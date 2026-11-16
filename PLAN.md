@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0 / M1 / M2 / M3 / M4 已完成（2026-11-16），剩余 M5 打包发布**
+> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；首个预览版 `v0.1.0-alpha.1` 已发布（2026-11-16）**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -161,7 +161,7 @@ hd2-proxy-toolkit/
 | **M2 GUI 骨架** | Tk 壳 + 5 页 + 状态轮询 + schema 驱动表单 + 星球/效果搜索选择器（以原型为基线） | 见 §11（234 单测；5 页实拍；门禁 PASS） | 1.5 天 | ✅ **约 30 分钟**（19:56→20:26） |
 | **M3 6 项能力** | 6 张能力卡/模板 + 离线预演 + 扩展入口（延后项折叠标注） | 见 §12（293 单测；每项能力 ≥1 条离线预演用例；预演截图） | 1 天 | ✅ **约 25 分钟**（交接档 21:31 → 收尾 21:44，含一次上下文折叠轮） |
 | **M4 实机验收** | 进游戏逐项验证、修现场问题、记录日志证据 | 见 §13 与 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)：**6/6 PASS** + 回读还原 | 0.5 天 | ✅ **约 80 分钟**（21:50→23:05；含 3 轮游戏内复核与 1 次 UAC 安装/还原） |
-| **M5 打包发布** | PyInstaller、README/使用说明/截图、v0.1.0 tag（远端按你意见再定） | 干净路径解压即用；安装→启动→验收→还原 全流程跑通 | 0.5 天 | ~**20–30 分钟**（校准） |
+| **M5 打包发布** | PyInstaller onedir、README/使用说明/截图、`v0.1.0-alpha.1` tag + Release | 见 §14：zip 解压即用（干净路径验证）、打包 exe 冒烟、Release 附件 + SHA256 | 0.5 天 | ✅ **约 22 分钟**（23:06→23:28，含 3 次打包工具修复） |
 
 关键路径：M0 → M1 →（M2/M3 可部分并行）→ M4 → M5。M4 必须你在场。
 
@@ -468,6 +468,30 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 **耗时校准**：M4 实际约 **75 分钟**（21:50→23:05），其中我这边操作/排查约 20 分钟、
 游戏内验证与等待约 55 分钟（3 轮复核 + 1 次 UAC 安装/还原），与 §5.1「需你开游戏、wall-clock 取决于你」一致。
+
+---
+
+## 14. M5 打包发布记录（2026-11-16）
+
+**一句话**：PyInstaller onedir 打包 + 干净路径验证 + GitHub Release `v0.1.0-alpha.1`
+（alpha：6 项能力已实机验证，但更多环境/游戏更新后的稳定性待观察）。
+
+| 项 | 结果 |
+|---|---|
+| 版本 | 显示 `0.1.0-alpha.1`（`__version__`）；PEP 440 元数据 `0.1.0a1`（pyproject） |
+| 打包 | PyInstaller 6.16 onedir；`dist/hd2proxy/hd2proxy.exe` + `_internal/` + 可编辑 `data/` |
+| 冻结适配 | `engine/paths.py` 识别 `sys.frozen`：优先 exe 旁 `data/`，否则 `_MEIPASS/data`；`cmd_engine` 冻结时在进程内调 `server.main`；`selftest/gate` 明确提示「源码树工具，打包版不含」 |
+| 产物 | `hd2proxy-toolkit-v0.1.0-alpha.1-windows-x64.zip`（约 14.8 MB）+ `SHA256SUMS.txt` |
+| 构建工具 | `tools/build_dist.py`：构建 → 打包后 exe 冒烟（`--version`/`info`/`preview`）→ zip/SHA256 → 解压到临时目录跑 `preview`（干净路径验证） |
+| 冒烟 | 打包 exe `--version` / `info` / `preview` 全 OK；GUI 进程可启动；`engine --help` 正常 |
+| Release | tag `v0.1.0-alpha.1`（prerelease）+ zip + SHA256SUMS + Release Notes（`docs/RELEASE-v0.1.0-alpha.1.md`） |
+| 文档 | README 增加「下载 / 快速开始（alpha）」；CHANGELOG.md；ARCHITECTURE §12 打包与分发 |
+
+**构建期间修掉的工具问题**（都不影响产品代码）：
+1. 冒烟断言用中文串在管道里被 cp936 编码破坏 → 改 ASCII 稳定串 + 子进程 UTF-8 env；
+2. `make_archive` 的 base 名带版本点号，`Path.with_suffix` 误裁 → 用返回值；
+3. zip 里数据在 `_internal/data`，用户看不到 → 构建时把 `data/` 再铺一份到 exe 旁（便携可改），
+   干净路径验证改用 exe 旁 `data/`。
 
 ---
 

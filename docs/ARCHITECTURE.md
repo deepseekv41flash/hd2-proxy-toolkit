@@ -224,3 +224,28 @@ hashmap` 对齐），`tools/gen_catalogs.py` 按 `row` 合并进 `data/catalogs/
 - 抓包原件用于「服务端原始数据 / 请求路径 / 目录结构」分析；
 - 改写证据看 `logs/proxy.log` 的 `REWRITE*` 行 + 游戏内观察；
 - v0.2 若需要 post-rewrite 证据，可在钩子链末尾另存一份（注意别把账号字段落盘）。
+
+## 12. 打包与分发（M5）
+
+产物：PyInstaller **onedir**（`dist/hd2proxy/`，zip 约 15 MB，解压约 60 MB）。
+
+```
+hd2proxy/
+├─ hd2proxy.exe            # 单一入口：gui / engine / install / uninstall / preview / verify / …
+├─ data/                   # 可编辑：legacy / catalogs / samples / acceptance（便携覆盖）
+└─ _internal/              # Python 运行时 / Tcl-Tk / cryptography / 内置 data 副本
+```
+
+冻结适配（`engine/paths.py`）：
+
+- `sys.frozen` 时 `REPO_ROOT` 取 exe 旁 `data/`（用户可改），没有则取 `sys._MEIPASS`（内置副本）；
+- `hd2proxy engine …` 冻结时不同于源码模式（没有 `src/` 树）：`__main__.cmd_engine` 直接在进程内
+  调 `engine.server.main(argv)`；
+- `selftest` / `gate` 是源码树工具，打包版明确提示不含，不假装可用。
+
+构建：`python tools/build_dist.py` —— PyInstaller 构建 → 用**打包后 exe** 冒烟
+（`--version` / `info` / `preview`）→ 打包 `data/` 到 exe 旁 → zip + SHA256SUMS →
+解压到临时目录再跑一次 `preview`（干净路径验证，证明不依赖仓库/本机路径）。
+
+发布：`v0.1.0-alpha.1`（prerelease）。alpha 原因：6 项能力已在 M4 实机逐项验证，
+但更多机型/网络环境/游戏更新后的全流程稳定性仍需观察；`0.x` 阶段 profile 结构可能变动。

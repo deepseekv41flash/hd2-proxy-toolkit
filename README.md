@@ -8,14 +8,50 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：M4 完成（2026-11-16）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.1.0-alpha.1 已发布（2026-11-16，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **297 个单元测试 + 5 个离线自检全绿**；打包在 M5。
+> **297 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.1.0-alpha.1`（见下方「下载」）。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
 > [物品与战备](research/screenshots/gui-inventory.png) ｜ [抓包与日志](research/screenshots/gui-capture.png) ｜
 > [设置](research/screenshots/gui-settings.png) ｜
 > [M4 实机：PARTION 出 PREDATOR STRAIN](research/screenshots/m4-partion-predator-strain.png)
+
+
+> **alpha 阶段提示**：工具目前处于 **alpha** 阶段，**可能有 bug**。欢迎到
+> [Issues](https://github.com/deepseekv41flash/hd2-proxy-toolkit/issues) 报告工具问题或提改进建议
+> （请附上 `hd2proxy info` 输出、`%LOCALAPPDATA%\HD2ProxyStudio\logs\proxy.log` 相关片段、
+> 复现步骤与游戏 build/war 号；敏感信息请先脱敏）。
+
+## 下载（v0.1.0-alpha.1）
+
+> **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
+> 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
+> [Release Notes](docs/RELEASE-v0.1.0-alpha.1.md)。
+
+- 下载：[GitHub Releases · v0.1.0-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.1.0-alpha.1)
+  （`hd2proxy-toolkit-v0.1.0-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
+- 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
+- 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）：
+
+```bat
+:: 1. 先看环境与数据是否正常（不需要管理员、不需要游戏）
+hd2proxy.exe info
+hd2proxy.exe preview --profile data\acceptance\m4-b.json     :: 离线预演
+
+:: 2. 图形界面
+hd2proxy.exe gui
+
+:: 3. 安装（改 hosts + 信任本机 CA；需要一次 UAC）
+hd2proxy.exe install --profile <你的 profile.json>
+:: 4. 起代理（GUI 里也能起）
+hd2proxy.exe engine --profile <你的 profile.json>
+:: 5. 验完还原（hosts + 证书；需要一次 UAC）
+hd2proxy.exe uninstall
+```
+
+> 安全边界：只改客户端收到的接口响应，不碰游戏文件、不进进程内存；单域名白名单 + 仅本机来源；
+> 会话证书 ≤2 天、签完删 CA 私钥；详见下文「安全设计」。
 
 ## 现在能做什么
 
@@ -110,16 +146,6 @@ docs/                                   来源与哈希、架构说明
 - 只改**客户端收到的**数据；服务端不落账（伪造星球/战役是"客户端侧真实、战局侧幻影"）。
 - `Mission/Session` 类会话恢复端点有校验（`errorCode 8012016`），不要承诺重连可用。
 
-## 里程碑
-
-| M | 内容 | 状态 |
-|---|---|---|
-| M0 | 仓库骨架 + 引擎迁移 + 5 自检绿 + catalogs | ✅ 2026-11-16 |
-| M1 | 引擎模块化 + schema v2 配置 + 控制 API + 安装/还原 + 自动续证 + 三连验收 | ✅ 2026-11-16 |
-| M2 | Tk GUI 骨架（5 页） | ✅ 2026-11-16 |
-| M3 | 6 项能力模板 + 离线预演 + 延后项折叠入口 | ✅ 2026-11-16 |
-| M4 | 实机逐项验收（6/6 PASS，见 docs/ACCEPTANCE-M4.md） | ✅ 2026-11-16 |
-| M5 | PyInstaller 打包 + 文档 + Release | ⏳ |
 
 ## 许可
 

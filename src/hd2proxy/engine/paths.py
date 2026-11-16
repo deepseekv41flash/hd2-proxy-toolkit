@@ -11,12 +11,22 @@
 """
 
 import os
+import sys
 from pathlib import Path
 
 _HERE = Path(__file__).resolve()
 
+if getattr(sys, "frozen", False):
+    # PyInstaller onedir：sys._MEIPASS = <bundle>/_internal（--add-data 的 data 在这里）；
+    # 如果用户把 data/ 放在 exe 旁边（便携改配置），优先用 exe 旁边那份。
+    _EXE_DIR = Path(sys.executable).resolve().parent
+    _BUNDLE = Path(getattr(sys, "_MEIPASS", _EXE_DIR))
+    _ROOT = _EXE_DIR if (_EXE_DIR / "data").is_dir() else _BUNDLE
+else:
+    _ROOT = _HERE.parents[3]
+
 # 仓库根 / 数据目录
-REPO_ROOT = Path(os.environ.get("HD2PROXY_ROOT") or _HERE.parents[3])
+REPO_ROOT = Path(os.environ.get("HD2PROXY_ROOT") or _ROOT)
 DATA_DIR = Path(os.environ.get("HD2PROXY_DATA") or (REPO_ROOT / "data"))
 LEGACY_DIR = DATA_DIR / "legacy"          # 研究线原始目录（引擎兼容层读这里）
 CATALOGS_DIR = DATA_DIR / "catalogs"      # 产品规范化目录（GUI 用）

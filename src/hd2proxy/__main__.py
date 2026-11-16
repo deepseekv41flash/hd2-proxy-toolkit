@@ -166,14 +166,31 @@ def cmd_info(_a):
 
 
 def cmd_engine(a):
+    """起引擎。打包版（frozen）没有 src/ 树，直接在进程内调 server.main。"""
+    if getattr(sys, "frozen", False):
+        from hd2proxy.engine import server
+        return server.main(a.rest)
     return _run_script(ENGINE, a.rest)
 
 
+def _dev_only(name):
+    """selftest / gate 是源码树工具，打包版不含；明确提示而不是报文件找不到。"""
+    if getattr(sys, "frozen", False):
+        print("%s 是源码树里的开发工具，打包版不含；请在仓库里跑 "
+              "`python -m hd2proxy %s`" % (name, name))
+        return True
+    return False
+
+
 def cmd_selftest(a):
+    if _dev_only("selftest"):
+        return FAIL
     return _run_script(TOOLS / "run_selftests.py", a.rest)
 
 
 def cmd_gate(a):
+    if _dev_only("gate"):
+        return FAIL
     return _run_script(TOOLS / "check_gate.py", a.rest)
 
 
