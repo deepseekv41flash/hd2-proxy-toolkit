@@ -2,6 +2,20 @@
 
 本项目遵循「里程碑 + 语义化版本」：`0.x` 阶段接口/数据结构可能变动，发布 alpha/beta 时显式标注。
 
+> **版本规则（2026-11-17 起）**：前三位 `X.Y.Z` 只在功能/能力变化时动；只修 bug 只动
+> `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
+> GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
+
+## 未发布（开发中）
+
+- 新增版本规则落地：`docs/VERSIONING.md`、`src/hd2proxy/versioning.py`、
+  `tools/bump_version.py`（按规则算下一版并改 `__version__`/pyproject）、
+  `tools/check_version.py`（版本一致性；门禁新增第 0 步）。
+- 新增 `tools/sync_release_area.py`：把 release 产物同步到专用测试区（`current/` 解包最新版、
+  `artifacts/` 放当前版本资产、`archive/` 留历史）；默认取 GitHub Release 资产，保证与用户
+  下载物逐字节一致；`build_dist.py` 支持 `--test-area` / `HD2PROXY_TEST_AREA` 构建后自动同步。
+- 单测 311 → **338**（新增版本规则 27 条）。
+
 ## v0.1.0-alpha.4（2026-11-17）— alpha.3 打包版实测发现的 3 个小问题 + 本机自签签名
 
 - **修复**：「切换直通」只改引擎运行时状态（控制面 `/passthrough`），不写回 profile ——

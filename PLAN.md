@@ -518,6 +518,49 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 - 回归测试：冻结/源码两种模式的 `cli_argv`、`engine_argv` 断言。
 - 打包 GUI 逐页实测补充修复：①冻结子进程 GBK 输出解码回退（GUI 里 CLI 结果不再乱码）；②冻结版 logs/runtime 落状态目录 + 「打开日志」友好提示（308 passed）。
 
+### 14.3 alpha.4 修复（2026-11-17，alpha.3 打包 GUI 实测的 3 个小问题）
+
+- 「切换直通」只改引擎运行时状态、不写回 profile → 随后「应用配置」按旧 profile 把直通恢复
+  （看起来像开关失灵）。修复：切换成功即写回内存 profile + `mark_dirty`。
+- 打包版证书签发提示写 `python -m hd2proxy install …`（打包版照抄必失败）→ 冻结模式改 `hd2proxy.exe …`。
+- 安装/还原计划、离线预演、证书弹窗长行不换行、左右被裁 → `wrap="word"` + 从开头显示。
+- 附：`tools/sign_local.ps1` 本机自签代码签名（CurrentUser 受信任根/发布者 + 签 exe），
+  `build_dist.py` 支持 `HD2PROXY_SIGN=1` 自动签名；详见 `docs/SIGNING-LOCAL.md`。
+- 回归测试 +3 → **311 passed**（当时）。
+
+### 14.4 版本规则落实（2026-11-17，用户定的发版规则）
+
+**规则**（完整版见 `docs/VERSIONING.md`）：
+
+| 变更 | 版本位 | 例 |
+|---|---|---|
+| 功能/能力更新（新能力/新页面/新模板/新子命令/行为语义变） | `X.Y.Z` 变，阶段重置 `alpha.1` | `0.1.0-alpha.4` → `0.2.0-alpha.1` |
+| 只修 bug（不改功能/行为） | 同 `X.Y.Z`，`alpha.N` 或 `rc.N` +1 | `0.1.0-alpha.4` → `0.1.0-alpha.5` |
+| 用户实机验收通过 → 发布候选 | `alpha` → `rc.1` | `0.1.0-alpha.5` → `0.1.0-rc.1` |
+| 功能完成、bug 收敛 | 去后缀发 GA | `0.1.0-rc.2` → `0.1.0` |
+
+阶段语义：**alpha** = 新功能刚落地、可能 bug 多；**rc** = 用户实机验证过、已知 bug 不影响正常使用
+（此后只修 bug）；**GA** = 功能与 bug 都收敛（首个 GA 目标 `1.0.0`）。
+
+**已合规模拟核**：alpha.1–alpha.4 的核心版本都是 `0.1.0`，alpha.2/3/4 均为只修 bug → 符合规则。
+
+**工具化**：
+
+- `src/hd2proxy/versioning.py`：解析/校验/PEP 440 映射/阶段迁移（纯逻辑，27 条单测）。
+- `tools/bump_version.py`：按规则算下一版并同时改 `__version__` 与 `pyproject`，打印后续待办
+  （`fix` / `promote-rc` / `ga` / `feature --major|minor|patch`；`--dry-run` 只看结果）。
+- `tools/check_version.py` + 门禁第 0 步：校验 `__version__` 格式 ↔ `pyproject` PEP 440 ↔
+  CHANGELOG 条目 ↔ 已打 tag 的 `docs/RELEASE-v*.md`（4 条任一不符 → GATE=FAIL）。
+
+**发版流程（此后固定）**：
+
+1. `python tools/bump_version.py <fix|promote-rc|ga|feature …>`
+2. 补 CHANGELOG 条目 + `docs/RELEASE-v<ver>.md`
+3. `python tools/check_gate.py`（含版本一致性）→ 提交/推送 → CI 绿
+4. `HD2PROXY_SIGN=1 python tools/build_dist.py`（本地签名 + 冒烟 + zip/SHA256）
+5. `gh release create v<ver> --prerelease …`（GA 才去掉 `--prerelease`）→ 核对资产 digest
+6. `python tools/sync_release_area.py --area <测试区>` 更新 release 产物测试区
+
 ---
 
 ## 附：本轮不做

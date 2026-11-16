@@ -92,6 +92,17 @@ def check_tests():
     return ok
 
 
+def check_version():
+    """版本一致性：__version__ 格式 / pyproject PEP 440 / CHANGELOG / Release Notes。"""
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "check_version.py")],
+                       cwd=str(ROOT), capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    out = (r.stdout or "") + (r.stderr or "")
+    for line in out.strip().splitlines():
+        print("  " + line if not line.startswith("  ") else line)
+    return "GATE=PASS" in out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-tests", action="store_true", help="跳过单元测试与离线自检")
@@ -102,15 +113,17 @@ def main():
     print("hd2-proxy-toolkit 门禁  |  %s" % ROOT)
     print("=" * 72)
     results = []
-    print("\n[1/4] 语法检查")
+    print("\n[0/5] 版本一致性（docs/VERSIONING.md）")
+    results.append(("version", check_version()))
+    print("\n[1/5] 语法检查")
     results.append(("py_compile", check_compile()))
-    print("\n[2/4] 绝对路径检查")
+    print("\n[2/5] 绝对路径检查")
     results.append(("no-abs-paths", check_no_abs_paths()))
     if not a.no_tests:
-        print("\n[3/4] 单元测试")
+        print("\n[3/5] 单元测试")
         results.append(("unit-tests", check_unit_tests()))
     if not (a.no_tests or a.no_scripts):
-        print("\n[4/4] 离线自检（5 个脚本）")
+        print("\n[5/5] 离线自检（5 个脚本）")
         results.append(("selftests", check_tests()))
 
     print("\n" + "=" * 72)

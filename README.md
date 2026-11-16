@@ -11,7 +11,7 @@
 > **当前状态：v0.1.0-alpha.4 已发布（2026-11-17，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **311 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.1.0-alpha.4`（见下方「下载」）。
+> **338 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.1.0-alpha.4`（见下方「下载」）。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
 > [物品与战备](research/screenshots/gui-inventory.png) ｜ [抓包与日志](research/screenshots/gui-capture.png) ｜
 > [设置](research/screenshots/gui-settings.png) ｜
@@ -22,6 +22,24 @@
 > [Issues](https://github.com/deepseekv41flash/hd2-proxy-toolkit/issues) 报告工具问题或提改进建议
 > （请附上 `hd2proxy info` 输出、`%LOCALAPPDATA%\HD2ProxyStudio\logs\proxy.log` 相关片段、
 > 复现步骤与游戏 build/war 号；敏感信息请先脱敏）。
+
+## 版本规则
+
+本项目的版本号规则（详见 [docs/VERSIONING.md](docs/VERSIONING.md)）：
+
+- **前三位 `X.Y.Z` 只在「功能/能力」变化时动**；只修 bug 就只动 `alpha.N` / `rc.N` 这一位。
+- `X.Y.Z-alpha.N`：新功能刚落地、bug 可能较多（未做用户实机验收）。
+- `X.Y.Z-rc.N`：**用户实机验证过**、已知 bug 不影响正常使用（之后只允许修 bug，再改功能回 alpha）。
+- `X.Y.Z`：GA 正式版（功能与 bug 都收敛后再发；首个 GA 目标 `1.0.0`）。
+
+```powershell
+python tools/bump_version.py fix             # 只修 bug：alpha.N / rc.N +1
+python tools/bump_version.py promote-rc      # alpha → rc.1（实机验收通过后）
+python tools/bump_version.py ga              # rc → 正式版
+python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 alpha.1
+```
+
+门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
 ## 下载（v0.1.0-alpha.4）
 
@@ -60,7 +78,7 @@ hd2proxy.exe uninstall
 ```bash
 python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
 set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
-python tools/check_gate.py                  # 门禁：语法 + 路径 + 308 单测 + 5 个离线自检
+python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 338 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
@@ -119,10 +137,13 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 ```
 src/hd2proxy/engine/                    引擎（server / 钩子 / 配置 / 证书 / 安装 / 控制面 / 离线预演 preview.py）
 src/hd2proxy/gui/                       Tk GUI：壳 + 5 页 + widgets + templates.py（能力模板）
-tests/unit/                             单元测试（311 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / CLI）
+src/hd2proxy/versioning.py               版本规则与 PEP 440 映射（docs/VERSIONING.md 的实现）
+tests/unit/                             单元测试（338 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / CLI）
 tests/selftest*.py                      5 个脚本式离线自检（迁自研究线，仅改路径）
 tools/run_selftests.py                  自检总入口（独立证书/数据目录，GATE 判定）
-tools/check_gate.py                     门禁：语法 + 绝对路径 + pytest + 5 自检
+tools/check_gate.py                     门禁：版本一致性 + 语法 + 绝对路径 + pytest + 5 自检
+tools/bump_version.py                   按版本规则算下一版本号并更新 __version__/pyproject
+tools/check_version.py                  版本一致性检查（__version__ ↔ PEP 440 ↔ CHANGELOG ↔ Release Notes）
 tools/gen_session_certs.py              会话证书签发（ca 模式，≤2 天硬上限）
 tools/gen_catalogs.py                   数据目录生成（GUI 用，来自研究仓产物）
 tools/gui_smoke.py                      GUI 冒烟：起真引擎 + 假上游 → 五页截图
