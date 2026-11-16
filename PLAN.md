@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0 已完成（2026-11-16），M1 待开工**
+> 起草 2026-11-16 ｜ 状态：**M0 / M1 已完成（2026-11-16），M2 待开工**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -158,7 +158,7 @@ hd2-proxy-toolkit/
 | M | 内容 | 门禁（贴原始输出） | 估时 |
 |---|---|---|---|
 | **M0 骨架** | 建仓、目录、搬 engine 源码（先原样落地）、5 个 selftest 与证书工具适配、catalogs 生成 | 5 个 selftest 全 PASS；`py_compile` 干净；无旧路径硬编码 | ✅ 0.5 天（2026-11-16，见 §9） |
-| **M1 引擎+控制面** | 模块化拆分、schema v2、热重载、控制 API、install/uninstall（UAC 自提升）、自动续证、CRL；**数据管道补齐**（`settings_hash` 以 live warinfo 导入为主、物品名称表） | 离线 pytest 全绿；`install → passthrough 起 → verify 三连 → stop → uninstall` 本机全通 | 1.5 天 |
+| **M1 引擎+控制面** | 模块化拆分（17 模块）、schema v2、热重载、控制 API、install/uninstall（UAC 自提升）、自动续证、CRL；数据管道：`settings_hash` 走 live warinfo 导入 | 见 §10（213 单测 + 5 自检 + 整链路实测全绿） | ✅ 1 天（2026-11-16） |
 | **M2 GUI 骨架** | Tk 壳 + 5 页 + 状态轮询 + schema 驱动表单 + 星球/效果搜索选择器（以原型为基线） | 5 页绑真实引擎状态；切换页无卡顿；截图 | 1.5 天 |
 | **M3 6 项能力** | 6 张能力卡/模板 + 离线预演 + 扩展入口（延后项折叠标注） | 每项 ≥1 条离线用例 + 预演截图；模板填入后增量符合预期 | 1 天 |
 | **M4 实机验收** | 进游戏逐项验证、修现场问题、记录日志证据 | 验收清单逐项 PASS（**需你开游戏配合**） | 0.5 天 |
@@ -245,6 +245,55 @@ GATE=PASS
 3. catalogs 的 `planets.settings_hash` 全 null（源无该字段）→ 生态借用改用「运行时 live warinfo 导入」，M1 数据管道实现。
 
 **遗留缺口（不阻塞 M0，进 M1/M3）**：见 [data/catalogs/README.md §已知缺口](data/catalogs/README.md) 四条。
+
+---
+
+## 10. M1 交付记录（2026-11-16）
+
+**一句话**：引擎从「1846 行单文件」拆成 `engine/` 17 个模块，配置面 / 控制面 / 安装还原 /
+证书自动续期 / 三连验收全部落地，且用 **M0 黄金基准**证明重构没有改变行为。
+
+| 交付 | 内容 |
+|---|---|
+| 引擎模块化 | `server / model / catalog / certs / config / spec / control / verify / paths / logutil / httpio / upstream` + `hooks/` 6 个 + 系统面 `hosts / sysprobe / elevation / installer`；`legacy_proxy.py` 变兼容入口（脚本方式启动仍可用） |
+| 配置面 | schema v2 单一 profile；校验（errors 阻止启动 / warnings 提示）、原子存取、`to_engine_spec()`、旧 `config.json`+`runtime/*.json`+`HD2_GWE_EXTRA` 一键迁移 |
+| 控制面 | 127.0.0.1 + token；`/status /events /config(GET/PUT 热应用) /profiles /reload /verify /passthrough /capture /shutdown`；`engine.json` 供 GUI 发现；本机请求显式绕系统代理 |
+| 证书 | ca 模式签发 / 状态快照 / 剩余 <12h 自动续期 / preflight（SAN、≤2 天、模式、多余私钥）/ CRL 服务 |
+| 安装/还原 | `installer` 契约：dry-run 只给计划；先证书后 hosts；非管理员走 UAC 自提升子进程；成败以回读系统状态为准；还原不删证书文件 |
+| 验收 | `verify.py` 三连（TLS 握手 / CRL 200 / Status 回执），CLI `verify` 走控制面 |
+| 数据管道 | `capture.planet_settings=true` 时把 live warinfo 的 `settingsHash` 落盘到状态目录（能力 6 的数据来源，替代不存在的离线字段） |
+| CLI | `info / engine / selftest / gate / profiles / migrate / certs / install / uninstall / status / verify / shutdown` |
+
+**门禁证据（本机原始输出）**
+
+```
+$ python tools/check_gate.py
+  py_compile: 60 个文件, 0 失败
+  绝对路径: 0 处
+  213 passed in 9.90s            # pytest tests/unit
+  basic/rewrite/hot_reload/sticky/faction 全 PASS   # 5 个脚本式自检
+GATE=PASS
+```
+
+**等价性证据**：`tests/fixtures/make_golden.py` 从 git 历史里的 M0 实现（commit `826ba04`）生成基准，
+`tests/unit/test_hooks.py` 用「显式 spec」与「旧 env/runtime 文件」两条路径比对，输出逐字段一致。
+
+**M1 期间修掉的真实产品级问题**
+
+1. **本机请求被系统代理劫持**：Windows 注册表代理会让 urllib 把 `127.0.0.1` 也送进 Clash，
+   控制面/CRL 直接失败 → 所有本机 HTTP 显式 `ProxyHandler({})`（研究线 curl 需 `--noproxy '*'` 的同类坑）。
+2. 控制面 `send_header("Connection: close")` 少传 value → 所有控制请求 500。
+3. `EngineContext` 缺 `set_passthrough_cb` 槽位 / 状态读取用了过期 spec → 直通切换后 `/status` 不更新。
+4. profile 的 `crl_port` 没覆盖 legacy cfg → CRL 仍绑 8080（与实机代理抢端口）。
+5. 回环监听：产品路径拒绝，但离线测试需要 → `--allow-loopback` / `cfg.allowLoopback` 显式开关（仅测试）。
+
+**与计划的偏离**
+
+- **真安装/还原未在本机执行**（要改 hosts + 写证书存储，需 UAC 且会与当前实机代理状态交叉）。
+  M1 用「dry-run 计划 + 系统状态回读 + 临时 hosts/certutil 桩的 178 项系统面单测」覆盖；
+  真安装留 M4 实机验收（你本人在场时跑一次 `install` 即可）。
+- 物品名称表补齐（catalogs 缺口 2）未在 M1 做：现有源只解出约 391/1671 个名字，
+  需要 dl_bin 名称表提取，随 M3 的「物品解锁」界面一起做。
 
 ---
 

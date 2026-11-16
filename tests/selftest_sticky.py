@@ -126,7 +126,7 @@ def main():
     threading.Thread(target=fake_upstream, daemon=True).start()
     time.sleep(0.3)
 
-    cfg = {"host": HOST, "port": TEST_PORT, "upstreamTest": "127.0.0.1:%d" % UP_PORT,
+    cfg = {"host": HOST, "listenIp": "127.0.0.1", "allowLoopback": True, "port": TEST_PORT, "upstreamTest": "127.0.0.1:%d" % UP_PORT,
            "passthrough": False, "allowDevFlags": False, "crlPort": 0, "targets": []}
     cfg_path = BASE / "logs" / "selftest_sticky_config.json"
     cfg_path.parent.mkdir(parents=True, exist_ok=True)

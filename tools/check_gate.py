@@ -12,6 +12,7 @@
 """
 
 import argparse
+import os
 import py_compile
 import re
 import subprocess
@@ -20,7 +21,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CODE_DIRS = ["src", "tests", "tools"]
-ABS_PATH_RE = re.compile(r"""["'](?:[A-Za-z]:[\\/]|\\\\)""")
+# 匹配硬编码的 Windows 绝对路径：盘符形式或真正的 UNC 共享。
+# 不按「引号后紧跟反斜杠」判，因为源码里合法写出的转义序列会被误判成路径。
+ABS_PATH_RE = re.compile(r"""["'](?:[A-Za-z]:[\\/]|\\\\[A-Za-z0-9_])""")
 
 
 def check_compile():
@@ -52,6 +55,20 @@ def check_no_abs_paths():
     return len(bad) == 0
 
 
+def check_unit_tests():
+    print("  运行 pytest tests/unit（离线，无需管理员）")
+    env = dict(os.environ)
+    env.setdefault("PYTHONUTF8", "1")
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    r = subprocess.run([sys.executable, "-m", "pytest", "tests/unit", "-q"],
+                       cwd=str(ROOT), capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", env=env)
+    tail = ((r.stdout or "") + (r.stderr or "")).strip().splitlines()
+    for line in tail[-8:]:
+        print("  " + line)
+    return r.returncode == 0
+
+
 def check_tests():
     env_note = "（输出见下方 run_selftests.py 汇总）"
     print("  运行离线自检 " + env_note)
@@ -68,19 +85,23 @@ def check_tests():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--no-tests", action="store_true", help="跳过离线自检")
+    ap.add_argument("--no-tests", action="store_true", help="跳过单元测试与离线自检")
+    ap.add_argument("--no-scripts", action="store_true", help="跳过 5 个脚本式自检")
     a = ap.parse_args()
 
     print("=" * 72)
-    print("hd2-proxy-toolkit M0 门禁  |  %s" % ROOT)
+    print("hd2-proxy-toolkit 门禁  |  %s" % ROOT)
     print("=" * 72)
     results = []
-    print("\n[1/3] 语法检查")
+    print("\n[1/4] 语法检查")
     results.append(("py_compile", check_compile()))
-    print("\n[2/3] 绝对路径检查")
+    print("\n[2/4] 绝对路径检查")
     results.append(("no-abs-paths", check_no_abs_paths()))
     if not a.no_tests:
-        print("\n[3/3] 离线自检")
+        print("\n[3/4] 单元测试")
+        results.append(("unit-tests", check_unit_tests()))
+    if not (a.no_tests or a.no_scripts):
+        print("\n[4/4] 离线自检（5 个脚本）")
         results.append(("selftests", check_tests()))
 
     print("\n" + "=" * 72)

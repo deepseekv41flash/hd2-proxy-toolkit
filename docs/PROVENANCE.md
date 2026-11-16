@@ -50,12 +50,29 @@ EOF
 
 | 文件 | CRLF sha256（工作副本） | LF sha256（git 存储 / 跨平台核对用） |
 |---|---|---|
-| `src/hd2proxy/engine/legacy_proxy.py` | `58d1960f6d64a9f6…` | `add4d28950655219…` |
+| `src/hd2proxy/engine/legacy_proxy.py`（M0 版本，见 git 历史） | `58d1960f6d64a9f6…` | `add4d28950655219…` |
 | `data/legacy/variant_catalog.json` | `b9683fb2f92d1c49…` | `8a1b5b29d35253a1…` |
 | `data/legacy/stratagem_catalog.json` | `c4a6de4ebc90b09b…` | `90fa19e4dd9bab68…` |
 | `data/legacy/config.example.json` | `b423ca8235c626dc…` | `2319a9e829ad1de8…` |
 
 （源文件 CRLF sha256 = `662af7d6…` 见 §1；其 LF 归一化后与上表第一行的迁移目标**不同**，因为 shim 改了路径那几行。）
+
+### 1.4 M1 重构（2026-11-16）后的读法
+
+M1 把 M0 的 1846 行单文件拆成 `engine/` 下 17 个模块（见 [ARCHITECTURE.md](ARCHITECTURE.md)），
+`legacy_proxy.py` 现在是**兼容入口**（只负责把脚本方式启动转发到 `server.main`，并再导出旧函数名）。
+
+为了保证「拆分/加 `spec` 参数」没有改变行为，M1 建立了**黄金回归**：
+
+- `tests/fixtures/make_golden.py` 从 **git 历史里的 M0 实现**（commit `826ba04`）生成基准，
+  产物在 `tests/fixtures/golden/`；
+- `tests/unit/test_hooks.py` 让重构后的钩子分别用「显式 spec」和「旧环境变量/runtime 文件」
+  两条路径跑同一输入，输出必须与 golden **逐字段一致**；
+- 5 个脚本式自检（`tests/selftest*.py`）保持原断言，验证传输层/热重载/粘性/阵营隔离。
+
+> 所以本文件的哈希核对仍然有效：**M0 那版实现**作为行为基线被固化在 git 与 golden 里；
+> 当前代码的等价性由测试保证，而不是靠"看起来一样"。
+
 
 ## 2. 数据文件（`data/legacy/`，逐字节复制）
 

@@ -22,7 +22,7 @@ jobs:
       - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
-          python -m pip install cryptography
+          python -m pip install cryptography pytest
 
       - name: 门禁
         run: python tools/check_gate.py

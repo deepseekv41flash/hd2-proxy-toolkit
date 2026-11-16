@@ -130,7 +130,7 @@ def main():
     time.sleep(0.3)
 
     cfg = {
-        "host": HOST, "port": TEST_PORT, "upstreamTest": "127.0.0.1:%d" % UP_PORT,
+        "host": HOST, "listenIp": "127.0.0.1", "allowLoopback": True, "port": TEST_PORT, "upstreamTest": "127.0.0.1:%d" % UP_PORT,
         "passthrough": False, "allowDevFlags": False, "crlPort": 0,
         "targets": [{"planet": 100, "variant": "掠食"}],
     }

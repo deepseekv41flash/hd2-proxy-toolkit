@@ -8,18 +8,31 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：M0 完成（2026-11-16）** —— 引擎代码已迁入并可离线自检；
-> 控制面 / GUI / 打包按计划 M1–M5 推进。M0 阶段**没有** GUI，别按成品预期使用。
+> **当前状态：M1 完成（2026-11-16）** —— 引擎已模块化、配置面/控制面/安装还原/证书自动续期/三连验收
+> 全部落地，213 个单元测试 + 5 个离线自检全绿；GUI 在 M2、打包在 M5。
 
 ## 现在能做什么
 
 ```bash
-python -m pip install cryptography          # 唯一运行依赖
-python tools/run_selftests.py               # 应输出 GATE=PASS (5/5)
+python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
+set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
+python tools/check_gate.py                  # 门禁：语法 + 路径 + 213 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
-5 项覆盖：白名单握手 / 非白名单 SNI 拒绝 / Status 改写 / `selection.json` 热重载 / 粘性星球上限 / 阵营隔离。
+
+M1 起也可以用 CLI 走完整流程（详细见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)）：
+
+```bash
+python -m hd2proxy info                        # 版本 / 路径 / 引擎是否在跑
+python -m hd2proxy certs renew --days 1        # 签发会话证书（ca 模式，≤2 天）
+python -m hd2proxy install --dry-run --listen-ip <本机非回环IP>   # 只看计划，不改系统
+python -m hd2proxy install --listen-ip <IP>    # 真安装（hosts + 证书信任；需要一次 UAC）
+python -m hd2proxy engine --profile <profile>  # 起代理（前台；GUI 在 M2）
+python -m hd2proxy status                      # 读运行中引擎状态
+python -m hd2proxy verify                      # 三连验收（TLS / CRL / Status）
+python -m hd2proxy uninstall --dry-run         # 还原计划（真还原需 UAC）
+```
 
 也可以直接跑引擎（研究模式，等价于研究线的 `war_proxy.py`）：
 
@@ -75,7 +88,7 @@ docs/                                 来源与哈希、后续架构说明
 | M | 内容 | 状态 |
 |---|---|---|
 | M0 | 仓库骨架 + 引擎迁移 + 5 自检绿 + catalogs | ✅ 2026-11-16 |
-| M1 | 引擎模块化 + schema v2 配置 + 控制 API + 安装/还原 + 自动续证 | ⏳ |
+| M1 | 引擎模块化 + schema v2 配置 + 控制 API + 安装/还原 + 自动续证 + 三连验收 | ✅ 2026-11-16 |
 | M2 | Tk GUI 骨架（5 页） | ⏳ |
 | M3 | 6 项能力卡 + 离线预演 | ⏳ |
 | M4 | 实机逐项验收 | ⏳ |
