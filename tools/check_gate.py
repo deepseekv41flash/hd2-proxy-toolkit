@@ -25,6 +25,15 @@ CODE_DIRS = ["src", "tests", "tools"]
 # 不按「引号后紧跟反斜杠」判，因为源码里合法写出的转义序列会被误判成路径。
 ABS_PATH_RE = re.compile(r"""["'](?:[A-Za-z]:[\\/]|\\\\[A-Za-z0-9_])""")
 
+# Windows 默认控制台是 GBK：自检子进程输出里可能夹着 U+FFFD 等 GBK 无法编码的字符，
+# 直接 print 会把「自检其实 PASS」变成 UnicodeEncodeError 假红。这里把两个流降级成
+# 替换字符，门禁判定逻辑不受影响 ✓（CI 的 UTF-8 环境行为不变）
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(errors="replace")
+    except (AttributeError, OSError, ValueError):
+        pass
+
 
 def check_compile():
     bad = []
