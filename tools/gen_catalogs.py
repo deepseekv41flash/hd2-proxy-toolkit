@@ -1,0 +1,855 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""生成 hd2-proxy-toolkit 自带的 JSON 数据目录：data/catalogs/*.json。
+
+源仓库（全部**只读**，本脚本绝不写入、不删除、不建文件）：
+  D:\\Downloads\\variant_mod   旧面板研究副本（MT 代理路线的工作目录）
+      - variant_catalog.json       变种目录（分组 + 变种名 + tag/mechanic 效果 id）
+      - stratagem_catalog.json     type32「临时配发战备」目录（GWE effectType=32）
+      - runtime/inventory_*.json   库存注入配置（物品解锁实验的 mixId 清单）
+      - runtime/items_inject.json  武器目录注入（未发布武器行 itemId）
+  D:\\mod\\work\\variant-net    网络层研究仓（hd2-network-proxy 的产物仓）
+      - out/effects-full.csv       GWE 效果全量解码表（312 条，数值来自数据表）
+      - out/effect-menu.csv        效果菜单展示表（presence/阵营/显示名，面向菜单）
+      - refs/armor_rows_parsed.json   外观表（generated_customization_armor_sets）422 行解析
+      - refs/store-cosmetics-20261106.json  已解名字的商店外观（mixId -> name）
+      - refs/unreleased_candidates.json     无名外观候选（外观表 itemId）
+      - configs/inventory_*.json / items_inject.json  同上的实验配置副本
+  D:\\mod\\work\\repo-datamined  离线数据挖掘仓
+      - out/planet/planet-index.json   星球索引（438 条：index/name/biome/planet_type/setup/region/locid）
+      - out/planet/planet-data.json    星球全量设置（本脚本只用来查 settingsHash；当前无此字段）
+
+只读约定：
+  1. 三个源目录只读；脚本只写 <repo>/data/catalogs/ 下的固定文件名。
+  2. JSON 数据内不出现绝对路径，source 一律写逻辑名（如 variant-net/refs/...）。
+  3. 缺任何一个必需源文件 -> 明确报错并退出（退出码 1），绝不静默产出空表。
+
+默认源路径：代码里不写死本机绝对路径，而是按本仓库在工作区中的相对位置推导
+（<repo>/../variant-net、<repo>/../repo-datamined、<repo 所在盘符>/Downloads/variant_mod），
+解析结果即本机真实源路径；换机器/换目录时用下面的 --variant-mod/--variant-net/--datamined 覆盖。
+
+确定性：
+  所有输出 UTF-8（无 BOM）、ensure_ascii=False、indent=1、sort_keys=True；
+  所有列表按主键排序；不使用当前时间/随机数/绝对路径进数据 ⇒ 同样的源重跑字节一致。
+
+用法：
+  python tools/gen_catalogs.py
+  python tools/gen_catalogs.py --variant-mod <path> --variant-net <path> \\
+                               --datamined <path> --out <path>
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import sys
+from pathlib import Path
+from typing import Any, Callable
+
+# ---------------------------------------------------------------- 路径与常量
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# 默认源路径：代码里**不写死本机绝对路径**（tools/check_gate.py 的 M0 门禁要求），
+# 按本仓库在工作区中的相对位置推导，解析结果就是本机真实源路径：
+#   <repo>/../variant-net、<repo>/../repo-datamined、<repo 所在盘符>/Downloads/variant_mod
+# 换机器/换目录时用 --variant-mod / --variant-net / --datamined 显式覆盖即可复现。
+_DISK_ROOT = Path(REPO_ROOT.anchor)  # 例如 D:\
+DEFAULT_VARIANT_MOD = _DISK_ROOT / "Downloads" / "variant_mod"
+DEFAULT_VARIANT_NET = REPO_ROOT.parent / "variant-net"
+DEFAULT_DATAMINED = REPO_ROOT.parent / "repo-datamined"
+DEFAULT_OUT = REPO_ROOT / "data" / "catalogs"
+
+# build.json 的手工常量（游戏 build 变化时改这里并重跑；variant_catalog 里的 build 另见 generated_from）
+GAME_BUILD = "26568081"
+WAR_ID = 801
+API_HOST = "api.live.prod.thehelldiversgame.com"
+WAR_SEASON = 801
+
+# source 字段使用的逻辑名（数据里绝不出现绝对路径）
+SRC_VARIANTS = "variant_mod/variant_catalog.json"
+SRC_STRATAGEMS = "variant_mod/stratagem_catalog.json"
+SRC_EFFECTS_FULL = "variant-net/out/effects-full.csv"
+SRC_EFFECTS_MENU = "variant-net/out/effect-menu.csv"
+SRC_ARMOR_ROWS = "variant-net/refs/armor_rows_parsed.json"
+SRC_STORE_COSMETICS = "variant-net/refs/store-cosmetics-20261106.json"
+SRC_UNRELEASED = "variant-net/refs/unreleased_candidates.json"
+SRC_PLANET_INDEX = "repo-datamined/out/planet/planet-index.json"
+SRC_PLANET_DATA = "repo-datamined/out/planet/planet-data.json"
+
+# 库存配置文件的来源分类（粗分类；不是游戏内 progressionCategory 原字段的转述，
+# 而是按文件语义/文件名给出：武器=cat1 实验、附件=cat2、外观=cat3、战备许可=cat11）。
+# None 表示该文件的条目类别未知（探针文件混了多个 cat）。
+INVENTORY_CATEGORIES: dict[str, str | None] = {
+    "inventory_attach": "attachment",
+    "inventory_cosmetic": "cosmetic",
+    "inventory_stratagem": "stratagem",
+    "inventory_inject": "weapon",
+    "inventory_probe": None,
+}
+
+
+class SourceError(Exception):
+    """源数据缺失 / 结构不符合预期。直接导致脚本失败退出。"""
+
+
+# ---------------------------------------------------------------- 通用工具
+
+
+def log(message: str) -> None:
+    print(f"[gen_catalogs] {message}")
+
+
+def require_file(path: Path, what: str) -> Path:
+    if not path.is_file():
+        raise SourceError(f"缺少{what}: {path}")
+    return path
+
+
+def load_json(path: Path, what: str, expect: type | tuple[type, ...] = dict) -> Any:
+    """读取 UTF-8 JSON（容忍 BOM），并校验顶层类型。"""
+    require_file(path, what)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except UnicodeDecodeError as exc:
+        raise SourceError(f"{what} 不是 UTF-8 文本: {path}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise SourceError(f"{what} 不是合法 JSON: {path}: {exc}") from exc
+    if not isinstance(data, expect):
+        names = " / ".join(t.__name__ for t in (expect if isinstance(expect, tuple) else (expect,)))
+        raise SourceError(f"{what} 顶层类型应为 {names}，实际是 {type(data).__name__}: {path}")
+    return data
+
+
+def load_csv(path: Path, what: str, required_columns: tuple[str, ...]) -> list[dict[str, str]]:
+    """读取 CSV（带 BOM 也无妨）；缺列直接报错，避免把结构变化静默吞掉。"""
+    require_file(path, what)
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            rows = list(reader)
+            fieldnames = tuple(reader.fieldnames or ())
+    except UnicodeDecodeError as exc:
+        raise SourceError(f"{what} 不是 UTF-8 文本: {path}: {exc}") from exc
+    missing = [col for col in required_columns if col not in fieldnames]
+    if missing:
+        raise SourceError(f"{what} 缺少列 {missing}（实际表头: {list(fieldnames)}）")
+    return rows
+
+
+def to_int(value: Any, where: str) -> int:
+    """空值/None 不合法（用于必需整数）；供 to_opt_int 之外的强校验。"""
+    result = to_opt_int(value, where)
+    if result is None:
+        raise SourceError(f"{where}: 期望整数，实际为空")
+    return result
+
+
+def to_opt_int(value: Any, where: str) -> int | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return int(text, 10)
+    except ValueError as exc:
+        raise SourceError(f"{where}: 期望整数，实际为 {value!r}") from exc
+
+
+def to_text(value: Any) -> str | None:
+    """去首尾空白；空字符串归一为 None（源里 '' 表示缺失）。"""
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def pick_display_name(candidates: list[str]) -> str | None:
+    """名字里有 Title-Case 变体（含小写字母）就优先它，否则取第一个。"""
+    for name in candidates:
+        if any(ch.islower() for ch in name):
+            return name
+    return candidates[0] if candidates else None
+
+
+def write_json(out_dir: Path, filename: str, payload: Any, entries: int) -> None:
+    """UTF-8 / indent=1 / sort_keys 写出；同一份源重跑必须字节一致。"""
+    path = out_dir / filename
+    text = json.dumps(payload, ensure_ascii=False, indent=1, sort_keys=True) + "\n"
+    path.write_text(text, encoding="utf-8", newline="\n")
+    try:
+        shown = path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:  # --out 指到仓库外时按传入路径显示
+        shown = path.as_posix()
+    print(f"wrote {shown} entries={entries}")
+
+
+# ---------------------------------------------------------------- 1. 变种目录
+
+
+def infer_faction(presence: str | None) -> str:
+    """源里没有 faction 时按 presence 前缀推断（任务约定）。"""
+    if not presence:
+        return "universal"
+    if presence.startswith("bugs_"):
+        return "terminid"
+    if presence.startswith(("bots_", "elite_bot_")):
+        return "automaton"
+    if presence.startswith("illuminate_"):
+        return "illuminate"
+    return "universal"
+
+
+def build_variants(variant_mod: Path) -> tuple[dict[str, Any], int]:
+    data = load_json(variant_mod / "variant_catalog.json", "变种目录 variant_catalog.json", dict)
+
+    for key in ("build", "gameVersion", "note", "groups", "variants", "meta"):
+        if key not in data:
+            raise SourceError(f"variant_catalog.json 缺少字段 {key!r}")
+
+    groups = data["groups"]
+    if not isinstance(groups, list) or not groups:
+        raise SourceError("variant_catalog.json 的 groups 必须是非空数组")
+    for group in groups:
+        if not isinstance(group, dict) or "name" not in group or "variants" not in group:
+            raise SourceError(f"variant_catalog.json 的 group 结构异常: {group!r}")
+
+    variants_ids: dict[str, list[int]] = data["variants"]
+    meta: dict[str, dict[str, Any]] = data["meta"]
+    if not isinstance(variants_ids, dict) or not variants_ids:
+        raise SourceError("variant_catalog.json 的 variants 必须是非空对象")
+    if not isinstance(meta, dict):
+        raise SourceError("variant_catalog.json 的 meta 必须是对象")
+
+    all_names = set(variants_ids) | set(meta)
+    if set(variants_ids) != set(meta):
+        log(
+            "note: variants 与 meta 的变种名不一致 "
+            f"(只在 variants: {sorted(set(variants_ids) - set(meta))}; "
+            f"只在 meta: {sorted(set(meta) - set(variants_ids))})"
+        )
+
+    items: dict[str, Any] = {}
+    for name in sorted(all_names):
+        ids_raw = variants_ids.get(name, [])
+        if not isinstance(ids_raw, list):
+            raise SourceError(f"variant_catalog.json variants[{name!r}] 应为数组")
+        ids = [to_int(effect_id, f"variant_catalog.json variants[{name!r}]") for effect_id in ids_raw]
+
+        entry: dict[str, Any] = {}
+        source_meta = meta.get(name, {})
+        if not isinstance(source_meta, dict):
+            raise SourceError(f"variant_catalog.json meta[{name!r}] 应为对象")
+        presence = to_text(source_meta.get("presence"))
+        faction = to_text(source_meta.get("faction")) or infer_faction(presence)
+        # 原样保留 tag / mechanic / help 等其它字段
+        for key, value in source_meta.items():
+            if key not in ("faction", "presence"):
+                entry[key] = value
+        entry["ids"] = ids
+        entry["faction"] = faction
+        entry["presence"] = presence
+        items[name] = entry
+
+    if not items:
+        raise SourceError("variant_catalog.json 没有解析出任何变种")
+
+    payload = {
+        "build": data["build"],
+        "game_version": data["gameVersion"],
+        "note": data["note"],
+        # aliases 是源里的简称->正式名映射，保留给界面搜索用（不属于 items 主键）
+        "aliases": data.get("aliases", {}),
+        "groups": [dict(group) for group in groups],
+        "items": items,
+    }
+    return payload, len(items)
+
+
+# ---------------------------------------------------------------- 2. 战备目录
+
+
+def build_stratagems(variant_mod: Path) -> tuple[dict[str, Any], int]:
+    data = load_json(
+        variant_mod / "stratagem_catalog.json", "战备目录 stratagem_catalog.json", dict
+    )
+    rows = data.get("items")
+    if not isinstance(rows, list) or not rows:
+        raise SourceError("stratagem_catalog.json 的 items 必须是非空数组")
+
+    seen: set[int] = set()
+    items: list[dict[str, Any]] = []
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict) or "id" not in row:
+            raise SourceError(f"stratagem_catalog.json items[{index}] 结构异常: {row!r}")
+        stratagem_id = to_int(row["id"], f"stratagem_catalog.json items[{index}].id")
+        if stratagem_id in seen:
+            raise SourceError(f"stratagem_catalog.json 出现重复 id {stratagem_id}")
+        seen.add(stratagem_id)
+        items.append(dict(row))  # 保留 id / name / key / native_hash / effect_hash / group 等全部字段
+
+    items.sort(key=lambda item: to_int(item["id"], "stratagem_catalog.json items[].id"))
+    return {"items": items, "count": len(items)}, len(items)
+
+
+# ---------------------------------------------------------------- 3. GWE 效果
+
+
+EFFECTS_FULL_COLUMNS = (
+    "effect_id",
+    "effect_type",
+    "type_semantics",
+    "flags",
+    "value_types",
+    "values_raw",
+    "values_hex",
+    "name",
+    "short_desc",
+    "long_desc",
+    "fluff",
+    "target",
+    "target_extra",
+    "note",
+    "label",
+    "decode_level",
+    "live_count",
+    "live_planets",
+    "ever_snapshot_count",
+    "ever_planet_count",
+    "gameplay_effect_id32",
+)
+
+EFFECT_MENU_COLUMNS = (
+    "effect_id",
+    "effect_type",
+    "type_hint",
+    "presence",
+    "kind",
+    "kind_label",
+    "sub",
+    "race",
+    "display_name",
+    "description",
+    "live_count",
+    "live_planets",
+    "gameplay_effect_id32",
+    "evidence",
+)
+
+
+def build_effects(variant_net: Path) -> tuple[dict[str, Any], int]:
+    full_rows = load_csv(
+        variant_net / "out" / "effects-full.csv", "效果全量表 effects-full.csv", EFFECTS_FULL_COLUMNS
+    )
+    menu_rows = load_csv(
+        variant_net / "out" / "effect-menu.csv", "效果菜单表 effect-menu.csv", EFFECT_MENU_COLUMNS
+    )
+
+    def index_rows(rows: list[dict[str, str]], what: str) -> dict[int, dict[str, str]]:
+        indexed: dict[int, dict[str, str]] = {}
+        for row in rows:
+            effect_id = to_int(row.get("effect_id"), f"{what} effect_id")
+            if effect_id in indexed:
+                raise SourceError(f"{what} 出现重复 effect_id {effect_id}")
+            indexed[effect_id] = row
+        return indexed
+
+    full = index_rows(full_rows, "effects-full.csv")
+    menu = index_rows(menu_rows, "effect-menu.csv")
+
+    only_full = sorted(set(full) - set(menu))
+    only_menu = sorted(set(menu) - set(full))
+    if only_full:
+        log(f"note: {SRC_EFFECTS_FULL} 独有 effect_id {len(only_full)} 条: {only_full[:20]}")
+    if only_menu:
+        log(f"note: {SRC_EFFECTS_MENU} 独有 effect_id {len(only_menu)} 条: {only_menu[:20]}")
+    log("note: 两表的 live_planets 格式不同（effects-full 为原始文本，effect-menu 为纯 index 串），采用 effects-full 文本")
+
+    # 数值列的一致性强校验；两边不一致时按任务口径保留 effects-full，并显式提示
+    for column in ("effect_type", "flags", "live_count", "gameplay_effect_id32"):
+        mismatched: list[int] = []
+        for effect_id in sorted(set(full) & set(menu)):
+            left = to_opt_int(full[effect_id].get(column), f"effects-full.csv[{effect_id}].{column}")
+            right = to_opt_int(menu[effect_id].get(column), f"effect-menu.csv[{effect_id}].{column}")
+            if left != right:
+                mismatched.append(effect_id)
+        if mismatched:
+            log(
+                f"note: {column} 两表不一致 {len(mismatched)} 条（采用 effects-full）: "
+                f"{mismatched[:20]}"
+            )
+
+    items: list[dict[str, Any]] = []
+    for effect_id in sorted(set(full) | set(menu)):
+        row = full.get(effect_id, {})
+        display = menu.get(effect_id, {})
+
+        def full_text(column: str) -> str | None:
+            return to_text(row.get(column))
+
+        def menu_text(column: str) -> str | None:
+            return to_text(display.get(column))
+
+        item = {
+            # 主键与数值/解码字段：effects-full 优先（数据表侧）
+            "effect_id": effect_id,
+            "effect_type": to_opt_int(row.get("effect_type") or display.get("effect_type"), f"effect {effect_id} effect_type"),
+            "type_semantics": full_text("type_semantics"),
+            "flags": to_opt_int(row.get("flags"), f"effect {effect_id} flags"),
+            "value_types": full_text("value_types"),
+            "values_raw": full_text("values_raw"),
+            "values_hex": full_text("values_hex"),
+            "name": full_text("name"),
+            "short_desc": full_text("short_desc"),
+            "long_desc": full_text("long_desc"),
+            "fluff": full_text("fluff"),
+            "target": full_text("target"),
+            "target_extra": full_text("target_extra"),
+            "note": full_text("note"),
+            "label": full_text("label"),
+            "decode_level": full_text("decode_level"),
+            "live_count": to_opt_int(row.get("live_count"), f"effect {effect_id} live_count"),
+            "live_planets": full_text("live_planets"),
+            "ever_snapshot_count": to_opt_int(
+                row.get("ever_snapshot_count"), f"effect {effect_id} ever_snapshot_count"
+            ),
+            "ever_planet_count": to_opt_int(
+                row.get("ever_planet_count"), f"effect {effect_id} ever_planet_count"
+            ),
+            "gameplay_effect_id32": to_opt_int(
+                row.get("gameplay_effect_id32"), f"effect {effect_id} gameplay_effect_id32"
+            ),
+            # 菜单展示字段：effect-menu 优先
+            "type_hint": menu_text("type_hint"),
+            "presence": menu_text("presence"),
+            "kind": to_opt_int(display.get("kind"), f"effect {effect_id} kind"),
+            "kind_label": menu_text("kind_label"),
+            "sub": to_opt_int(display.get("sub"), f"effect {effect_id} sub"),
+            "race": menu_text("race"),
+            "display_name": menu_text("display_name"),
+            "description": menu_text("description"),
+            "evidence": menu_text("evidence"),
+        }
+        items.append(item)
+
+    if not items:
+        raise SourceError("effects 两表合并后为空")
+    return {"items": items, "count": len(items)}, len(items)
+
+
+# ---------------------------------------------------------------- 4. 星球
+
+
+def collect_key_names(node: Any, wanted: frozenset[str], found: list[str], path: str = "") -> None:
+    """递归收集出现过的键名（只用于确认 settingsHash 是否存在）。"""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key in wanted:
+                found.append(f"{path}/{key}")
+            collect_key_names(value, wanted, found, f"{path}/{key}")
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            collect_key_names(value, wanted, found, f"{path}[{index}]")
+
+
+def build_planets(datamined: Path) -> tuple[dict[str, Any], int]:
+    index_path = datamined / "out" / "planet" / "planet-index.json"
+    data_path = datamined / "out" / "planet" / "planet-data.json"
+    rows = load_json(index_path, "星球索引 planet-index.json", list)
+    planet_data = load_json(data_path, "星球全量 planet-data.json", list)
+
+    # 任务要求：检查 planet-data.json 是否有 settingsHash；有则按 index 合并，无则 null + 日志说明。
+    settings_hash_by_index: dict[int, Any] = {}
+    discovered_keys: list[str] = []
+    collect_key_names(planet_data, frozenset({"settingsHash", "settings_hash"}), discovered_keys)
+    if discovered_keys:
+        for row in planet_data:
+            if not isinstance(row, dict):
+                continue
+            for key in ("settingsHash", "settings_hash"):
+                if key in row:
+                    idx = to_opt_int(row.get("index"), f"{SRC_PLANET_DATA} index")
+                    if idx is not None:
+                        settings_hash_by_index[idx] = row[key]
+                    break
+        log(
+            f"note: {SRC_PLANET_DATA} 找到 settingsHash 字段 {len(settings_hash_by_index)} 条，"
+            f"按 index 合并进 planets.json"
+        )
+    else:
+        log(
+            f"note: {SRC_PLANET_DATA} 没有 settingsHash / settings_hash 字段 "
+            f"(共 {len(planet_data)} 条, 键名已递归确认) -> planets.json 的 settings_hash 全部置 null"
+        )
+
+    items: list[dict[str, Any]] = []
+    seen_indices: set[int] = set()
+    for position, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise SourceError(f"planet-index.json[{position}] 不是对象")
+        index = to_int(row.get("index"), f"planet-index.json[{position}].index")
+        if index in seen_indices:
+            raise SourceError(f"planet-index.json 出现重复 index {index}")
+        seen_indices.add(index)
+        items.append(
+            {
+                "index": index,
+                "name": to_text(row.get("name")),
+                "biome": to_text(row.get("biome")),
+                "planet_type": to_opt_int(row.get("planet_type"), f"planet {index} planet_type"),
+                "setup": to_text(row.get("setup")),
+                "region": to_text(row.get("region")),
+                "locid": to_opt_int(row.get("locid"), f"planet {index} locid"),
+                "settings_hash": settings_hash_by_index.get(index),
+            }
+        )
+
+    if not items:
+        raise SourceError("planet-index.json 没有解析出任何星球")
+    items.sort(key=lambda item: item["index"])
+    return {"items": items, "count": len(items)}, len(items)
+
+
+# ---------------------------------------------------------------- 5. 物品
+
+
+def iter_id_objects(node: Any) -> Any:
+    """递归产出所有含 mixId 或 itemId 键的对象（用于库存配置的通用扫描）。"""
+    if isinstance(node, dict):
+        if "mixId" in node or "itemId" in node:
+            yield node
+        for value in node.values():
+            yield from iter_id_objects(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from iter_id_objects(value)
+
+
+def inventory_category(filename: str) -> tuple[str | None, bool]:
+    stem = filename[:-5] if filename.endswith(".json") else filename
+    for prefix, category in INVENTORY_CATEGORIES.items():
+        if stem.startswith(prefix):
+            return category, True
+    return None, False
+
+
+class UnionFind:
+    """极简并查集：把「同 id 的多来源记录」合并成同一个物品。"""
+
+    def __init__(self) -> None:
+        self._parent: list[int] = []
+
+    def add(self) -> int:
+        index = len(self._parent)
+        self._parent.append(index)
+        return index
+
+    def find(self, index: int) -> int:
+        root = index
+        while self._parent[root] != root:
+            root = self._parent[root]
+        while self._parent[index] != root:  # 路径压缩
+            self._parent[index], index = root, self._parent[index]
+        return root
+
+    def union(self, left: int, right: int) -> int:
+        left_root, right_root = self.find(left), self.find(right)
+        if left_root != right_root:
+            self._parent[right_root] = left_root
+        return left_root
+
+
+def build_items(variant_net: Path, variant_mod: Path) -> tuple[dict[str, Any], int]:
+    records: list[dict[str, Any]] = []
+
+    def add_record(
+        *,
+        mix_id: int | None = None,
+        item_id: int | None = None,
+        name: str | None = None,
+        category: str | None = None,
+        source: str,
+    ) -> None:
+        if mix_id is None and item_id is None:
+            raise SourceError(f"{source}: 记录既没有 mix_id 也没有 item_id")
+        records.append(
+            {
+                "mix_id": mix_id,
+                "item_id": item_id,
+                "name": name,
+                "category": category,
+                "source": source,
+            }
+        )
+
+    # --- 外观表 422 行：行 id 是目录 itemId（UNLOCK-MAP §8.2），名字是 [[locid, name], ...]
+    armor_rows = load_json(variant_net / "refs" / "armor_rows_parsed.json", "外观表 armor_rows_parsed.json", list)
+    armor_seen: set[int] = set()
+    for position, row in enumerate(armor_rows):
+        if not isinstance(row, dict) or "id" not in row:
+            raise SourceError(f"armor_rows_parsed.json[{position}] 结构异常: {row!r}")
+        item_id = to_int(row["id"], f"armor_rows_parsed.json[{position}].id")
+        if item_id in armor_seen:
+            raise SourceError(f"armor_rows_parsed.json 出现重复 id {item_id}")
+        armor_seen.add(item_id)
+        names: list[str] = []
+        for pair in row.get("names") or []:
+            if isinstance(pair, (list, tuple)) and len(pair) == 2 and pair[1]:
+                text = to_text(pair[1])
+                if text:
+                    names.append(text)
+        add_record(
+            item_id=item_id,
+            name=pick_display_name(names),
+            category="cosmetic",
+            source=SRC_ARMOR_ROWS,
+        )
+
+    # --- 未发布外观候选：id 为外观表 itemId（15 行全部是上面 422 行的子集，会合并来源）
+    unreleased_rows = load_json(
+        variant_net / "refs" / "unreleased_candidates.json", "未发布外观候选", list
+    )
+    for position, row in enumerate(unreleased_rows):
+        if not isinstance(row, dict) or "id" not in row:
+            raise SourceError(f"unreleased_candidates.json[{position}] 结构异常: {row!r}")
+        add_record(
+            item_id=to_int(row["id"], f"unreleased_candidates.json[{position}].id"),
+            category="cosmetic",
+            source=SRC_UNRELEASED,
+        )
+
+    # --- 商店外观：键是 mixId；name 可能为 null（未解出）
+    store = load_json(variant_net / "refs" / "store-cosmetics-20261106.json", "商店外观表", dict)
+    for raw_key in sorted(store, key=lambda key: to_int(key, "store-cosmetics.json key")):
+        value = store[raw_key]
+        if not isinstance(value, dict):
+            raise SourceError(f"store-cosmetics-20261106.json[{raw_key!r}] 应为对象")
+        add_record(
+            mix_id=to_int(raw_key, "store-cosmetics.json key"),
+            name=to_text(value.get("name")),
+            category="cosmetic",
+            source=SRC_STORE_COSMETICS,
+        )
+
+    # --- 库存注入配置：configs/ 与 runtime/ 两处都扫；items[].mixId、以及任何 mixId/itemId 出现处
+    inventory_roots = (
+        ("variant-net/configs", variant_net / "configs"),
+        ("variant_mod/runtime", variant_mod / "runtime"),
+    )
+    for label, directory in inventory_roots:
+        if not directory.is_dir():
+            raise SourceError(f"缺少库存配置目录: {directory}")
+        inventory_files = sorted(directory.glob("inventory_*.json"))
+        if not inventory_files:
+            raise SourceError(f"{directory} 下没有任何 inventory_*.json")
+        for path in inventory_files:
+            data = load_json(path, f"库存配置 {label}/{path.name}", dict)
+            source = f"{label}/{path.name}"
+            category, known = inventory_category(path.name)
+            if not known:
+                log(f"note: 未识别的库存文件名 {source}，category 记 null")
+            for obj in iter_id_objects(data):
+                mix_id = to_opt_int(obj.get("mixId"), f"{source} mixId") if "mixId" in obj else None
+                item_id = to_opt_int(obj.get("itemId"), f"{source} itemId") if "itemId" in obj else None
+                if mix_id is None and item_id is None:
+                    continue
+                add_record(
+                    mix_id=mix_id,
+                    item_id=item_id,
+                    category=category,
+                    source=source,
+                )
+
+        # --- 目录注入（未发布武器行）：add[].id 在武器行上同时是 itemId 与 mixId
+        #     （UNLOCK-MAP §2.3「要补的 itemId（= mixId）」）；若将来出现显式 mixId/itemId 字段则优先用字段。
+        items_inject_path = directory / "items_inject.json"
+        data = load_json(items_inject_path, f"目录注入 {label}/items_inject.json", dict)
+        source = f"{label}/items_inject.json"
+        injection_rows: list[Any] = []
+        for key in ("items", "add"):
+            value = data.get(key)
+            if isinstance(value, list):
+                injection_rows.extend(value)
+        if not injection_rows:
+            raise SourceError(f"{source} 里没有 items/add 行")
+        for position, row in enumerate(injection_rows):
+            if not isinstance(row, dict):
+                raise SourceError(f"{source} items/add[{position}] 不是对象")
+            if "mixId" in row or "itemId" in row:
+                mix_id = to_opt_int(row.get("mixId"), f"{source} mixId")
+                item_id = to_opt_int(row.get("itemId"), f"{source} itemId")
+            elif "id" in row:
+                row_id = to_int(row["id"], f"{source} add[{position}].id")
+                mix_id = item_id = row_id
+            else:
+                raise SourceError(f"{source} add[{position}] 没有 id/mixId/itemId")
+            add_record(
+                mix_id=mix_id,
+                item_id=item_id,
+                category="weapon",
+                source=source,
+            )
+
+    # --- 合并：同一 mix_id / 同一 item_id 视为同一物品；itemId 与 mixId 数值相同也视为同一物品
+    #     （外观表简单件 itemId == 目录 mixId，见 UNLOCK-MAP §8.2；本次仅零星几例，下面会打印）。
+    uf = UnionFind()
+    token_owner: dict[tuple[str, int], int] = {}
+    for index, record in enumerate(records):
+        uf.add()
+        for namespace, value in (("mix", record["mix_id"]), ("item", record["item_id"])):
+            if value is None:
+                continue
+            token = (namespace, value)
+            if token in token_owner:
+                uf.union(index, token_owner[token])
+            else:
+                token_owner[token] = index
+
+    mix_values = {value for namespace, value in token_owner if namespace == "mix"}
+    item_values = {value for namespace, value in token_owner if namespace == "item"}
+    cross_merged: list[int] = []
+    for value in sorted(mix_values & item_values):
+        mix_root = uf.find(token_owner[("mix", value)])
+        item_root = uf.find(token_owner[("item", value)])
+        if mix_root != item_root:
+            uf.union(mix_root, item_root)
+            cross_merged.append(value)
+    if cross_merged:
+        log(
+            "note: items 里 itemId 与 mixId 数值相同的记录按同一物品合并: "
+            f"{cross_merged}（依据 UNLOCK-MAP §8.2：外观表简单件 itemId == 目录 mixId）"
+        )
+
+    grouped: dict[int, list[dict[str, Any]]] = {}
+    for index, record in enumerate(records):
+        grouped.setdefault(uf.find(index), []).append(record)
+
+    merged_items: list[dict[str, Any]] = []
+    for group in grouped.values():
+        mix_ids = {record["mix_id"] for record in group if record["mix_id"] is not None}
+        item_ids = {record["item_id"] for record in group if record["item_id"] is not None}
+        if len(mix_ids) > 1 or len(item_ids) > 1:
+            raise SourceError(
+                "items 合并出现一对多 id（同组多个 mixId/itemId），需要人工确认: "
+                f"mix={sorted(mix_ids)} item={sorted(item_ids)} "
+                f"sources={sorted({record['source'] for record in group})}"
+            )
+        categories = {record["category"] for record in group if record["category"]}
+        if len(categories) > 1:
+            raise SourceError(
+                "items 合并出现类别冲突（同一物品来自不同类别来源），需要人工确认: "
+                f"mix={sorted(mix_ids)} item={sorted(item_ids)} categories={sorted(categories)}"
+            )
+        name_candidates: list[str] = []
+        for record in group:
+            if record["name"] and record["name"] not in name_candidates:
+                name_candidates.append(record["name"])
+        sources = sorted({record["source"] for record in group})
+        merged_items.append(
+            {
+                "mix_id": min(mix_ids) if mix_ids else None,
+                "item_id": min(item_ids) if item_ids else None,
+                "name": pick_display_name(name_candidates),
+                "category": next(iter(categories)) if categories else None,
+                # 单来源写字符串，多来源合并成去重数组（任务口径）
+                "source": sources[0] if len(sources) == 1 else sources,
+            }
+        )
+
+    if not merged_items:
+        raise SourceError("items 没有解析出任何物品")
+    merged_items.sort(
+        key=lambda item: (
+            item["mix_id"] is None,
+            item["mix_id"] if item["mix_id"] is not None else 0,
+            item["item_id"] if item["item_id"] is not None else 0,
+        )
+    )
+    return {"items": merged_items, "count": len(merged_items)}, len(merged_items)
+
+
+# ---------------------------------------------------------------- 6. build 指纹
+
+
+def build_build(variants: dict[str, Any]) -> tuple[dict[str, Any], int]:
+    payload = {
+        "game_build": GAME_BUILD,
+        "war_id": WAR_ID,
+        "api_host": API_HOST,
+        "warseason": WAR_SEASON,
+        "generated_from": {
+            # 旧面板变种目录里记录的 build（与 PRODUCT game_build 不同，见 README）
+            "variant_mod": variants["build"],
+            # 星球索引的逻辑来源；settingsHash 检查结果见生成日志 / README
+            "datamined": SRC_PLANET_INDEX,
+        },
+    }
+    return payload, len(payload)
+
+
+# ---------------------------------------------------------------- 主流程
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="从只读研究仓生成 hd2-proxy-toolkit 的 data/catalogs/*.json（确定性输出）。"
+    )
+    parser.add_argument(
+        "--variant-mod",
+        type=Path,
+        default=DEFAULT_VARIANT_MOD,
+        help=f"旧面板研究副本目录（默认 {DEFAULT_VARIANT_MOD}）",
+    )
+    parser.add_argument(
+        "--variant-net",
+        type=Path,
+        default=DEFAULT_VARIANT_NET,
+        help=f"variant-net 研究仓目录（默认 {DEFAULT_VARIANT_NET}）",
+    )
+    parser.add_argument(
+        "--datamined",
+        type=Path,
+        default=DEFAULT_DATAMINED,
+        help=f"repo-datamined 研究仓目录（默认 {DEFAULT_DATAMINED}）",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_OUT,
+        help=f"输出目录（默认 {DEFAULT_OUT}）",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")  # 日志里有中文/⚠ 等字符，避免控制台编码报错
+
+    args = parse_args(argv)
+    try:
+        variants, variants_count = build_variants(args.variant_mod)
+        stratagems, stratagems_count = build_stratagems(args.variant_mod)
+        effects, effects_count = build_effects(args.variant_net)
+        planets, planets_count = build_planets(args.datamined)
+        items, items_count = build_items(args.variant_net, args.variant_mod)
+        build, build_count = build_build(variants)
+
+        # 全部构建成功后再落盘，避免中途失败留下半套目录
+        args.out.mkdir(parents=True, exist_ok=True)
+        write_json(args.out, "variants.json", variants, variants_count)
+        write_json(args.out, "stratagems.json", stratagems, stratagems_count)
+        write_json(args.out, "effects.json", effects, effects_count)
+        write_json(args.out, "planets.json", planets, planets_count)
+        write_json(args.out, "items.json", items, items_count)
+        write_json(args.out, "build.json", build, build_count)
+    except SourceError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

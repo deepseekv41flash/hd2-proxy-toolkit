@@ -158,7 +158,7 @@ hd2-proxy-toolkit/
 | M | 内容 | 门禁（贴原始输出） | 估时 |
 |---|---|---|---|
 | **M0 骨架** | 建仓、目录、搬 engine 源码（先原样落地）、5 个 selftest 与证书工具适配、catalogs 生成 | 5 个 selftest 全 PASS；`py_compile` 干净；无旧路径硬编码 | 0.5 天 |
-| **M1 引擎+控制面** | 模块化拆分、schema v2、热重载、控制 API、install/uninstall（UAC 自提升）、自动续证、CRL | 离线 pytest 全绿；`install → passthrough 起 → verify 三连 → stop → uninstall` 本机全通 | 1.5 天 |
+| **M1 引擎+控制面** | 模块化拆分、schema v2、热重载、控制 API、install/uninstall（UAC 自提升）、自动续证、CRL；**数据管道补齐**（`settings_hash` 以 live warinfo 导入为主、物品名称表） | 离线 pytest 全绿；`install → passthrough 起 → verify 三连 → stop → uninstall` 本机全通 | 1.5 天 |
 | **M2 GUI 骨架** | Tk 壳 + 5 页 + 状态轮询 + schema 驱动表单 + 星球/效果搜索选择器（以原型为基线） | 5 页绑真实引擎状态；切换页无卡顿；截图 | 1.5 天 |
 | **M3 6 项能力** | 6 张能力卡/模板 + 离线预演 + 扩展入口（延后项折叠标注） | 每项 ≥1 条离线用例 + 预演截图；模板填入后增量符合预期 | 1 天 |
 | **M4 实机验收** | 进游戏逐项验证、修现场问题、记录日志证据 | 验收清单逐项 PASS（**需你开游戏配合**） | 0.5 天 |

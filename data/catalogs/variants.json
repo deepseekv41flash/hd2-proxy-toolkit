@@ -1,0 +1,344 @@
+{
+ "aliases": {
+  "SEAF": "重兵部署",
+  "喷气旅": "喷气部队",
+  "增兵-巨兽": "巨型者激增",
+  "增兵-战车": "重甲激增",
+  "增兵-毁灭者": "蹂躏者激增",
+  "工程师": "入侵者",
+  "恐怖体": "窃票者",
+  "掘地": "爆裂变种",
+  "掠食": "掠食变种",
+  "收割者": "无票者大军",
+  "象牙军团": "灼热部队",
+  "阴霾": "孢裂变种"
+ },
+ "build": "25988413",
+ "game_version": "1.007.200",
+ "groups": [
+  {
+   "name": "虫族 5",
+   "variants": [
+    "掠食变种",
+    "孢裂变种",
+    "爆裂变种",
+    "蟑龙",
+    "霸王虫"
+   ]
+  },
+  {
+   "name": "机器人 3",
+   "variants": [
+    "生化人",
+    "灼热部队",
+    "喷气部队"
+   ]
+  },
+  {
+   "name": "卡牌 4",
+   "variants": [
+    "入侵舰队",
+    "无票者大军",
+    "入侵者",
+    "窃票者"
+   ]
+  },
+  {
+   "name": "通用 1",
+   "variants": [
+    "重兵部署"
+   ]
+  },
+  {
+   "exclusive": true,
+   "name": "重甲类激增（三选一）",
+   "variants": [
+    "重甲激增",
+    "巨型者激增",
+    "蹂躏者激增"
+   ]
+  }
+ ],
+ "items": {
+  "bots_increased_warstriders": {
+   "faction": "universal",
+   "help": "重甲激增（universal，可写任意阵营星球）",
+   "ids": [
+    1355
+   ],
+   "mechanic": 1355,
+   "presence": "bots_increased_warstriders"
+  },
+  "caustic_strain": {
+   "faction": "terminid",
+   "help": "CAUSTIC STRAIN（已发布未出现）：tag 1430 + mechanic 1431(bugs_acid)",
+   "ids": [
+    1430,
+    1431
+   ],
+   "mechanic": 1431,
+   "presence": "bugs_acid",
+   "tag": 1430
+  },
+  "gloom_cross": {
+   "faction": "illuminate",
+   "help": "B 实验：终结族 presence 注入光照星球（跨阵营）",
+   "ids": [
+    1386
+   ],
+   "mechanic": 1386,
+   "presence": "bugs_gloom"
+  },
+  "illuminate_fleet": {
+   "faction": "illuminate",
+   "help": "实验 R1：同阵营对照（单 id，无 tag 对）",
+   "ids": [
+    1269
+   ],
+   "mechanic": 1269,
+   "presence": "illuminate_fleet"
+  },
+  "illuminate_ritual_storm_lvl1": {
+   "faction": "illuminate",
+   "help": "仪式风暴 lvl1（有天气覆盖，局内可见）",
+   "ids": [
+    1373
+   ],
+   "mechanic": 1373,
+   "presence": "illuminate_ritual_storm_lvl1"
+  },
+  "storm_on_bugs": {
+   "faction": "terminid",
+   "help": "跨阵营事件实验：光照族 CLASS 1 EXOSTORM 挂到终结族星球",
+   "ids": [
+    1373
+   ],
+   "mechanic": 1373,
+   "presence": "illuminate_ritual_storm_lvl1"
+  },
+  "trial1": {
+   "faction": "universal",
+   "help": "验证显示顺序：只注入 1128，预期显示 Orbital Laser",
+   "ids": [
+    1128
+   ],
+   "presence": null
+  },
+  "trial30": {
+   "faction": "universal",
+   "help": "战备试用实验：一次性注入 30 条目录外 type32，用于反查未发布战备的 effect id",
+   "ids": [
+    1128,
+    1129,
+    1130,
+    1133,
+    1137,
+    1139,
+    1142,
+    1143,
+    1147,
+    1156,
+    1162,
+    1165,
+    1166,
+    1171,
+    1172,
+    1175,
+    1178,
+    1179,
+    1194,
+    1247,
+    1274,
+    1328,
+    1331,
+    1343,
+    1351,
+    1389,
+    1422,
+    1426,
+    1427,
+    1428
+   ],
+   "presence": null
+  },
+  "type94_incendiary_gatling": {
+   "faction": "universal",
+   "help": "type94 试验：effect 1346 = INCENDIARY GATLING BARRAGE（modifier #2）",
+   "ids": [
+    1346
+   ],
+   "presence": null
+  },
+  "入侵者": {
+   "faction": "illuminate",
+   "help": "添加：入侵者",
+   "ids": [
+    1380,
+    1379
+   ],
+   "mechanic": 1379,
+   "presence": "illuminate_engineer",
+   "tag": 1380
+  },
+  "入侵舰队": {
+   "faction": "illuminate",
+   "help": "光能者主力入侵舰队，包含光能者与被转化的公民单位。",
+   "ids": [
+    1413,
+    1414
+   ],
+   "mechanic": 1414,
+   "presence": "illuminate_invading",
+   "tag": 1413
+  },
+  "喷气部队": {
+   "faction": "automaton",
+   "help": "装备喷气背包的机器人部队。",
+   "ids": [
+    1202,
+    1203
+   ],
+   "mechanic": 1203,
+   "presence": "elite_bot_jumpattack",
+   "tag": 1202
+  },
+  "孢裂变种": {
+   "faction": "terminid",
+   "help": "添加：孢裂变种",
+   "ids": [
+    1244,
+    1386
+   ],
+   "mechanic": 1386,
+   "presence": "bugs_gloom",
+   "tag": 1244
+  },
+  "巨型者激增": {
+   "faction": "automaton",
+   "help": "巨型者是机器人阵营的大型重装单位；此项用于提高其出现频率。",
+   "ids": [
+    1357
+   ],
+   "mechanic": 1357,
+   "presence": "bots_increased_hulks"
+  },
+  "掠食变种": {
+   "faction": "terminid",
+   "help": "添加：掠食变种",
+   "ids": [
+    1243,
+    1245
+   ],
+   "mechanic": 1245,
+   "presence": "bugs_super_predator",
+   "tag": 1243
+  },
+  "无票者大军": {
+   "faction": "illuminate",
+   "help": "以无票者等被转化的公民单位为主，光能者单位较少。",
+   "ids": [
+    1377,
+    1378
+   ],
+   "mechanic": 1378,
+   "presence": "illuminate_harvester",
+   "tag": 1377
+  },
+  "灼热部队": {
+   "faction": "automaton",
+   "help": "添加：灼热部队",
+   "ids": [
+    1248,
+    1249
+   ],
+   "mechanic": 1249,
+   "presence": "bots_ivory_legion",
+   "tag": 1248
+  },
+  "爆裂变种": {
+   "faction": "terminid",
+   "help": "添加：爆裂变种",
+   "ids": [
+    1303,
+    1310
+   ],
+   "mechanic": 1310,
+   "presence": "bugs_burrower",
+   "tag": 1303
+  },
+  "生化人": {
+   "faction": "automaton",
+   "help": "生化人率领机器人军队出战。",
+   "ids": [
+    1360,
+    1361
+   ],
+   "mechanic": 1361,
+   "presence": "bots_cyborgs",
+   "tag": 1360
+  },
+  "窃票者": {
+   "faction": "illuminate",
+   "help": "添加：窃票者",
+   "ids": [
+    1402,
+    1403
+   ],
+   "mechanic": 1403,
+   "presence": "illuminate_bodyhorror",
+   "tag": 1402
+  },
+  "蟑龙": {
+   "faction": "terminid",
+   "help": "加入威胁空域的终结族蟑龙。",
+   "ids": [
+    1306,
+    1309
+   ],
+   "mechanic": 1309,
+   "presence": "bugs_dragon",
+   "tag": 1306
+  },
+  "蹂躏者激增": {
+   "faction": "automaton",
+   "help": "用于提高机器人蹂躏者的出现数量。",
+   "ids": [
+    1359
+   ],
+   "mechanic": 1359,
+   "presence": "bots_increased_devastators"
+  },
+  "重兵部署": {
+   "faction": "universal",
+   "help": "添加：重兵部署",
+   "ids": [
+    1401,
+    1400
+   ],
+   "mechanic": 1400,
+   "presence": "seaf",
+   "tag": 1401
+  },
+  "重甲激增": {
+   "faction": "universal",
+   "help": "用于提高重甲敌人的出现数量。",
+   "ids": [
+    1355
+   ],
+   "mechanic": 1355,
+   "presence": "bots_increased_warstriders"
+  },
+  "霸王虫": {
+   "faction": "terminid",
+   "help": "加入终结族的霸王虫。",
+   "ids": [
+    1307,
+    1308
+   ],
+   "mechanic": 1308,
+   "presence": "bugs_hive_lord",
+   "tag": 1307
+  }
+ },
+ "note": "选项名称沿用 Quanbianzhong 10.00（玩家熟悉的那一套）。词条(tag) + 玩法(mechanic) 成对注入才会出局内变种；重甲类三项同时只能生效一个。"
+}

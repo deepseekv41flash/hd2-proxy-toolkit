@@ -1,0 +1,10 @@
+{
+ "api_host": "api.live.prod.thehelldiversgame.com",
+ "game_build": "26568081",
+ "generated_from": {
+  "datamined": "repo-datamined/out/planet/planet-index.json",
+  "variant_mod": "25988413"
+ },
+ "war_id": 801,
+ "warseason": 801
+}

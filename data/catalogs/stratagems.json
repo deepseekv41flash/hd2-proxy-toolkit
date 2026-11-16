@@ -1,0 +1,469 @@
+{
+ "count": 58,
+ "items": [
+  {
+   "effect_hash": "7628496F",
+   "group": "飞鹰空袭",
+   "id": 1127,
+   "key": "trial_1127",
+   "name": "飞鹰500千克炸弹",
+   "native_hash": "F583B70B"
+  },
+  {
+   "effect_hash": "5A998E60",
+   "group": "轨道打击",
+   "id": 1145,
+   "key": "trial_1145",
+   "name": "轨道激光炮",
+   "native_hash": "39D7E6A4"
+  },
+  {
+   "effect_hash": "E5F0225D",
+   "group": "背包与载具",
+   "id": 1148,
+   "key": "trial_1148",
+   "name": "EXO-45 爱国者外骨骼装甲",
+   "native_hash": "119EF38F"
+  },
+  {
+   "effect_hash": "E648F3D4",
+   "group": "背包与载具",
+   "id": 1149,
+   "key": "trial_1149",
+   "name": "LIFT-850 喷气背包",
+   "native_hash": "68835223"
+  },
+  {
+   "effect_hash": "14106D56",
+   "group": "背包与载具",
+   "id": 1150,
+   "key": "trial_1150",
+   "name": "B-1 补给背包",
+   "native_hash": "71B6D7DA"
+  },
+  {
+   "effect_hash": "1677F4A0",
+   "group": "支援武器",
+   "id": 1152,
+   "key": "trial_1152",
+   "name": "APW-1 反器材步枪",
+   "native_hash": "83970A39"
+  },
+  {
+   "effect_hash": "119C108E",
+   "group": "轨道打击",
+   "id": 1153,
+   "key": "trial_1153",
+   "name": "RS-422 轨道炮",
+   "native_hash": "B77A3F9D"
+  },
+  {
+   "effect_hash": "82FAD744",
+   "group": "轨道打击",
+   "id": 1154,
+   "key": "trial_1154",
+   "name": "轨道炮攻击",
+   "native_hash": "A39552A5"
+  },
+  {
+   "effect_hash": "32236C8F",
+   "group": "支援武器",
+   "id": 1155,
+   "key": "trial_1155",
+   "name": "AC-8 机炮",
+   "native_hash": "342FD96B"
+  },
+  {
+   "effect_hash": "D3AD1895",
+   "group": "轨道打击",
+   "id": 1160,
+   "key": "trial_1160",
+   "name": "轨道电磁冲击波攻击",
+   "native_hash": "4C561B17"
+  },
+  {
+   "effect_hash": "5517A9ED",
+   "group": "飞鹰空袭",
+   "id": 1161,
+   "key": "trial_1161",
+   "name": "飞鹰凝固汽油弹空袭",
+   "native_hash": "799A07DB"
+  },
+  {
+   "effect_hash": "DDEF9211",
+   "group": "飞鹰空袭",
+   "id": 1163,
+   "key": "trial_1163",
+   "name": "飞鹰110毫米火箭巢",
+   "native_hash": "76031695"
+  },
+  {
+   "effect_hash": "73E18B8B",
+   "group": "支援武器",
+   "id": 1167,
+   "key": "trial_1167",
+   "name": "FLAM-40 火焰喷射器",
+   "native_hash": "5563504D"
+  },
+  {
+   "effect_hash": "5F3A90D5",
+   "group": "支援武器",
+   "id": 1168,
+   "key": "trial_1168",
+   "name": "LAS-99 类星体加农炮",
+   "native_hash": "9C77755B"
+  },
+  {
+   "effect_hash": "47F7D8C5",
+   "group": "支援武器",
+   "id": 1169,
+   "key": "trial_1169",
+   "name": "EAT-17 消耗性反坦克武器",
+   "native_hash": "CB778090"
+  },
+  {
+   "effect_hash": "BED1BF3A",
+   "group": "支援武器",
+   "id": 1170,
+   "key": "trial_1170",
+   "name": "RL-77 空爆火箭筒",
+   "native_hash": "77ADEF81"
+  },
+  {
+   "effect_hash": "2CF6B5E4",
+   "group": "背包与载具",
+   "id": 1173,
+   "key": "trial_1173",
+   "name": "EXO-49 解放者外骨骼装甲",
+   "native_hash": "4CEB772F"
+  },
+  {
+   "effect_hash": "BC2CCED9",
+   "group": "防御与哨戒",
+   "id": 1174,
+   "key": "trial_1174",
+   "name": "A/M-23 电磁迫击炮哨戒炮",
+   "native_hash": "B7E90B5A"
+  },
+  {
+   "effect_hash": "BF73CBC6",
+   "group": "支援武器",
+   "id": 1181,
+   "key": "trial_1181",
+   "name": "MLS-4X 突击兵",
+   "native_hash": "8518B86B"
+  },
+  {
+   "effect_hash": "63A48EB4",
+   "group": "防御与哨戒",
+   "id": 1200,
+   "key": "trial_1200",
+   "name": "A/ARC-3 特斯拉塔",
+   "native_hash": "8F349F3B"
+  },
+  {
+   "effect_hash": "E42457F4",
+   "group": "防御与哨戒",
+   "id": 1207,
+   "key": "trial_1207",
+   "name": "E/MG-101 重机枪炮台",
+   "native_hash": "AE094363"
+  },
+  {
+   "effect_hash": "0C0DE384",
+   "group": "支援武器",
+   "id": 1226,
+   "key": "trial_1226",
+   "name": "FAF-14 飞矛",
+   "native_hash": "E9DE8D7F"
+  },
+  {
+   "effect_hash": "37B6732C",
+   "group": "支援武器",
+   "id": 1227,
+   "key": "trial_1227",
+   "name": "MG-43 机枪",
+   "native_hash": "1B4F8FA2"
+  },
+  {
+   "effect_hash": "4F118112",
+   "group": "防御与哨戒",
+   "id": 1231,
+   "key": "trial_1231",
+   "name": "MD-8 毒气地雷",
+   "native_hash": "26640A59"
+  },
+  {
+   "effect_hash": "D47A37CA",
+   "group": "支援武器",
+   "id": 1233,
+   "key": "trial_1233",
+   "name": "StA-X3 W.A.S.P. 发射器",
+   "native_hash": "351B2B3E"
+  },
+  {
+   "effect_hash": "2EADF5B8",
+   "group": "防御与哨戒",
+   "id": 1235,
+   "key": "trial_1235",
+   "name": "MD-17 反坦克地雷",
+   "native_hash": "8577190E"
+  },
+  {
+   "effect_hash": "F7DE28A5",
+   "group": "轨道打击",
+   "id": 1237,
+   "key": "trial_1237",
+   "name": "轨道380毫米高爆火力网",
+   "native_hash": "B948340B"
+  },
+  {
+   "effect_hash": "F0BB3D90",
+   "group": "支援武器",
+   "id": 1254,
+   "key": "trial_1254",
+   "name": "MG-206 重机枪",
+   "native_hash": "1FC9CA61"
+  },
+  {
+   "effect_hash": "67845B77",
+   "group": "防御与哨戒",
+   "id": 1256,
+   "key": "trial_1256",
+   "name": "E/GL-21 掷弹兵阵地",
+   "native_hash": "93D3C05C"
+  },
+  {
+   "effect_hash": "75E7ABE4",
+   "group": "支援武器",
+   "id": 1263,
+   "key": "trial_1263",
+   "name": "M-105 盟友",
+   "native_hash": "00DAE676"
+  },
+  {
+   "effect_hash": "439C6708",
+   "group": "轨道打击",
+   "id": 1267,
+   "key": "trial_1267",
+   "name": "轨道毒气攻击",
+   "native_hash": "BE55DB09"
+  },
+  {
+   "effect_hash": "042C63B7",
+   "group": "防御与哨戒",
+   "id": 1276,
+   "key": "trial_1276",
+   "name": "FX-12 防护罩生成中继器",
+   "native_hash": "880384FF"
+  },
+  {
+   "effect_hash": "2931379D",
+   "group": "轨道打击",
+   "id": 1277,
+   "key": "trial_1277",
+   "name": "轨道凝固汽油弹火力网",
+   "native_hash": "AD00E173"
+  },
+  {
+   "effect_hash": "7BAAF574",
+   "group": "背包与载具",
+   "id": 1279,
+   "key": "trial_1279",
+   "name": "M-102 快速侦察载具",
+   "native_hash": "EA902C4B"
+  },
+  {
+   "effect_hash": "51425E4C",
+   "group": "轨道打击",
+   "id": 1280,
+   "key": "trial_1280",
+   "name": "轨道烟雾攻击",
+   "native_hash": "DD588E38"
+  },
+  {
+   "effect_hash": "3F5430B8",
+   "group": "飞鹰空袭",
+   "id": 1281,
+   "key": "trial_1281",
+   "name": "飞鹰烟雾攻击",
+   "native_hash": "6472975A"
+  },
+  {
+   "effect_hash": "5F05BE2C",
+   "group": "支援武器",
+   "id": 1284,
+   "key": "trial_1284",
+   "name": "GR-8 无后座力步枪",
+   "native_hash": "4D67103D"
+  },
+  {
+   "effect_hash": "91D12574",
+   "group": "防御与哨戒",
+   "id": 1301,
+   "key": "trial_1175",
+   "name": "A/G-16 加特林哨戒炮",
+   "native_hash": "2528336D"
+  },
+  {
+   "effect_hash": "FEF4C915",
+   "group": "支援武器",
+   "id": 1302,
+   "key": "trial_1302",
+   "name": "AX/LAS-5 护卫犬漫游者",
+   "native_hash": "38BE3206"
+  },
+  {
+   "effect_hash": "BA2B027F",
+   "group": "背包与载具",
+   "id": 1332,
+   "key": "trial_1332",
+   "name": "LIFT-182 跃迁背包",
+   "native_hash": "823D2463"
+  },
+  {
+   "effect_hash": "394F99FF",
+   "group": "支援武器",
+   "id": 1334,
+   "key": "trial_1334",
+   "name": "LAS-98 激光大炮",
+   "native_hash": "A83CF95D"
+  },
+  {
+   "effect_hash": "3035A8DB",
+   "group": "轨道打击",
+   "id": 1335,
+   "key": "trial_1335",
+   "name": "轨道游走火力网",
+   "native_hash": "C37DFB01"
+  },
+  {
+   "effect_hash": "0DBD2E5B",
+   "group": "背包与载具",
+   "id": 1347,
+   "key": "trial_1347",
+   "name": "LIFT-860 悬浮背包",
+   "native_hash": "04610B4D"
+  },
+  {
+   "effect_hash": "D43C92ED",
+   "group": "支援武器",
+   "id": 1348,
+   "key": "trial_1348",
+   "name": "GL-52（De-Escalator）",
+   "native_hash": "092B178B"
+  },
+  {
+   "effect_hash": "A01F1931",
+   "group": "支援武器",
+   "id": 1349,
+   "key": "trial_1349",
+   "name": "AX/ARC-3（K-9）",
+   "native_hash": "64DBEFFC"
+  },
+  {
+   "effect_hash": "4045AC1A",
+   "group": "轨道打击",
+   "id": 1383,
+   "key": "trial_1383",
+   "name": "轨道加特林（普通型）",
+   "native_hash": "7C414C59"
+  },
+  {
+   "effect_hash": "4A54F9A0",
+   "group": "近战与特殊",
+   "id": 1388,
+   "key": "trial_1388",
+   "name": "CQC-1（One True Flag）",
+   "native_hash": "8703E7B7"
+  },
+  {
+   "effect_hash": "A52B4376",
+   "group": "近战与特殊",
+   "id": 1390,
+   "key": "trial_1390",
+   "name": "CQC-20（Breaching Hammer）",
+   "native_hash": "C682A504"
+  },
+  {
+   "effect_hash": "B2A0F308",
+   "group": "背包与载具",
+   "id": 1392,
+   "key": "trial_1392",
+   "name": "M-103（Supply FRV）",
+   "native_hash": "9D28D826"
+  },
+  {
+   "effect_hash": "DA0600D7",
+   "group": "背包与载具",
+   "id": 1393,
+   "key": "trial_1393",
+   "name": "M-104（Incinerator FRV）",
+   "native_hash": "A9A97CD7"
+  },
+  {
+   "effect_hash": "CFB0DCB5",
+   "group": "支援武器",
+   "id": 1397,
+   "key": "trial_1397",
+   "name": "AX/TX-13（Dog Breath）",
+   "native_hash": "004F214C"
+  },
+  {
+   "effect_hash": "CC5781D7",
+   "group": "防御与哨戒",
+   "id": 1398,
+   "key": "trial_1398",
+   "name": "A/GM-17 毒气迫击炮哨戒炮",
+   "native_hash": "BDBDE856"
+  },
+  {
+   "effect_hash": "66D9ABDC",
+   "group": "支援武器",
+   "id": 1399,
+   "key": "trial_1399",
+   "name": "TX-41 灭菌者",
+   "native_hash": "F77D6B07"
+  },
+  {
+   "effect_hash": "1CF23BA5",
+   "group": "背包与载具",
+   "id": 1416,
+   "key": "trial_1416",
+   "name": "SH-32 防护罩生成背包",
+   "native_hash": "E51A48F4"
+  },
+  {
+   "effect_hash": "B08BC18C",
+   "group": "飞鹰空袭",
+   "id": 1419,
+   "key": "trial_1419",
+   "name": "飞鹰毒气攻击",
+   "native_hash": "FA1E1428"
+  },
+  {
+   "effect_hash": "B5298F6F",
+   "group": "防御与哨戒",
+   "id": 1420,
+   "key": "trial_1420",
+   "name": "MD-6 反步兵雷区",
+   "native_hash": "00C19C58"
+  },
+  {
+   "effect_hash": "B97023B3",
+   "group": "防御与哨戒",
+   "id": 1421,
+   "key": "trial_1421",
+   "name": "MD-I4 燃烧地雷",
+   "native_hash": "A371C29D"
+  },
+  {
+   "effect_hash": "855F8784",
+   "group": "近战与特殊",
+   "id": 1423,
+   "key": "trial_1423",
+   "name": "TD-110（Maelstrom）",
+   "native_hash": "1B7853AC"
+  }
+ ]
+}
