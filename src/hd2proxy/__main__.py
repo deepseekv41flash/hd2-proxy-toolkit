@@ -117,12 +117,21 @@ def _install_context(a):
             "cert_dir": cert_dir, "days": days, "scope": scope}
 
 
+def _cli_hint():
+    """提示语里该写的命令前缀：打包版是 hd2proxy.exe，源码树是 python -m hd2proxy。
+
+    为什么需要：冻结版里 CLI 自己也打「python -m hd2proxy install …」，用户照抄会失败
+    （打包版没有 python 环境/源码树）—— 实测打包 GUI 的「证书签发」弹窗就是这条 ✓
+    """
+    return "hd2proxy.exe" if getattr(sys, "frozen", False) else "python -m hd2proxy"
+
+
 def _build_plan(ctx):
     cert_dir = ctx["cert_dir"]
     session = cert_dir / "session.json"
     if not session.exists():
-        raise RuntimeError("没有会话证书（%s）；先跑 `python -m hd2proxy certs renew --cert-dir %s`"
-                           % (session, cert_dir))
+        raise RuntimeError("没有会话证书（%s）；先跑 `%s certs renew --cert-dir %s`"
+                           % (session, _cli_hint(), cert_dir))
     info = json.loads(session.read_text(encoding="utf-8"))
     thumbprint = info.get("thumbprint_sha1") or ""
     if len(thumbprint.replace(" ", "")) != 40:
@@ -249,7 +258,8 @@ def cmd_certs(a):
         _out({k: report.get(k) for k in ("mode", "host", "not_before", "not_after",
                                          "thumbprint_sha1", "self_check", "stray_keys")})
         print("证书目录：%s" % cert_dir)
-        print("下一步：python -m hd2proxy install --cert-dir %s（安装 hosts + 信任证书）" % cert_dir)
+        print("下一步：%s install --cert-dir %s（安装 hosts + 信任证书）"
+              % (_cli_hint(), cert_dir))
         return OK
     print("未知操作：%s" % a.action)
     return FAIL
@@ -290,8 +300,8 @@ def cmd_install(a):
     result = installer.install(plan)
     _print_action("安装", result)
     if result.ok:
-        print("\n下一步：python -m hd2proxy engine --profile <profile> --cert-dir %s"
-              % ctx["cert_dir"])
+        print("\n下一步：%s engine --profile <profile> --cert-dir %s"
+              % (_cli_hint(), ctx["cert_dir"]))
     return OK if result.ok else FAIL
 
 

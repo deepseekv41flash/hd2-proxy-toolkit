@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.0-alpha.3` 已发布（2026-11-17，修复 GUI 启动引擎弹窗/按钮失效）**
+> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.0-alpha.4` 已发布（2026-11-17，修 alpha.3 实测发现的 3 个小问题 + 本机自签签名）**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >

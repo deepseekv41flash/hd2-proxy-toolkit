@@ -173,11 +173,12 @@ class ScrollText(tk.Frame):
         self.text.pack(side="left", fill="both", expand=True, padx=1, pady=1)
         sb.pack(side="right", fill="y")
 
-    def set_text(self, content: str):
+    def set_text(self, content: str, see_end=True):
+        """换内容。see_end=False 用于报告/计划（先看开头），默认滚到末尾（日志）。"""
         self.text.configure(state="normal")
         self.text.delete("1.0", "end")
         self.text.insert("1.0", content)
-        self.text.see("end")
+        self.text.see("end" if see_end else "1.0")
         self.text.configure(state="disabled")
 
     def append(self, line: str):

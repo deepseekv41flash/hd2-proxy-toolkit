@@ -344,3 +344,43 @@ def test_paths_source_mode_keeps_repo_logs():
     if getattr(sys, "frozen", False):
         pytest.skip("frozen")
     assert paths_mod.LOGDIR == paths_mod.REPO_ROOT / "logs"
+
+
+# ---------------------------------------------------------------- alpha.4 小修
+
+def test_cli_hint_frozen_uses_exe(monkeypatch):
+    """打包版的提示语不能写 `python -m hd2proxy install …`（用户照抄会失败）。"""
+    import hd2proxy.__main__ as m
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    assert m._cli_hint() == "hd2proxy.exe"
+    monkeypatch.delattr(sys, "frozen", raising=False)
+    assert m._cli_hint() == "python -m hd2proxy"
+
+
+def test_passthrough_toggle_syncs_profile():
+    """切换直通必须写回 profile：否则随后「应用配置」会按旧 profile 把直通恢复。"""
+    from hd2proxy.gui.pages.overview import apply_passthrough
+
+    prof = {"proxy": {"host": "api.live.prod.thehelldiversgame.com", "passthrough": True}}
+    apply_passthrough(prof, False)
+    assert prof["proxy"]["passthrough"] is False
+    apply_passthrough(prof, True)
+    assert prof["proxy"]["passthrough"] is True
+    # proxy 缺失时也要能补出结构
+    empty = {}
+    apply_passthrough(empty, False)
+    assert empty["proxy"]["passthrough"] is False
+
+
+def test_save_profile_roundtrip_keeps_passthrough(tmp_path):
+    """写回 profile 后保存，磁盘上的 passthrough 应与切换结果一致（防回归）。"""
+    from hd2proxy.engine import config
+    from hd2proxy.gui.pages.overview import apply_passthrough
+
+    prof = config.default_profile(name="t")
+    apply_passthrough(prof, False)
+    out = tmp_path / "p.json"
+    config.save_profile_file(out, prof)
+    loaded = config.load_profile_file(out)
+    assert loaded["proxy"]["passthrough"] is False

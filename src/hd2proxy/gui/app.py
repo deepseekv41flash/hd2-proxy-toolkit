@@ -453,14 +453,18 @@ class App:
 
 
 class _TextDialog(tk.Toplevel):
-    """只读输出窗口（安装/还原计划、CLI 输出）。"""
+    """只读输出窗口（安装/还原计划、CLI 输出、离线预演报告）。
+
+    为什么用 wrap="word"：这些输出里有很长的一行（路径/指纹/JSON），wrap="none" 会被
+    右边界裁掉且没有横向滚动条 —— 实测「离线预演」「安装计划」窗口左右看不全 ✓
+    """
 
     def __init__(self, master, title, content):
         super().__init__(master)
         self.title(title)
         self.geometry("760x560")
         self.configure(bg=theme.BG)
-        box = theme.ScrollText(self, height=26)
+        box = theme.ScrollText(self, height=26, wrap="word")
         box.pack(fill="both", expand=True, padx=12, pady=12)
-        box.set_text(content)
+        box.set_text(content, see_end=False)
         theme.button(self, "关闭", command=self.destroy).pack(pady=(0, 12))

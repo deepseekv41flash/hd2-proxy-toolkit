@@ -7,6 +7,21 @@ from ..app import _TextDialog
 from . import Page
 
 
+def apply_passthrough(profile, enabled):
+    """把「切换直通」的结果写回 profile（只改内存）。
+
+    为什么必须写回：切换直通走控制面 `/passthrough`，只影响**运行中的引擎**；profile 里
+    还记着旧值。用户切到「改写」后再点「应用配置」，就会按 profile 把直通恢复 —— 实测
+    很容易被当成「开关失灵」✓ 这里补一条：切完即记入 profile 并标记未保存。
+    """
+    proxy = profile.get("proxy")
+    if not isinstance(proxy, dict):
+        proxy = {}
+        profile["proxy"] = proxy
+    proxy["passthrough"] = bool(enabled)
+    return profile
+
+
 class OverviewPage(Page):
     title = "总览"
 
@@ -124,7 +139,11 @@ class OverviewPage(Page):
             if isinstance(result, Exception):
                 self.app.toast("切换失败：%r" % (result,), error=True)
                 return
-            self.app.toast("已切到%s" % ("直通（不改写）" if want else "改写模式"))
+            # 同步写回内存 profile：否则接着点「应用配置」会按旧 profile 把直通恢复（实测易误解）
+            apply_passthrough(self.app.profile, want)
+            self.app.mark_dirty()
+            self.app.toast("已切到%s（已记入 profile，点「保存配置」可持久化）"
+                           % ("直通（不改写）" if want else "改写模式"))
 
         self.app.run_bg(lambda: self.app.client.set_passthrough(want), done,
                         busy="切换模式…")

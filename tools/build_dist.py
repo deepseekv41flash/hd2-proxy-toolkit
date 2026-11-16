@@ -148,6 +148,32 @@ def build():
             raise SystemExit("构建失败：%s 不存在" % exe)
 
 
+def sign_local():
+    """可选：用**本机自签证书**给两个 exe 签名（仅当 HD2PROXY_SIGN=1）。
+
+    为什么默认关：自签证书只对「本机已信任这张证书」的机器有意义（方便本地测试不被
+    SmartScreen 拦），对别人下载这个 zip 没有增益；CI 也没有私钥，不该默认签。
+    本机发版想免 SmartScreen：先跑一次 tools/sign_local.ps1 -Install 装信任，再
+      set HD2PROXY_SIGN=1 && python tools/build_dist.py
+    """
+    if os.environ.get("HD2PROXY_SIGN", "").lower() not in ("1", "true", "yes"):
+        print("sign: 跳过（设 HD2PROXY_SIGN=1 可用本机自签证书签名）")
+        return
+    script = ROOT / "tools" / "sign_local.ps1"
+    shell = shutil.which("pwsh") or shutil.which("powershell")
+    if not script.exists() or not shell:
+        raise SystemExit("签名不可用：缺少 tools/sign_local.ps1 或 pwsh/powershell")
+    r = run([shell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script),
+             "-Install", "-DistDir", str(DIST / NAME)])
+    # 子进程（certutil 等）可能吐出非 UTF-8 字节 → 解出来带 U+FFFD；打印前降级成 ?，
+    # 否则在 GBK 控制台会再抛 UnicodeEncodeError（实测踩过）
+    for line in (r.stdout or "").strip().splitlines()[-10:]:
+        print("  " + line.replace("\ufffd", "?"))
+    if r.returncode != 0:
+        raise SystemExit("签名失败（rc=%s）\n%s"
+                         % (r.returncode, (r.stderr or "").replace("\ufffd", "?")[-1500:]))
+
+
 def stage_data():
     """把 data/ 复制到 exe 旁边：用户可直接改 catalogs/acceptance（便携目录）。"""
     target = DIST / NAME / "data"
@@ -226,6 +252,13 @@ def main(argv=None):
     ap.add_argument("--no-zip", action="store_true", help="不打包 zip/校验和/干净路径验证")
     a = ap.parse_args(argv)
 
+    # 控制台可能是 GBK：子进程输出里偶有 U+FFFD，直接 print 会 UnicodeEncodeError 假失败
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, OSError, ValueError):
+            pass
+
     t0 = time.time()
     if a.skip_build:
         for exe in (CLI_EXE, GUI_EXE):
@@ -234,6 +267,7 @@ def main(argv=None):
     else:
         build()
     stage_data()
+    sign_local()
     smoke()
     if not a.no_zip:
         zip_path = make_zip()
