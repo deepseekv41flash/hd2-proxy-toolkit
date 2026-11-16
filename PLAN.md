@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**已过技术选型，待你点头开工 M0**
+> 起草 2026-11-16 ｜ 状态：**M0 已完成（2026-11-16），M1 待开工**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -157,7 +157,7 @@ hd2-proxy-toolkit/
 
 | M | 内容 | 门禁（贴原始输出） | 估时 |
 |---|---|---|---|
-| **M0 骨架** | 建仓、目录、搬 engine 源码（先原样落地）、5 个 selftest 与证书工具适配、catalogs 生成 | 5 个 selftest 全 PASS；`py_compile` 干净；无旧路径硬编码 | 0.5 天 |
+| **M0 骨架** | 建仓、目录、搬 engine 源码（先原样落地）、5 个 selftest 与证书工具适配、catalogs 生成 | 5 个 selftest 全 PASS；`py_compile` 干净；无旧路径硬编码 | ✅ 0.5 天（2026-11-16，见 §9） |
 | **M1 引擎+控制面** | 模块化拆分、schema v2、热重载、控制 API、install/uninstall（UAC 自提升）、自动续证、CRL；**数据管道补齐**（`settings_hash` 以 live warinfo 导入为主、物品名称表） | 离线 pytest 全绿；`install → passthrough 起 → verify 三连 → stop → uninstall` 本机全通 | 1.5 天 |
 | **M2 GUI 骨架** | Tk 壳 + 5 页 + 状态轮询 + schema 驱动表单 + 星球/效果搜索选择器（以原型为基线） | 5 页绑真实引擎状态；切换页无卡顿；截图 | 1.5 天 |
 | **M3 6 项能力** | 6 张能力卡/模板 + 离线预演 + 扩展入口（延后项折叠标注） | 每项 ≥1 条离线用例 + 预演截图；模板填入后增量符合预期 | 1 天 |
@@ -203,6 +203,48 @@ hd2-proxy-toolkit/
 | 2 | 仓库名 | **hd2-proxy-toolkit** |
 | 3 | v0.1 范围 | **6 项核心**，其余引擎保留、界面延后 |
 | 4 | GitHub | **先纯本地**，M5 前确认远端 |
+
+---
+
+## 9. M0 交付记录（2026-11-16）
+
+**仓库**：https://github.com/deepseekv41flash/hd2-proxy-toolkit （public，`master`）
+
+| 提交 | 内容 |
+|---|---|
+| `fc06376` | 仓库骨架：LICENSE / .gitignore / pyproject / README / 计划书 / 选型实测 / 来源档案 |
+| `826ba04` | 引擎逐字节迁入（`src/hd2proxy/engine/legacy_proxy.py`，仅路径 shim）+ 5 个离线自检 + `run_selftests.py` / `check_gate.py` / `gen_session_certs.py` |
+| `0071f53` | GitHub Actions 离线门禁（windows-latest） |
+| `05fa6a1` | `python -m hd2proxy` 入口（engine/selftest/gate/info）；示例配置去机器相关值；PROVENANCE 补 CRLF/LF 双哈希 |
+| `791681b` | catalogs 生成脚本 + 6 份规范化目录（双跑字节一致） |
+
+**门禁证据（本机原始输出）**
+
+```
+$ python tools/check_gate.py
+  py_compile: 11 个文件, 0 失败
+  绝对路径: 0 处（说明：代码里只允许环境变量/相对仓库根的路径）
+  basic        PASS    1.9s  RESULT=PASS
+  rewrite      PASS    1.9s  RESULT=PASS
+  hot_reload   PASS    4.7s  RESULT=PASS
+  sticky       PASS    3.5s  RESULT=PASS
+  faction      PASS    0.1s  RESULT=PASS
+GATE=PASS
+```
+
+**CI 证据**：GitHub Actions `gate` 在 `windows-latest` 上连续两轮 `success`（31s / 37s）。
+
+**catalogs 实测**：`variants 25 / stratagems 58 / effects 312 / planets 438 / items 1671 / build 5`，
+连续两次运行 6 份 JSON 的 sha256 逐字节一致（`b50dc077…`、`6695ba81…`、`0aa32d33…`、`c8c179cf…`、`e8bc5eef…`、`54ab90ec…`），
+无 BOM / 无 CRLF / 无绝对路径；缺源文件时报错退出、不落半套文件。
+
+**与计划的偏离（均已在 PROVENANCE / catalogs README 记录）**
+
+1. `data/legacy/config.example.json` 不再逐字节等于机器快照：`listenIp` 改占位符（原值为作者机器网卡 IP）、`passthrough` 默认 `true`；其余字段一致。
+2. 新增 `src/hd2proxy/__main__.py`（pyproject 的 `hd2proxy` 入口需要，M0 只做 4 个子命令）。
+3. catalogs 的 `planets.settings_hash` 全 null（源无该字段）→ 生态借用改用「运行时 live warinfo 导入」，M1 数据管道实现。
+
+**遗留缺口（不阻塞 M0，进 M1/M3）**：见 [data/catalogs/README.md §已知缺口](data/catalogs/README.md) 四条。
 
 ---
 
