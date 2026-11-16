@@ -482,7 +482,8 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 | 打包 | PyInstaller 6.16 onedir；`dist/hd2proxy/hd2proxy.exe` + `_internal/` + 可编辑 `data/` |
 | 冻结适配 | `engine/paths.py` 识别 `sys.frozen`：优先 exe 旁 `data/`，否则 `_MEIPASS/data`；`cmd_engine` 冻结时在进程内调 `server.main`；`selftest/gate` 明确提示「源码树工具，打包版不含」 |
 | 产物 | `hd2proxy-toolkit-v0.1.0-alpha.1-windows-x64.zip`（约 14.8 MB）+ `SHA256SUMS.txt` |
-| 构建工具 | `tools/build_dist.py`：构建 → 打包后 exe 冒烟（`--version`/`info`/`preview`）→ zip/SHA256 → 解压到临时目录跑 `preview`（干净路径验证） |
+| 构建工具 | `tools/build_dist.py`：构建 → 打包后 exe 冒烟（`--version`/`info`/`preview`）→ zip/SHA256 → 解压到临时目录跑 `preview`（干净路径验证）→ 可选 `--test-area` 同步测试区 |
+| 测试区 | `tools/sync_release_area.py`：把 release 资产同步到专门的产物测试区（`current/` 解包最新版、`artifacts/` 放 zip+sums+notes、`archive/` 留历史版本）；**默认取 GitHub Release 资产**，保证与用户下载物逐字节一致（重打包 zip 会因时间戳改变哈希） |
 | 冒烟 | 打包 exe `--version` / `info` / `preview` 全 OK；GUI 进程可启动；`engine --help` 正常 |
 | Release | tag `v0.1.0-alpha.1`（prerelease）+ zip + SHA256SUMS + Release Notes（`docs/RELEASE-v0.1.0-alpha.1.md`） |
 | 文档 | README 增加「下载 / 快速开始（alpha）」；CHANGELOG.md；ARCHITECTURE §12 打包与分发 |
