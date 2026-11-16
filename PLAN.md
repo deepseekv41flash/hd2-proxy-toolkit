@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0 / M1 / M2 已完成（2026-11-16），M3 待开工**
+> 起草 2026-11-16 ｜ 状态：**M0 / M1 / M2 / M3 已完成（2026-11-16），M4 待你开游戏验收**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -159,7 +159,7 @@ hd2-proxy-toolkit/
 | **M0 骨架** | 建仓、目录、搬 engine 源码（先原样落地）、5 个 selftest 与证书工具适配、catalogs 生成 | 5 个 selftest 全 PASS；`py_compile` 干净；无旧路径硬编码 | 0.5 天 | ✅ **~19 分钟**（19:00→19:18） |
 | **M1 引擎+控制面** | 模块化拆分（17 模块）、schema v2、热重载、控制 API、install/uninstall（UAC 自提升）、自动续证、CRL；数据管道：`settings_hash` 走 live warinfo 导入 | 见 §10（213 单测 + 5 自检 + 整链路实测全绿） | 1.5 天 | ✅ **26 分 38 秒**（19:19→19:45） |
 | **M2 GUI 骨架** | Tk 壳 + 5 页 + 状态轮询 + schema 驱动表单 + 星球/效果搜索选择器（以原型为基线） | 见 §11（234 单测；5 页实拍；门禁 PASS） | 1.5 天 | ✅ **约 30 分钟**（19:56→20:26） |
-| **M3 6 项能力** | 6 张能力卡/模板 + 离线预演 + 扩展入口（延后项折叠标注） | 每项 ≥1 条离线用例 + 预演截图；模板填入后增量符合预期 | 1 天 | ~**30–45 分钟**（校准） |
+| **M3 6 项能力** | 6 张能力卡/模板 + 离线预演 + 扩展入口（延后项折叠标注） | 见 §12（293 单测；每项能力 ≥1 条离线预演用例；预演截图） | 1 天 | ✅ **约 25 分钟**（交接档 21:31 → 收尾 21:44，含一次上下文折叠轮） |
 | **M4 实机验收** | 进游戏逐项验证、修现场问题、记录日志证据 | 验收清单逐项 PASS（**需你开游戏配合**） | 0.5 天 | 我 ~**15–20 分钟** + 你 10–15 分钟；**受你与游戏可用性约束** |
 | **M5 打包发布** | PyInstaller、README/使用说明/截图、v0.1.0 tag（远端按你意见再定） | 干净路径解压即用；安装→启动→验收→还原 全流程跑通 | 0.5 天 | ~**20–30 分钟**（校准） |
 
@@ -357,6 +357,74 @@ GATE=PASS
 - GUI 未做「星图可视化」：v0.1 用星球下拉 + 表格，符合「简洁」定位；星图画布留 v0.2。
 - 物品名依赖 catalogs（约 391/1671 有名字）：其余显示类别，M3 与物品解锁界面一起补。
 - 战况页 6 卡在 780 高度需纵向滚动（已实现），优先保证控件完整可见。
+
+---
+
+## 12. M3 交付记录（2026-11-16）
+
+**一句话**：六项核心能力从「一页编辑器」升级为「能力模板 + 离线预演」——
+不进游戏就能看到 profile 会改客户端什么、为什么没生效；延后项折叠在「扩展 / 实验」区并标注验证状态。
+
+| 交付 | 内容 |
+|---|---|
+| 离线预演引擎 | `engine/preview.py`：`preview(profile) -> {passthrough, fixtures{counts,changes,warnings,applied}, warnings}`。对 5 类响应（status / warinfo / inventory / items / customize）套**同一批钩子**，输出「会新增/修改哪些条目」与「为什么预演看不到变化」。纯计算：不联网、不落盘、不读 runtime（`logutil.quiet()` 连日志都不写） |
+| 样本 | `data/samples/{status,warinfo,inventory,items,customize}.json`（真实抓包裁剪、无账号字段）+ `README.md`（来源 / 边界 / 换成自己 live 样本的步骤） |
+| CLI | `python -m hd2proxy preview --profile P [--fixture status\|warinfo\|inventory\|items\|customize\|all] [--json]`；无 profile 时列出本机 profile |
+| 能力模板 | `gui/templates.py`：6 个核心模板（变种词条 / 全局效果 / 战备试用 / 物品解锁 / 休眠星四件套 / 生态借用）+ 3 个延后项（防守战役、城市分区、L2 改装，带 `evidence` 验证状态）；只改内存 profile，幂等 |
+| GUI 集成 | 战况页顶部「能力模板」条（模板下拉 + 目标星球 + 应用 + **离线预演**按钮，预演结果进只读窗口）；底部「扩展 / 实验」折叠区（默认收起，逐项标验证状态并可应用） |
+| 战备试用补洞 | 试用按星球下发，之前「只有 trials 没有变种」的 profile 会被 `build_status_plan` 静默丢成空计划 → 新增 `status.trials_planet`（null=跟随变种星球），模板自动写入 |
+| 测试 | `test_preview.py` 21 条（六项能力各 ≥1 条 + 直通/空 profile/样本缺失/未知样本/不写日志等边界）、`test_templates.py` 31 条（6+3 模板 apply 后仍能通过 validate、幂等、延后项标注） |
+
+**门禁证据（本机原始输出）**
+
+```
+$ python tools/check_gate.py
+  py_compile: 63 个文件, 0 失败
+  绝对路径: 0 处
+  293 passed in 16.80s          # pytest tests/unit（M2 末 234 → +59）
+  basic/rewrite/hot_reload/sticky/faction 全 PASS
+GATE=PASS
+```
+
+**离线预演样例**（`python -m hd2proxy preview --profile <演示 profile>`，节选）
+
+```
+· 战况 Status：5 处增量（会改写）
+  - 星球 100 追加效果 1243
+  - 星球 100 追加效果 1245
+  - 星球 76 追加效果 1244
+  - 结构化改写：战役 +1 条
+  - 星球 158 归属 2 → 1
+  ! 变种 掠食变种（terminid）与星球 76 的 owner=unknown 不同阵营，实机会被过滤掉
+· 星球 WarInfo：2 处增量（会改写）
+  - 星球 76 生态 settingsHash 0x0000006F → 0x000003E7
+  - 追加星球身份 index=350（休眠星补节点身份）
+· 物品库存：3 处增量（会改写）  · 物品目录：1 处  · L2 改装（实验）：2 处
+合计：13 处增量，5 类响应会被改写
+```
+
+**界面实拍**：`research/screenshots/gui-status.png`（模板条 + 预演按钮）、
+预演/模板说明走 `_TextDialog` 只读窗口（复用安装计划窗口）。
+
+**M3 期间修掉的真实问题**
+
+1. **`_warnings` 被当成拼错的用户键**：`load_profile_file` 挂的内部元数据会被下一次
+   `validate()` 报「未知顶层键」，预演/GUI 都显示这条噪声 → `validate()` 跳过 `_` 前缀键（加回归测试）。
+2. **只有战备试用没有变种的 profile 不生效**：`build_status_plan` 只从变种星球建计划，trials 被静默吞掉 →
+   新增 `status.trials_planet`，无变种也能单独挂星球生效（预演可见「追加效果 1227」）。
+3. **预演会把钩子日志写进 `logs/proxy.log`**：钩子内部直接调 `log()`，参数传不进去 →
+   `logutil.quiet()` 进程级静音，预演真正零副作用。
+4. 模板说明文字在 1180 宽下被裁 → 按容器宽度动态 `wraplength`。
+
+**与计划的偏离（有意）**
+
+- **直通模式下预演仍然算增量**：默认 profile 是 `passthrough=true`，若照「直通=0 改动」实现，
+  新建 profile 的预演永远空白。改为「预演算关闭直通后的增量 + 顶部警告 + 每类响应标 applied」，
+  GUI 明确提示「需先关直通」。
+- **延后项不止折叠展示**：3 个延后模板也能直接应用（引擎能力已在），只是界面归入「扩展 / 实验」并标注验证状态。
+- **休眠星模板带默认星 300（BICEP）**：坐标/hash 用研究线模板值，说明里明确「换 build 需抓 live warinfo 核对」。
+
+**剩余**：M4 实机逐项验收（需你开游戏，含真 install/uninstall）；M5 PyInstaller 打包 + 发布。
 
 ---
 

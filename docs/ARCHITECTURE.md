@@ -1,4 +1,4 @@
-# 架构（M1）
+# 架构（M1 → M3）
 
 > 目标：把研究线的「1846 行单文件脚本」拆成**可测试、可热更新、可多入口**的产品骨架。
 > 一句话：**引擎（写什么） / 配置面（改什么） / 控制面（谁指挥） / 系统面（装到哪）** 四层分离。
@@ -25,6 +25,7 @@ src/hd2proxy/
    ├─ sysprobe.py       系统探针（网卡 IP/端口占用/游戏进程/证书存储/管理员）
    ├─ elevation.py      UAC 自提升（ShellExecuteEx "runas"）
    ├─ installer.py      安装/还原编排（先证书后 hosts；失败回读系统状态）
+   ├─ preview.py        离线预演（M3）：profile 套样本响应 → 结构化 diff / 人读文本
    ├─ legacy_proxy.py   兼容入口（脚本方式启动 → server.main）
    └─ hooks/            warinfo / status / inventory / items / customize / capture
 ```
@@ -119,12 +120,14 @@ GUI / CLI / 脚本通过它发现引擎。所有请求要求 `X-HD2-Token`（或
 | 证书 | `tests/unit/test_certs.py` | ca 签发/状态/自动续期/preflight/多余私钥拒绝 |
 | 系统面 | `tests/unit/test_hosts.py` / `test_installer.py` / `test_sysprobe.py` | 临时 hosts + certutil 桩 + 提权注入点，不碰系统 |
 | 整链路 | `tests/unit/test_engine_flow.py` | 起引擎→控制面→verify→热重载→直通→退出；install dry-run |
+| 离线预演 | `tests/unit/test_preview.py` | 6 项能力在样本上的增量 + 直通/空 profile/样本缺失/不写日志等边界 |
+| 能力模板 | `tests/unit/test_templates.py` | 9 个模板 apply 后 profile 仍合法、幂等、延后项有验证状态 |
 | 线上语义 | `tests/selftest*.py` | 5 个脚本式集成自检（与 M0 相同断言） |
 
 门禁：`python tools/check_gate.py` = 语法 + 绝对路径 + pytest + 5 个脚本自检。
 
 
-## 7. GUI 层（M2）
+## 7. GUI 层（M2 / M3）
 
 ```
 src/hd2proxy/gui/
@@ -133,6 +136,7 @@ src/hd2proxy/gui/
 ├─ theme.py      调色板/字体/ttk 样式 + 小部件工厂（card/section/table/pill/button/ScrollText）
 ├─ widgets.py    SearchList（搜索+列表）/ PlanetPicker（星球下拉）/ RowEditor（可删行表）
 ├─ catalogs.py   只读数据目录封装（变种/战备/效果/星球/物品/build），缺文件降级不崩
+├─ templates.py  能力模板（M3）：6 核心 + 3 延后项；每个模板 = 一组已验证 profile 字段 + 说明
 ├─ client.py     EngineClient：engine.json 发现 + token API（显式绕系统代理）+ 引擎子进程管理与日志环
 └─ pages/        overview / status_page / inventory / capture / settings
 ```
@@ -144,7 +148,46 @@ src/hd2proxy/gui/
 - **profile 是唯一数据面**：页面只改内存里的 schema v2 dict + `mark_dirty()`，统一「保存/应用」；
   热更新走 PUT /config，无需重启代理。
 - **轮询在后台线程**（0.6s），Tk 主线程只渲染；窗口销毁时停轮询（避免 Tk 状态异常）。
-- 截图工具 `tools/gui_smoke.py`：起真引擎 + 假上游 → 逐页截图，是 M2 的验收证据。
+- **模板与预演（M3）**：战况页顶部模板条（模板下拉 + 目标星球 + 应用/离线预演）；模板只改内存 profile，
+  预演在线程里跑引擎的 `preview()` 并进只读窗口；底部「扩展 / 实验」折叠区放延后项并标验证状态。
+- 截图工具 `tools/gui_smoke.py`：起真引擎 + 假上游 → 逐页截图，是 M2/M3 的验收证据。
 
 M2 遗留打磨项（不影响使用）：战况页 6 张卡在 780 高度下需要纵向滚动（已可滚）；
 物品名称依赖 catalogs（约 391/1671 有名字，其余显示类别）；`settingsHash` 生态借用需先导入 live warinfo。
+
+## 8. 离线预演（M3）
+
+```
+profile (schema v2)
+   └─ config.to_engine_spec()          # 与引擎启动时**同一套**映射
+        └─ 对 5 类样本响应逐个跑钩子    # data/samples/*.json（真实抓包裁剪、无账号字段）
+             ├─ status    : model.resolve_plan → rewrite_status（含阵营过滤 + 结构化 extra）
+             ├─ warinfo   : hooks/warinfo.apply（预演剥掉 record_planet_settings，绝不落盘）
+             ├─ inventory : hooks/inventory.inventory_rewrite（+ customization 去重）
+             ├─ items     : hooks/items.items_rewrite（模板不在样本里会 warning）
+             └─ customize : hooks/inventory.customize_rewrite（按槽位给出前/后值）
+        └─ 输出 {fixtures: {counts, changes, warnings, applied}, warnings}
+```
+
+设计约束：
+
+- **纯计算**：不联网、不写盘、不读 `runtime/*.json`；钩子显式传 `spec=`，`spec=None` 时不调用
+  （旧路径会读文件）；`logutil.quiet()` 连 `logs/proxy.log` 都不写。
+- **不假装「不会生效」**：样本是裁剪的，样本里没有的星球/物品 → 给 warning 说明「实机 live 响应里
+  存在时才生效」，而不是报 0 改动。
+- `passthrough=true` 只作为警告：预演永远算「关闭直通后的增量」，否则新建 profile 的预演永远空白。
+- 消费方：CLI `hd2proxy preview` 与 GUI 战况页「离线预演」按钮共用 `format_text()`。
+
+## 9. 能力模板（M3）
+
+`gui/templates.py` 的 `Template` 是「一组已验证的 profile 字段 + 人读说明 + 验证状态」：
+
+| 项 | 内容 |
+|---|---|
+| 核心 6 | 变种词条 / 全局效果 / 战备试用 / 物品解锁 / 休眠星四件套 / 生态借用 |
+| 延后 3 | 防守战役 / 城市分区 / L2 改装（`deferred=True`，带 `evidence`，GUI 折叠区展示） |
+| 契约 | `apply(profile, planet=None) -> list[str] notes`：只改内存 profile、幂等、不落盘不调引擎 |
+| 值来源 | 研究线与黄金回归里记录的原值（如 settingsHash 2995599666 / 694418289、campaign 51999、effect 1346），不编造 |
+
+战备试用在 M3 补了 `status.trials_planet`：试用是「按星球下发」的，之前「只有 trials 没有变种」
+的 profile 会被 `build_status_plan` 静默丢成空计划；现在可以单独指定星球生效（模板自动写入）。
