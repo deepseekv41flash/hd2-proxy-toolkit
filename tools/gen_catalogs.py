@@ -77,6 +77,10 @@ SRC_STORE_COSMETICS = "variant-net/refs/store-cosmetics-20261106.json"
 SRC_UNRELEASED = "variant-net/refs/unreleased_candidates.json"
 SRC_PLANET_INDEX = "repo-datamined/out/planet/planet-index.json"
 SRC_PLANET_DATA = "repo-datamined/out/planet/planet-data.json"
+# 行号 -> 游戏索引 的权威映射（war 801 抓包 + planet_data 尾部 hashmap 对齐产物）。
+# 为什么必须合并：planet-index.json 的 `index` 是 planet_data **行号**，不是游戏索引；
+# 游戏里 Status/warinfo 用的是「压缩后」的游戏索引，两者偏移不是常数（M4 实机踩坑）。
+SRC_INDEX_NAMES = "repo-datamined/out/planet/index-names-801.json"
 
 # 库存配置文件的来源分类（粗分类；不是游戏内 progressionCategory 原字段的转述，
 # 而是按文件语义/文件名给出：武器=cat1 实验、附件=cat2、外观=cat3、战备许可=cat11）。
@@ -164,6 +168,16 @@ def to_text(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _opt_float(value: Any) -> float | None:
+    """可选浮点（星图坐标；空/非法一律 None，不猜值）。"""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def pick_display_name(candidates: list[str]) -> str | None:
@@ -460,6 +474,35 @@ def build_planets(datamined: Path) -> tuple[dict[str, Any], int]:
     rows = load_json(index_path, "星球索引 planet-index.json", list)
     planet_data = load_json(data_path, "星球全量 planet-data.json", list)
 
+    # 行号 -> 游戏索引（权威映射；只覆盖上战场的 273 颗，休眠星为 null）
+    map_path = datamined / "out" / "planet" / "index-names-801.json"
+    game_by_row: dict[int, dict[str, Any]] = {}
+    map_meta: dict[str, Any] = {}
+    if map_path.exists():
+        mapping_doc = load_json(map_path, "游戏索引映射 index-names-801.json", dict)
+        map_meta = {
+            "war_id": to_opt_int(mapping_doc.get("warId"), f"{SRC_INDEX_NAMES} warId"),
+            "source": to_text(mapping_doc.get("source")),
+        }
+        for position, entry in enumerate(mapping_doc.get("mapping") or []):
+            if not isinstance(entry, dict):
+                continue
+            gidx = to_opt_int(entry.get("index"), f"index-names[{position}].index")
+            row = to_opt_int(entry.get("row"), f"index-names[{position}].row")
+            if gidx is None or row is None:
+                continue
+            game_by_row[row] = {
+                "game_index": gidx,
+                "x": _opt_float(entry.get("x")),
+                "y": _opt_float(entry.get("y")),
+            }
+        log(
+            f"note: {SRC_INDEX_NAMES} 合并游戏索引 {len(game_by_row)} 条"
+            f"（行号≠游戏索引；其余 {len(rows) - len(game_by_row)} 行为休眠星，game_index=null）"
+        )
+    else:
+        log(f"warn: 缺少 {SRC_INDEX_NAMES} -> planets.json 的 game_index 全部为 null")
+
     # 任务要求：检查 planet-data.json 是否有 settingsHash；有则按 index 合并，无则 null + 日志说明。
     settings_hash_by_index: dict[int, Any] = {}
     discovered_keys: list[str] = []
@@ -493,9 +536,11 @@ def build_planets(datamined: Path) -> tuple[dict[str, Any], int]:
         if index in seen_indices:
             raise SourceError(f"planet-index.json 出现重复 index {index}")
         seen_indices.add(index)
+        game_info = game_by_row.get(index) or {}
         items.append(
             {
                 "index": index,
+                "game_index": game_info.get("game_index"),
                 "name": to_text(row.get("name")),
                 "biome": to_text(row.get("biome")),
                 "planet_type": to_opt_int(row.get("planet_type"), f"planet {index} planet_type"),
@@ -503,13 +548,18 @@ def build_planets(datamined: Path) -> tuple[dict[str, Any], int]:
                 "region": to_text(row.get("region")),
                 "locid": to_opt_int(row.get("locid"), f"planet {index} locid"),
                 "settings_hash": settings_hash_by_index.get(index),
+                "x": game_info.get("x"),
+                "y": game_info.get("y"),
             }
         )
 
     if not items:
         raise SourceError("planet-index.json 没有解析出任何星球")
     items.sort(key=lambda item: item["index"])
-    return {"items": items, "count": len(items)}, len(items)
+    payload: dict[str, Any] = {"items": items, "count": len(items)}
+    if map_meta:
+        payload["game_index_source"] = map_meta
+    return payload, len(items)
 
 
 # ---------------------------------------------------------------- 5. 物品

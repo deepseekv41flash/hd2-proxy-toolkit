@@ -12,7 +12,7 @@
 | `variants.json` | 25 变种 / 5 组 | `variant_mod/variant_catalog.json` | 分组保留 `exclusive`；`items` 覆盖目录全部变种（含未分组的实验项），保留 `tag`/`mechanic`/`help`；`aliases` 为简称→正式名，供界面搜索 |
 | `stratagems.json` | 58 | `variant_mod/stratagem_catalog.json` | type32「临时配发战备」；每项保留 `id/name/key/native_hash/effect_hash/group` 全部原字段 |
 | `effects.json` | 312 | `variant-net/out/effects-full.csv` + `variant-net/out/effect-menu.csv` | 两表 `effect_id` 完全对齐；数值/解码字段取 effects-full，`presence`/`race`/`display_name` 等展示字段取 effect-menu |
-| `planets.json` | 438 | `repo-datamined/out/planet/planet-index.json` | 主键 `index`；`name`/`setup` 缺失记 null；`settings_hash` 当前全为 null（见下） |
+| `planets.json` | 438（273 有游戏索引） | `repo-datamined/out/planet/planet-index.json` + `index-names-801.json` | 主键 `index` = **planet_data 行号**；`game_index` = 游戏索引（Status/warinfo/写 profile 用），休眠星为 null；附 `x`/`y` 星图坐标；`settings_hash` 全为 null（见下） |
 | `items.json` | 1671 | `variant-net/refs/{armor_rows_parsed,store-cosmetics-20261106,unreleased_candidates}.json` + `variant-net/configs/` 与 `variant_mod/runtime/` 的 `inventory_*.json`、`items_inject.json` | 物品解锁搜索用；`mix_id` 为库存键、`item_id` 为目录内容 id |
 
 ## 口径与已知坑
@@ -24,6 +24,10 @@
   - `category`：按来源文件的粗分类（`weapon` / `attachment` / `cosmetic` / `stratagem`），**不是**游戏内 `progressionCategory` 原字段；`inventory_probe` 混多个 cat，记 null。
 - **effects.json**：`live_planets` 保留 effects-full 的原始文本（可能被截断，如「…共9」），未解析成 index 列表。
 - **planets.json**：`repo-datamined/out/planet/planet-data.json` 中**没有** `settingsHash` / `settings_hash` 字段（438 条已递归确认键名），因此 `settings_hash` 全部为 null；每次生成日志都会打印该结论。
+- **`index` 是行号，不是游戏索引（M4 实机踩坑）✗**：`planet_data` 行按名字字母序排列、共 438 行，只有 273 颗在战场上；游戏里的 `planetStatus.index` / `planetActiveEffects.index` 是**压缩后的游戏索引**，行号与它偏移不是常数（如行 79 = TERREK = 游戏 76；行 180 = GACRUX = 游戏 171）。权威映射来自 `repo-datamined/out/planet/index-names-801.json`（`warinfo planetInfos + planet_data tail hashmap` 对齐产物），生成时按 `row` 合并进 `game_index`，文件头写 `game_index_source`。
+  - **写 profile / 调引擎一律用 `game_index`**；`index` 只用于回查离线资料（名称/生态/坐标）。
+  - 休眠星（165 行）没有游戏索引：`game_index` 为 null，休眠星模板用自选节点号（如 BICEP=300）+ 目标行自己的 `settingsHash` 补身份。
+  - 星球身份（星图名字/生态）由 **`settingsHash`** 决定，不是 `index`：拿错行的 hash 会把节点显示成另一颗星（M4 实机：300 号注 TRANDOR 的 hash → 显示 BALDRICK PRIME）。
 - **variants.json**：`faction` 原样保留（含跨阵营实验项，如 `gloom_cross`）；仅当源里缺 `faction` 时才按 `presence` 前缀推断。
 
 ## 生成命令

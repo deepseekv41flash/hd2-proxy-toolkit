@@ -1,4385 +1,5703 @@
 {
  "count": 438,
+ "game_index_source": {
+  "source": "warinfo planetInfos + planet_data tail hashmap",
+  "war_id": 801
+ },
  "items": [
   {
    "biome": "superearth",
+   "game_index": 0,
    "index": 0,
    "locid": 1441504339,
    "name": "SUPER EARTH",
    "planet_type": 10,
    "region": "region_superearth",
    "settings_hash": null,
-   "setup": "homeworld_superearth"
+   "setup": "homeworld_superearth",
+   "x": 0.0,
+   "y": 0.0
   },
   {
    "biome": "sandy",
+   "game_index": 1,
    "index": 1,
    "locid": 131300950,
    "name": "KLEN DAHTH II",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_klen_dahth_2"
+   "setup": "desert_sandy_klen_dahth_2",
+   "x": 0.0537,
+   "y": 0.1057
   },
   {
    "biome": "moor",
+   "game_index": 2,
    "index": 2,
    "locid": 230047501,
    "name": "PATHFINDER V",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": 0.0466,
+   "y": 0.1676
   },
   {
    "biome": "sandy",
+   "game_index": 3,
    "index": 3,
    "locid": 4082023109,
    "name": "WIDOW'S HARBOR",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": 0.1254,
+   "y": 0.1182
   },
   {
    "biome": "primordial",
+   "game_index": 4,
    "index": 4,
    "locid": 421621431,
    "name": "NEW HAVEN",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": 0.1028,
+   "y": 0.0577
   },
   {
    "biome": "sandy",
+   "game_index": 5,
    "index": 5,
    "locid": 1375930354,
    "name": "PILEN V",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": 0.1599,
+   "y": 0.0436
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 6,
    "locid": 1927972667,
    "name": "MERIDIAN IIa",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": 6,
    "index": 7,
    "locid": 440189837,
    "name": "HYDROFALL PRIME",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": 0.1354,
+   "y": -0.0338
   },
   {
    "biome": "sandy",
+   "game_index": 7,
    "index": 8,
    "locid": 4185597853,
    "name": "ZEA RUGOSIA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": 0.3616,
+   "y": -0.5227
   },
   {
    "biome": "sandy",
+   "game_index": 8,
    "index": 9,
    "locid": 584255963,
    "name": "DARROWSPORT",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": 0.0949,
+   "y": -0.081
   },
   {
    "biome": "swamp",
+   "game_index": 9,
    "index": 10,
    "locid": 1748948844,
    "name": "FORNSKOGUR II",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": 0.158,
+   "y": -0.0969
   },
   {
    "biome": "moor",
+   "game_index": 10,
    "index": 11,
    "locid": 289898661,
    "name": "MIDASBURG",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": 0.0677,
+   "y": -0.1449
   },
   {
    "biome": "sandy",
+   "game_index": 11,
    "index": 12,
    "locid": 3725356541,
    "name": "CERBERUS IIIc",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": 0.0018,
+   "y": -0.1894
   },
   {
    "biome": "primordial",
+   "game_index": 12,
    "index": 13,
    "locid": 1642268665,
    "name": "PROSPERITY FALLS",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": -0.0018,
+   "y": -0.1254
   },
   {
    "biome": "arctic",
+   "game_index": 13,
    "index": 14,
    "locid": 2879388280,
    "name": "OKUL VI",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.0616,
+   "y": -0.1649
   },
   {
    "biome": "arctic",
+   "game_index": 14,
    "index": 15,
    "locid": 2575476666,
    "name": "MARTYR'S BAY",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": -0.099,
+   "y": -0.1119
   },
   {
    "biome": "moor",
+   "game_index": 15,
    "index": 16,
    "locid": 73196956,
    "name": "FREEDOM PEAK",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": -0.1701,
+   "y": -0.0887
   },
   {
    "biome": "moor",
+   "game_index": 16,
    "index": 17,
    "locid": 1181947803,
    "name": "FORT UNION",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": 0.2724,
+   "y": 0.2043
   },
   {
    "biome": "arctic",
+   "game_index": 17,
    "index": 18,
    "locid": 3603869762,
    "name": "KELVINOR",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.1477,
+   "y": -0.0307
   },
   {
    "biome": "sandy",
+   "game_index": 18,
    "index": 19,
    "locid": 778160541,
    "name": "WRAITH",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": -0.1507,
+   "y": 0.0157
   },
   {
    "biome": "arctic",
+   "game_index": 19,
    "index": 20,
    "locid": 2439731458,
    "name": "IGLA",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": -0.1729,
+   "y": 0.0697
   },
   {
    "biome": "arctic",
+   "game_index": 20,
    "index": 21,
    "locid": 4062016236,
    "name": "NEW KIRUNA",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.1262,
+   "y": 0.1114
   },
   {
    "biome": "primordial",
+   "game_index": 21,
    "index": 22,
    "locid": 1243225162,
    "name": "FORT JUSTICE",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": -0.078,
+   "y": 0.1059
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 23,
    "locid": 1724005326,
    "name": "THE BUG QUARANTINE",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": 22,
    "index": 24,
    "locid": 992619516,
    "name": "ZEGEMA PARADISE",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": -0.0398,
+   "y": 0.1454
   },
   {
    "biome": "moor",
+   "game_index": 23,
    "index": 25,
    "locid": 3965403289,
    "name": "PROVIDENCE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.0303,
+   "y": 0.2269
   },
   {
    "biome": "primordial",
+   "game_index": 24,
    "index": 26,
    "locid": 1230925792,
    "name": "PRIMORDIA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": 0.0938,
+   "y": 0.2561
   },
   {
    "biome": "primordial",
+   "game_index": 25,
    "index": 27,
    "locid": 119892493,
    "name": "SULFURA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": 0.1701,
+   "y": 0.1878
   },
   {
    "biome": "swamp",
+   "game_index": 26,
    "index": 28,
    "locid": 3261100878,
    "name": "NUBLARIA I",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": 0.2118,
+   "y": 0.1241
   },
   {
    "biome": "arctic",
+   "game_index": 27,
    "index": 29,
    "locid": 1857755083,
    "name": "KRAKATWO",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": 0.2541,
+   "y": 0.0558
   },
   {
    "biome": "moor",
+   "game_index": 28,
    "index": 30,
    "locid": 846577287,
    "name": "VOLTERRA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": 0.2939,
+   "y": -0.0337
   },
   {
    "biome": "moor",
+   "game_index": 29,
    "index": 31,
    "locid": 2083818604,
    "name": "CRUCIBLE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": 0.2295,
+   "y": -0.0292
   },
   {
    "biome": "primordial",
+   "game_index": 30,
    "index": 32,
    "locid": 1647662801,
    "name": "VEIL",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": 0.2304,
+   "y": -0.0977
   },
   {
    "biome": "moor",
+   "game_index": 31,
    "index": 33,
    "locid": 2144389101,
    "name": "MARRE IV",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": 0.2008,
+   "y": -0.1491
   },
   {
    "biome": "moor",
+   "game_index": 32,
    "index": 34,
    "locid": 205278761,
    "name": "FORT SANCTUARY",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.1541,
+   "y": -0.2101
   },
   {
    "biome": "primordial",
+   "game_index": 33,
    "index": 35,
    "locid": 2402248837,
    "name": "SEYSHEL BEACH",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": 0.0977,
+   "y": -0.2241
   },
   {
    "biome": "moor",
+   "game_index": 34,
    "index": 36,
    "locid": 771961394,
    "name": "HELLMIRE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "hellmire"
+   "setup": "hellmire",
+   "x": 0.5111,
+   "y": 0.3512
   },
   {
    "biome": "sandy",
+   "game_index": 35,
    "index": 37,
    "locid": 1211600962,
    "name": "EFFLUVIA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": -0.0231,
+   "y": -0.2498
   },
   {
    "biome": "swamp",
+   "game_index": 36,
    "index": 38,
    "locid": 4155803285,
    "name": "SOLGHAST",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": -0.0907,
+   "y": -0.2414
   },
   {
    "biome": "moor",
+   "game_index": 37,
    "index": 39,
    "locid": 4224650510,
    "name": "DILUVIA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": -0.1441,
+   "y": -0.2028
   },
   {
    "biome": "sandy",
+   "game_index": 38,
    "index": 40,
    "locid": 2531725087,
    "name": "VIRIDIA PRIME",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": -0.1919,
+   "y": -0.1448
   },
   {
    "biome": "moor",
+   "game_index": 39,
    "index": 41,
    "locid": 3868806488,
    "name": "OBARI",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.2444,
+   "y": -0.1028
   },
   {
    "biome": "sandy",
+   "game_index": 40,
    "index": 42,
    "locid": 863969201,
    "name": "MYRADESH",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": -0.2415,
+   "y": -0.0332
   },
   {
    "biome": "swamp",
+   "game_index": 41,
    "index": 43,
    "locid": 2793302978,
    "name": "ATRAMA",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": -0.2568,
+   "y": 0.0301
   },
   {
    "biome": "sandy",
+   "game_index": 42,
    "index": 44,
    "locid": 1031846155,
    "name": "EMERIA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": -0.2474,
+   "y": 0.0997
   },
   {
    "biome": "swamp",
+   "game_index": 43,
    "index": 45,
    "locid": 2324026679,
    "name": "BARABOS",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": -0.1858,
+   "y": 0.1381
   },
   {
    "biome": "moor",
+   "game_index": 44,
    "index": 46,
    "locid": 3164522440,
    "name": "FENMIRE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.1681,
+   "y": 0.1958
   },
   {
    "biome": "sandy",
+   "game_index": 45,
    "index": 47,
    "locid": 909845190,
    "name": "MASTIA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": -0.1307,
+   "y": 0.3064
   },
   {
    "biome": "primordial",
+   "game_index": 46,
    "index": 48,
    "locid": 1066909283,
    "name": "SHALLUS",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": -0.0613,
+   "y": 0.2489
   },
   {
    "biome": "swamp",
+   "game_index": 47,
    "index": 49,
    "locid": 3115822437,
    "name": "KRAKABOS",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": 0.0378,
+   "y": 0.3225
   },
   {
    "biome": "primordial",
+   "game_index": 48,
    "index": 50,
    "locid": 1905935376,
    "name": "IRIDICA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": 0.113,
+   "y": 0.3346
   },
   {
    "biome": "sandy",
+   "game_index": 49,
    "index": 51,
    "locid": 4116054022,
    "name": "AZTERRA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": 0.222,
+   "y": 0.2773
   },
   {
    "biome": "sandy",
+   "game_index": 50,
    "index": 52,
    "locid": 4193991609,
    "name": "AZUR SECUNDUS",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": 0.8739,
+   "y": 0.3536
   },
   {
    "biome": "swamp",
+   "game_index": 51,
    "index": 53,
    "locid": 147228259,
    "name": "IVIS",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": 0.2879,
+   "y": 0.11
   },
   {
    "biome": "sandy",
+   "game_index": 52,
    "index": 54,
    "locid": 288468253,
    "name": "SLIF",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": 0.3387,
+   "y": 0.0546
   },
   {
    "biome": "sandy",
+   "game_index": 53,
    "index": 55,
    "locid": 3035241840,
    "name": "CARAMOOR",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": 0.3265,
+   "y": -0.1238
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 56,
    "locid": 920622126,
    "name": "ARLIA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": 54,
    "index": 57,
    "locid": 4093374049,
    "name": "KHARST",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.2687,
+   "y": -0.2125
   },
   {
    "biome": "arctic",
+   "game_index": 55,
    "index": 58,
    "locid": 2543939,
    "name": "EUKORIA",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": 0.1935,
+   "y": -0.28
   },
   {
    "biome": "sandy",
+   "game_index": 56,
    "index": 59,
    "locid": 514623903,
    "name": "MYRIUM",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": 0.127,
+   "y": -0.3076
   },
   {
    "biome": "moor",
+   "game_index": 57,
    "index": 60,
    "locid": 539324145,
    "name": "KERTH SECUNDUS",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": 0.0428,
+   "y": -0.3355
   },
   {
    "biome": "swamp",
+   "game_index": 58,
    "index": 61,
    "locid": 4275167981,
    "name": "PARSH",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": -0.0388,
+   "y": -0.3275
   },
   {
    "biome": "moor",
+   "game_index": 59,
    "index": 62,
    "locid": 1443392861,
    "name": "REAF",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.1138,
+   "y": -0.3216
   },
   {
    "biome": "primordial",
+   "game_index": 60,
    "index": 63,
    "locid": 3246104028,
    "name": "IRULTA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": -0.1995,
+   "y": -0.283
   },
   {
    "biome": "primordial",
+   "game_index": 61,
    "index": 64,
    "locid": 444653002,
    "name": "EMORATH",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": -0.2669,
+   "y": -0.2356
   },
   {
    "biome": "moor",
+   "game_index": 62,
    "index": 65,
    "locid": 2403632757,
    "name": "ILDUNA PRIME",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": -0.2899,
+   "y": -0.161
   },
   {
    "biome": "moor",
+   "game_index": 63,
    "index": 66,
    "locid": 123940318,
    "name": "MAW",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": -0.3355,
+   "y": -0.0508
   },
   {
    "biome": "primordial",
+   "game_index": 64,
    "index": 67,
    "locid": 3092832165,
    "name": "MERIDIA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base_bug"
+   "setup": "forest_primordial_base_bug",
+   "x": 0.2965,
+   "y": 0.1163
   },
   {
    "biome": "arctic",
+   "game_index": 65,
    "index": 68,
    "locid": 1451959923,
    "name": "BOREA",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.3176,
+   "y": 0.1318
   },
   {
    "biome": "sandy",
+   "game_index": 66,
    "index": 69,
    "locid": 2825278027,
    "name": "CURIA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": -0.2449,
+   "y": 0.2126
   },
   {
    "biome": "swamp",
+   "game_index": 67,
    "index": 70,
    "locid": 689956975,
    "name": "TARSH",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": -0.21,
+   "y": 0.2833
   },
   {
    "biome": "moor",
+   "game_index": 68,
    "index": 71,
    "locid": 436121739,
    "name": "SHELT",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": -0.0537,
+   "y": 0.3649
   },
   {
    "biome": "moor",
+   "game_index": 69,
    "index": 72,
    "locid": 3909684051,
    "name": "IMBER",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": -0.0607,
+   "y": 0.4454
   },
   {
    "biome": "moor",
+   "game_index": 70,
    "index": 73,
    "locid": 877629863,
    "name": "BLISTICA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": -0.1716,
+   "y": 0.8051
   },
   {
    "biome": "swamp",
+   "game_index": 71,
    "index": 74,
    "locid": 523421401,
    "name": "RATCH",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": 0.0441,
+   "y": 0.4263
   },
   {
    "biome": "arctic",
+   "game_index": 72,
    "index": 75,
    "locid": 1224007776,
    "name": "JULHEIM",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.5232,
+   "y": 0.1434
   },
   {
    "biome": "moor",
+   "game_index": 73,
    "index": 76,
    "locid": 1582178959,
    "name": "VALGAARD",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.1661,
+   "y": 0.4031
   },
   {
    "biome": "arctic",
+   "game_index": 74,
    "index": 77,
    "locid": 2696343909,
    "name": "ARKTURUS",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": 0.256,
+   "y": 0.526
   },
   {
    "biome": "sandy",
+   "game_index": 75,
    "index": 78,
    "locid": 3166068636,
    "name": "ESKER",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": 0.3727,
+   "y": 0.5083
   },
   {
    "biome": "sandy",
+   "game_index": 76,
    "index": 79,
    "locid": 775857686,
    "name": "TERREK",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": 0.2653,
+   "y": 0.3477
   },
   {
    "biome": "primordial",
+   "game_index": 77,
    "index": 80,
    "locid": 2788864241,
    "name": "CIRRUS",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": 0.3249,
+   "y": 0.2584
   },
   {
    "biome": "moor",
+   "game_index": 78,
    "index": 81,
    "locid": 3962567934,
    "name": "CRIMSICA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.6114,
+   "y": 0.2288
   },
   {
    "biome": "arctic",
+   "game_index": 79,
    "index": 82,
    "locid": 340135660,
    "name": "HEETH",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": 0.3944,
+   "y": 0.2731
   },
   {
    "biome": "primordial",
+   "game_index": 80,
    "index": 83,
    "locid": 1911274390,
    "name": "VELD",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": 0.4393,
+   "y": 0.0731
   },
   {
    "biome": "primordial",
+   "game_index": 81,
    "index": 84,
    "locid": 870181849,
    "name": "ALTA V",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": 0.3661,
+   "y": -0.0476
   },
   {
    "biome": "primordial",
+   "game_index": 82,
    "index": 85,
    "locid": 1650103832,
    "name": "URSICA XI",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": 0.5341,
+   "y": -0.0904
   },
   {
    "biome": "arctic",
+   "game_index": 83,
    "index": 86,
    "locid": 2875412642,
    "name": "INARI",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": 0.4456,
+   "y": -0.0621
   },
   {
    "biome": "sandy",
+   "game_index": 84,
    "index": 87,
    "locid": 782903598,
    "name": "SKAASH",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": 0.4184,
+   "y": -0.1708
   },
   {
    "biome": "sandy",
+   "game_index": 85,
    "index": 88,
    "locid": 379673343,
    "name": "MORADESH",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": 0.3371,
+   "y": 0.1549
   },
   {
    "biome": "sandy",
+   "game_index": 86,
    "index": 89,
    "locid": 3607018920,
    "name": "RASP",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": 0.395,
+   "y": -0.262
   },
   {
    "biome": "swamp",
+   "game_index": 87,
    "index": 90,
    "locid": 3239741438,
    "name": "BASHYR",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": 0.3249,
+   "y": -0.2634
   },
   {
    "biome": "primordial",
+   "game_index": 88,
    "index": 91,
    "locid": 1654759752,
    "name": "REGNUS",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": 0.2464,
+   "y": -0.3159
   },
   {
    "biome": "arctic",
+   "game_index": 89,
    "index": 92,
    "locid": 3009003351,
    "name": "MOG",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": 0.2907,
+   "y": -0.3533
   },
   {
    "biome": "moor",
+   "game_index": 90,
    "index": 93,
    "locid": 740173750,
    "name": "VALMOX",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.1861,
+   "y": -0.3811
   },
   {
    "biome": "swamp",
+   "game_index": 91,
    "index": 94,
    "locid": 710416841,
    "name": "IRO",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": 0.1538,
+   "y": -0.4374
   },
   {
    "biome": "arctic",
+   "game_index": 92,
    "index": 95,
    "locid": 1706936029,
    "name": "GRAFMERE",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": 0.0611,
+   "y": -0.4053
   },
   {
    "biome": "arctic",
+   "game_index": 93,
    "index": 96,
    "locid": 1407696270,
    "name": "NEW STOCKHOLM",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": 0.1471,
+   "y": -0.5096
   },
   {
    "biome": "primordial",
+   "game_index": 94,
    "index": 97,
    "locid": 973640366,
    "name": "OASIS",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": 0.0006,
+   "y": -0.4441
   },
   {
    "biome": "primordial",
+   "game_index": 95,
    "index": 98,
    "locid": 2537631,
    "name": "GENESIS PRIME",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": -0.0761,
+   "y": -0.4436
   },
   {
    "biome": "sandy",
+   "game_index": 96,
    "index": 99,
    "locid": 188240743,
    "name": "OUTPOST 32",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": -0.1379,
+   "y": -0.4011
   },
   {
    "biome": "sandy",
+   "game_index": 97,
    "index": 100,
    "locid": 1437811852,
    "name": "CALYPSO",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": -0.2111,
+   "y": -0.4244
   },
   {
    "biome": "moor",
+   "game_index": 98,
    "index": 101,
    "locid": 730425751,
    "name": "ELYSIAN MEADOWS",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": -0.2554,
+   "y": -0.3439
   },
   {
    "biome": "primordial",
+   "game_index": 273,
    "index": 102,
    "locid": 4137490107,
    "name": "ALDERIDGE COVE",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": -0.328,
+   "y": -0.381
   },
   {
    "biome": "moor",
+   "game_index": 100,
    "index": 103,
    "locid": 1815342243,
    "name": "TRANDOR",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": 0.919,
+   "y": -0.125
   },
   {
    "biome": "swamp",
+   "game_index": 101,
    "index": 104,
    "locid": 1846098026,
    "name": "EAST IRIDIUM TRADING BAY",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": -0.3423,
+   "y": -0.3027
   },
   {
    "biome": "moor",
+   "game_index": 102,
    "index": 105,
    "locid": 4225321155,
    "name": "LIBERTY RIDGE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": -0.4124,
+   "y": -0.1751
   },
   {
    "biome": "primordial",
+   "game_index": 103,
    "index": 106,
    "locid": 2137230620,
    "name": "BALDRICK PRIME",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": -0.3531,
+   "y": -0.1331
   },
   {
    "biome": "moor",
+   "game_index": 104,
    "index": 107,
    "locid": 1749038307,
    "name": "THE WEIR",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.4231,
+   "y": -0.0294
   },
   {
    "biome": "primordial",
+   "game_index": 105,
    "index": 108,
    "locid": 2949618488,
    "name": "KUPER",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": -0.4646,
+   "y": -0.0941
   },
   {
    "biome": "arctic",
+   "game_index": 106,
    "index": 109,
    "locid": 3376866480,
    "name": "OSLO STATION",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": -0.4233,
+   "y": 0.0501
   },
   {
    "biome": "moor",
+   "game_index": 107,
    "index": 110,
    "locid": 3380571980,
    "name": "PÖPLI IX",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": -0.6356,
+   "y": 0.0491
   },
   {
    "biome": "moor",
+   "game_index": 108,
    "index": 111,
    "locid": 103796783,
    "name": "GUNVALD",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": -0.3491,
+   "y": 0.0569
   },
   {
    "biome": "sandy",
+   "game_index": 109,
    "index": 112,
    "locid": 655668011,
    "name": "DOLPH",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": -0.5311,
+   "y": 0.0541
   },
   {
    "biome": "primordial",
+   "game_index": 110,
    "index": 113,
    "locid": 4219840211,
    "name": "BEKVAM III",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": -0.484,
+   "y": 0.214
   },
   {
    "biome": "moor",
+   "game_index": 111,
    "index": 114,
    "locid": 3630129367,
    "name": "DUMA TYR",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": -0.4097,
+   "y": 0.159
   },
   {
    "biome": "sandy",
+   "game_index": 112,
    "index": 115,
    "locid": 3584260041,
    "name": "VERNEN WELLS",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": -0.27,
+   "y": 0.376
   },
   {
    "biome": "primordial",
+   "game_index": 113,
    "index": 116,
    "locid": 306250652,
    "name": "AESIR PASS",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": -0.3487,
+   "y": 0.2863
   },
   {
    "biome": "moor",
+   "game_index": 114,
    "index": 117,
    "locid": 3726554027,
    "name": "AURORA BAY",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": -0.4431,
+   "y": 0.5991
   },
   {
    "biome": "primordial",
+   "game_index": 115,
    "index": 118,
    "locid": 3985499109,
    "name": "PENTA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": -0.2788,
+   "y": 0.5874
   },
   {
    "biome": "primordial",
+   "game_index": 116,
    "index": 119,
    "locid": 3949569347,
    "name": "GAELLIVARE",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": -0.1621,
+   "y": 0.4143
   },
   {
    "biome": "arctic",
+   "game_index": 117,
    "index": 120,
    "locid": 222072050,
    "name": "VOG-SOJOTH",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.1221,
+   "y": 0.5436
   },
   {
    "biome": "primordial",
+   "game_index": 118,
    "index": 121,
    "locid": 3091329534,
    "name": "KIRRIK",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": 0.1295,
+   "y": 0.5234
   },
   {
    "biome": "sandy",
+   "game_index": 119,
    "index": 122,
    "locid": 4050163919,
    "name": "MORTAX PRIME",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": 0.0339,
+   "y": 0.5456
   },
   {
    "biome": "sandy",
+   "game_index": 120,
    "index": 123,
    "locid": 2188495010,
    "name": "WILFORD STATION",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": 0.1969,
+   "y": 0.5865
   },
   {
    "biome": "sandy",
+   "game_index": 121,
    "index": 124,
    "locid": 179119539,
    "name": "PIONEER II",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": 0.2802,
+   "y": 0.6416
   },
   {
    "biome": "sandy",
+   "game_index": 122,
    "index": 125,
    "locid": 2563213682,
    "name": "ERSON SANDS",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": 0.4685,
+   "y": 0.5513
   },
   {
    "biome": "swamp",
+   "game_index": 123,
    "index": 126,
    "locid": 1475087488,
    "name": "SOCORRO III",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": 0.3994,
+   "y": 0.601
   },
   {
    "biome": "swamp",
+   "game_index": 124,
    "index": 127,
    "locid": 4212061343,
    "name": "BORE ROCK",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": 0.326,
+   "y": 0.4174
   },
   {
    "biome": "sandy",
+   "game_index": 125,
    "index": 128,
    "locid": 3480109512,
    "name": "FENRIR III",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": 0.4699,
+   "y": 0.2742
   },
   {
    "biome": "primordial",
+   "game_index": 126,
    "index": 129,
    "locid": 3342924444,
    "name": "TURING",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": 0.5349,
+   "y": 0.1182
   },
   {
    "biome": "moor",
+   "game_index": 127,
    "index": 130,
    "locid": 567695062,
    "name": "ANGEL'S VENTURE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": 0.4448,
+   "y": 0.1619
   },
   {
    "biome": "sandy",
+   "game_index": 128,
    "index": 131,
    "locid": 1143724091,
    "name": "DARIUS II",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": 0.6416,
+   "y": -0.0341
   },
   {
    "biome": "moor",
+   "game_index": 129,
    "index": 132,
    "locid": 1235215129,
    "name": "ACAMAR IV",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": 0.6244,
+   "y": 0.1095
   },
   {
    "biome": "moor",
+   "game_index": 130,
    "index": 133,
    "locid": 646100137,
    "name": "ACHERNAR SECUNDUS",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": 0.6394,
+   "y": -0.1135
   },
   {
    "biome": "sandy",
+   "game_index": 131,
    "index": 134,
    "locid": 2042206691,
    "name": "ACHIRD III",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": 0.5706,
+   "y": -0.0359
   },
   {
    "biome": "moor",
+   "game_index": 132,
    "index": 135,
    "locid": 1921206358,
    "name": "ACRAB XI",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.4986,
+   "y": -0.2142
   },
   {
    "biome": "arctic",
+   "game_index": 133,
    "index": 136,
    "locid": 1485636464,
    "name": "ACRUX IX",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": 0.5715,
+   "y": -0.1989
   },
   {
    "biome": "primordial",
+   "game_index": 134,
    "index": 137,
    "locid": 70623210,
    "name": "ACUBENS PRIME",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": 0.3949,
+   "y": -0.3442
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 138,
    "locid": 3270663062,
    "name": "ADHAFERA SECUNDUS",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": 135,
    "index": 139,
    "locid": 857545008,
    "name": "ADHARA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": 0.3655,
+   "y": -0.4063
   },
   {
    "biome": "moor",
+   "game_index": 136,
    "index": 140,
    "locid": 1941770292,
    "name": "AFOYAY BAY",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": 0.3082,
+   "y": -0.4349
   },
   {
    "biome": "primordial",
+   "game_index": 137,
    "index": 141,
    "locid": 1342954337,
    "name": "AIN-5",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": 0.2172,
+   "y": -0.4916
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 142,
    "locid": 3667756654,
    "name": "ALADFAR CXI",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": 138,
    "index": 143,
    "locid": 4168695740,
    "name": "ALAIRT III",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": 0.1135,
+   "y": -0.5914
   },
   {
    "biome": "primordial",
+   "game_index": 139,
    "index": 144,
    "locid": 3222410792,
    "name": "ALAMAK VII",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": 0.0636,
+   "y": -0.5271
   },
   {
    "biome": "primordial",
+   "game_index": 140,
    "index": 145,
    "locid": 1220978891,
    "name": "ALARAPH",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": -0.0349,
+   "y": -0.5486
   },
   {
    "biome": "arctic",
+   "game_index": 141,
    "index": 146,
    "locid": 1545408205,
    "name": "ALATHFAR XI",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.1216,
+   "y": -0.5161
   },
   {
    "biome": "moor",
+   "game_index": 142,
    "index": 147,
    "locid": 1926035611,
    "name": "ANDAR",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": -0.2009,
+   "y": -0.4955
   },
   {
    "biome": "swamp",
+   "game_index": 143,
    "index": 148,
    "locid": 2028193710,
    "name": "ASPEROTH PRIME",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": -0.2369,
+   "y": -0.5768
   },
   {
    "biome": "moor",
+   "game_index": 144,
    "index": 149,
    "locid": 3494209900,
    "name": "BELLATRIX",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.3064,
+   "y": -0.4627
   },
   {
    "biome": "sandy",
+   "game_index": 145,
    "index": 150,
    "locid": 53785855,
    "name": "BOTEIN",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": -0.3872,
+   "y": -0.4339
   },
   {
    "biome": "sandy",
+   "game_index": 146,
    "index": 151,
    "locid": 1753892252,
    "name": "OSUPSAM",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": -0.478,
+   "y": -0.3174
   },
   {
    "biome": "primordial",
+   "game_index": 147,
    "index": 152,
    "locid": 3300214952,
    "name": "BRINK-2",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": -0.4117,
+   "y": -0.3474
   },
   {
    "biome": "moor",
+   "game_index": 148,
    "index": 153,
    "locid": 710669387,
    "name": "BUNDA SECUNDUS",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": -0.5268,
+   "y": -0.1869
   },
   {
    "biome": "sandy",
+   "game_index": 149,
    "index": 154,
    "locid": 3429653155,
    "name": "CANOPUS",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": -0.4706,
+   "y": -0.2302
   },
   {
    "biome": "swamp",
+   "game_index": 150,
    "index": 155,
    "locid": 2418805493,
    "name": "CAPH",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": -0.5226,
+   "y": -0.0359
   },
   {
    "biome": "sandy",
+   "game_index": 151,
    "index": 156,
    "locid": 3914500540,
    "name": "CASTOR",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": -0.5624,
+   "y": -0.1135
   },
   {
    "biome": "sandy",
+   "game_index": 152,
    "index": 157,
    "locid": 366016090,
    "name": "DURGEN",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": -0.9146,
+   "y": -0.1731
   },
   {
    "biome": "moor",
+   "game_index": 153,
    "index": 158,
    "locid": 3792296541,
    "name": "DRAUPNIR",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.7454,
+   "y": -0.1315
   },
   {
    "biome": "primordial",
+   "game_index": 154,
    "index": 159,
    "locid": 2388292518,
    "name": "MORT",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": -0.6789,
+   "y": 0.1172
   },
   {
    "biome": "moor",
+   "game_index": 155,
    "index": 160,
    "locid": 4164770624,
    "name": "INGMAR",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": -0.7315,
+   "y": 0.0529
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 161,
    "locid": 3722503053,
    "name": "CHARA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": 156,
    "index": 162,
    "locid": 3143846020,
    "name": "CHARBAL-VII",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": -0.601,
+   "y": 0.2024
   },
   {
    "biome": "moor",
+   "game_index": 157,
    "index": 163,
    "locid": 1901047489,
    "name": "CHARON PRIME",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": -0.5752,
+   "y": 0.2659
   },
   {
    "biome": "arctic",
+   "game_index": 158,
    "index": 164,
    "locid": 1213932068,
    "name": "CHOEPESSA IV",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": -0.7044,
+   "y": 0.2567
   },
   {
    "biome": "sandy",
+   "game_index": 159,
    "index": 165,
    "locid": 2366892687,
    "name": "CHOOHE",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": -0.3992,
+   "y": 0.5129
   },
   {
    "biome": "sandy",
+   "game_index": 160,
    "index": 166,
    "locid": 343442322,
    "name": "CHORT BAY",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": -0.3412,
+   "y": 0.5516
   },
   {
    "biome": "sandy",
+   "game_index": 161,
    "index": 167,
    "locid": 3279100752,
    "name": "CLAORELL",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": -0.0496,
+   "y": 0.5291
   },
   {
    "biome": "swamp",
+   "game_index": 162,
    "index": 168,
    "locid": 655206231,
    "name": "CLASA",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": -0.0735,
+   "y": 0.6374
   },
   {
    "biome": "magma",
+   "game_index": null,
    "index": 169,
    "locid": 2087816161,
    "name": "CURSA",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": 163,
    "index": 170,
    "locid": 3937567880,
    "name": "DEMIURG",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": 0.0614,
+   "y": 0.6512
   },
   {
    "biome": "arctic",
+   "game_index": 164,
    "index": 171,
    "locid": 1166279471,
    "name": "DENEB SECUNDUS",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": 0.092,
+   "y": 0.7373
   },
   {
    "biome": "moor",
+   "game_index": 165,
    "index": 172,
    "locid": 3704017479,
    "name": "ELECTRA BAY",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": 0.2164,
+   "y": 0.7094
   },
   {
    "biome": "moor",
+   "game_index": 166,
    "index": 173,
    "locid": 3054022597,
    "name": "ENULIALE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.4758,
+   "y": 0.6789
   },
   {
    "biome": "arctic",
+   "game_index": 167,
    "index": 174,
    "locid": 2375431518,
    "name": "EPSILON PHOENCIS VI",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": 0.5693,
+   "y": 0.6043
   },
   {
    "biome": "sandy",
+   "game_index": 168,
    "index": 175,
    "locid": 3160372667,
    "name": "ERATA PRIME",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": 0.4243,
+   "y": 0.3483
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 176,
    "locid": 4209107572,
    "name": "ERRANT",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": 169,
    "index": 177,
    "locid": 2576641352,
    "name": "ESTANU",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": 0.5804,
+   "y": 0.2914
   },
   {
    "biome": "sandy",
+   "game_index": 170,
    "index": 178,
    "locid": 916548545,
    "name": "FORI PRIME",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": 0.688,
+   "y": 0.301
   },
   {
    "biome": "magma",
+   "game_index": 261,
    "index": 179,
    "locid": 2700729919,
    "name": "FURY",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": -0.729,
+   "y": 0.172
   },
   {
    "biome": "swamp",
+   "game_index": 171,
    "index": 180,
    "locid": 3955894400,
    "name": "GACRUX",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": 0.7303,
+   "y": 0.148
   },
   {
    "biome": "swamp",
+   "game_index": 172,
    "index": 181,
    "locid": 265392480,
    "name": "GAR HAREN",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": 0.7312,
+   "y": -0.1224
   },
   {
    "biome": "moor",
+   "game_index": 173,
    "index": 182,
    "locid": 2773451630,
    "name": "GATRIA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.8253,
+   "y": -0.132
   },
   {
    "biome": "primordial",
+   "game_index": 174,
    "index": 183,
    "locid": 546585509,
    "name": "GEMMA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": 0.5601,
+   "y": -0.2744
   },
   {
    "biome": "moor",
+   "game_index": 175,
    "index": 184,
    "locid": 2985681234,
    "name": "GRAND ERRANT",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": 0.6873,
+   "y": -0.244
   },
   {
    "biome": "arctic",
+   "game_index": 176,
    "index": 185,
    "locid": 2616578175,
    "name": "HADAR",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": 0.519,
+   "y": -0.386
   },
   {
    "biome": "primordial",
+   "game_index": 177,
    "index": 186,
    "locid": 1585645666,
    "name": "HAKA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": 0.5813,
+   "y": -0.4583
   },
   {
    "biome": "swamp",
+   "game_index": 178,
    "index": 187,
    "locid": 3692813988,
    "name": "HALDUS",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": 0.459,
+   "y": -0.459
   },
   {
    "biome": "arctic",
+   "game_index": 179,
    "index": 188,
    "locid": 2726804828,
    "name": "HALIES PORT",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": 0.4808,
+   "y": -0.5826
   },
   {
    "biome": "moor",
+   "game_index": 180,
    "index": 189,
    "locid": 3263009716,
    "name": "HERTHON SECUNDUS",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": 0.27,
+   "y": -0.588
   },
   {
    "biome": "arctic",
+   "game_index": 181,
    "index": 190,
    "locid": 1577431289,
    "name": "HESOE PRIME",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": 0.359,
+   "y": -0.7393
   },
   {
    "biome": "sandy",
+   "game_index": 182,
    "index": 191,
    "locid": 1539362188,
    "name": "HEZE BAY",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": 0.0474,
+   "y": -0.6422
   },
   {
    "biome": "moor",
+   "game_index": 183,
    "index": 192,
    "locid": 1105824679,
    "name": "HORT",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": 0.251,
+   "y": -0.6913
   },
   {
    "biome": "sandy",
+   "game_index": 184,
    "index": 193,
    "locid": 774406423,
    "name": "HYDROBIUS",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": -0.0484,
+   "y": -0.7072
   },
   {
    "biome": "moor",
+   "game_index": 185,
    "index": 194,
    "locid": 916505227,
    "name": "KARLIA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": -0.133,
+   "y": -0.6603
   },
   {
    "biome": "magma",
+   "game_index": null,
    "index": 195,
    "locid": 614560108,
    "name": "KARON BAY",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": 186,
    "index": 196,
    "locid": 1317730141,
    "name": "KEID",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": -0.265,
+   "y": -0.6723
   },
   {
    "biome": "swamp",
+   "game_index": 187,
    "index": 197,
    "locid": 356613305,
    "name": "KHANDARK",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": -0.3728,
+   "y": -0.5306
   },
   {
    "biome": "magma",
+   "game_index": 262,
    "index": 198,
    "locid": 1710870229,
    "name": "K",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": -0.657,
+   "y": 0.33
   },
   {
    "biome": "swamp",
+   "game_index": 188,
    "index": 199,
    "locid": 1560396759,
    "name": "KLAKA 5",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": -0.5559,
+   "y": -0.3158
   },
   {
    "biome": "moor",
+   "game_index": 189,
    "index": 200,
    "locid": 1572521316,
    "name": "KNETH PORT",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": -0.4953,
+   "y": -0.4213
   },
   {
    "biome": "sandy",
+   "game_index": 190,
    "index": 201,
    "locid": 1570376244,
    "name": "KRAZ",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": -0.6141,
+   "y": -0.2034
   },
   {
    "biome": "sandy",
+   "game_index": 191,
    "index": 202,
    "locid": 3626758819,
    "name": "KUMA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": 0.034,
+   "y": 0.926
   },
   {
    "biome": "sandy",
+   "game_index": 192,
    "index": 203,
    "locid": 1298431672,
    "name": "LASTOFE",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": -0.6222,
+   "y": -0.0424
   },
   {
    "biome": "sandy",
+   "game_index": 193,
    "index": 204,
    "locid": 3024520777,
    "name": "LENG SECUNDUS",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": -0.6863,
+   "y": -0.256
   },
   {
    "biome": "arctic",
+   "game_index": 194,
    "index": 205,
    "locid": 3220476127,
    "name": "LESATH",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": -0.229,
+   "y": 0.4991
   },
   {
    "biome": "sandy",
+   "game_index": 195,
    "index": 206,
    "locid": 2225860827,
    "name": "MAIA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": -0.9273,
+   "y": -0.043
   },
   {
    "biome": "primordial",
+   "game_index": 196,
    "index": 207,
    "locid": 2206946868,
    "name": "MALEVELON CREEK",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": -0.8473,
+   "y": -0.096
   },
   {
    "biome": "primordial",
+   "game_index": 197,
    "index": 208,
    "locid": 2032929579,
    "name": "MANTES",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": -0.746,
+   "y": -0.032
   },
   {
    "biome": "arctic",
+   "game_index": 198,
    "index": 209,
    "locid": 2795013007,
    "name": "MARFARK",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.437,
+   "y": 0.326
   },
   {
    "biome": "moor",
+   "game_index": 199,
    "index": 210,
    "locid": 2013327304,
    "name": "MARTALE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": -0.5379,
+   "y": 0.3338
   },
   {
    "biome": "moor",
+   "game_index": 200,
    "index": 211,
    "locid": 4088126157,
    "name": "MATAR BAY",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.491,
+   "y": 0.414
   },
   {
    "biome": "primordial",
+   "game_index": 201,
    "index": 212,
    "locid": 820622353,
    "name": "MEISSA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": -0.5683,
+   "y": 0.4903
   },
   {
    "biome": "sandy",
+   "game_index": 202,
    "index": 213,
    "locid": 677430713,
    "name": "MEKBUDA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": -0.5344,
+   "y": 0.6511
   },
   {
    "biome": "moor",
+   "game_index": 203,
    "index": 214,
    "locid": 1842172307,
    "name": "MENKENT",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": -0.315,
+   "y": 0.456
   },
   {
    "biome": "primordial",
+   "game_index": 204,
    "index": 215,
    "locid": 3519536123,
    "name": "MERAK",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": -0.3521,
+   "y": 0.645
   },
   {
    "biome": "swamp",
+   "game_index": 205,
    "index": 216,
    "locid": 2251442607,
    "name": "MERGA IV",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": -0.326,
+   "y": 0.7473
   },
   {
    "biome": "primordial",
+   "game_index": 206,
    "index": 217,
    "locid": 3978718279,
    "name": "MINCHIR",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": 0.0849,
+   "y": 0.8338
   },
   {
    "biome": "moor",
+   "game_index": 207,
    "index": 218,
    "locid": 438442448,
    "name": "MINTORIA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.0601,
+   "y": 0.8418
   },
   {
    "biome": "primordial",
+   "game_index": 208,
    "index": 219,
    "locid": 1960080764,
    "name": "MORDIA 9",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": 0.3105,
+   "y": 0.7716
   },
   {
    "biome": "magma",
+   "game_index": 266,
    "index": 220,
    "locid": 2700736388,
    "name": "MOX",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": -0.766,
+   "y": 0.41
   },
   {
    "biome": "swamp",
+   "game_index": 209,
    "index": 221,
    "locid": 1382288454,
    "name": "NABATEA SECUNDUS",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": 0.7658,
+   "y": 0.537
   },
   {
    "biome": "primordial",
+   "game_index": 210,
    "index": 222,
    "locid": 1465854050,
    "name": "NAVI VII",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": 0.7781,
+   "y": 0.3444
   },
   {
    "biome": "primordial",
+   "game_index": 211,
    "index": 223,
    "locid": 2753928740,
    "name": "NIVEL 43",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": 0.4889,
+   "y": 0.4333
   },
   {
    "biome": "magma",
+   "game_index": null,
    "index": 224,
    "locid": 3767503173,
    "name": "OROTH",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "bug_hiveworld",
+   "game_index": 212,
    "index": 225,
    "locid": 331217504,
    "name": "OSHAUNE",
    "planet_type": 11,
    "region": "region_bug_hiveworld",
    "settings_hash": null,
-   "setup": "hiveworld_moor_base"
+   "setup": "hiveworld_moor_base",
+   "x": 0.6339,
+   "y": 0.3955
   },
   {
    "biome": "moor",
+   "game_index": 213,
    "index": 226,
    "locid": 1318124552,
    "name": "OVERGOE PRIME",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": 0.9115,
+   "y": 0.1851
   },
   {
    "biome": "primordial",
+   "game_index": 214,
    "index": 227,
    "locid": 3243895582,
    "name": "PANDION-XXIV",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": 0.7148,
+   "y": 0.0639
   },
   {
    "biome": "moor",
+   "game_index": 215,
    "index": 228,
    "locid": 2588104988,
    "name": "PARTION",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": 0.8418,
+   "y": 0.1009
   },
   {
    "biome": "primordial",
+   "game_index": 216,
    "index": 229,
    "locid": 3970498706,
    "name": "PEACOCK",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": 0.9332,
+   "y": 0.0045
   },
   {
    "biome": "sandy",
+   "game_index": 217,
    "index": 230,
    "locid": 805511186,
    "name": "PHACT BAY",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": 0.7588,
+   "y": -0.0199
   },
   {
    "biome": "swamp",
+   "game_index": 218,
    "index": 231,
    "locid": 996702475,
    "name": "PHERKAD SECUNDUS",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": 0.8658,
+   "y": -0.3
   },
   {
    "biome": "sandy",
+   "game_index": 219,
    "index": 232,
    "locid": 708743426,
    "name": "POLARIS PRIME",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": 0.7575,
+   "y": -0.3511
   },
   {
    "biome": "primordial",
+   "game_index": 220,
    "index": 233,
    "locid": 1048855585,
    "name": "POLLUX 31",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": 0.7659,
+   "y": -0.4823
   },
   {
    "biome": "sandy",
+   "game_index": 221,
    "index": 234,
    "locid": 690834076,
    "name": "PRASA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": 0.664,
+   "y": -0.5728
   },
   {
    "biome": "sandy",
+   "game_index": 222,
    "index": 235,
    "locid": 2337934883,
    "name": "PROPUS",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": 0.5878,
+   "y": -0.677
   },
   {
    "biome": "moor",
+   "game_index": 223,
    "index": 236,
    "locid": 3458804072,
    "name": "RAS ALGETHI",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": 0.4903,
+   "y": -0.7166
   },
   {
    "biome": "sandy",
+   "game_index": 224,
    "index": 237,
    "locid": 1070913489,
    "name": "RD-4",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": 0.2935,
+   "y": -0.8716
   },
   {
    "biome": "primordial",
+   "game_index": 225,
    "index": 238,
    "locid": 2831328950,
    "name": "ROGUE 5",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": 0.1481,
+   "y": -0.9115
   },
   {
    "biome": "sandy",
+   "game_index": 226,
    "index": 239,
    "locid": 3176756443,
    "name": "RIRGA BAY",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": 0.0969,
+   "y": -0.7278
   },
   {
    "biome": "rift",
+   "game_index": 227,
    "index": 240,
    "locid": 122093803,
    "name": "SEASSE",
    "planet_type": 16,
    "region": "region_rift",
    "settings_hash": null,
-   "setup": "forest_rift_active"
+   "setup": "forest_rift_active",
+   "x": 0.1049,
+   "y": -0.8298
   },
   {
    "biome": "sandy",
+   "game_index": 228,
    "index": 241,
    "locid": 4165159481,
    "name": "SENGE 23",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": -0.0379,
+   "y": -0.8438
   },
   {
    "biome": "swamp",
+   "game_index": 229,
    "index": 242,
    "locid": 3504573238,
    "name": "SETIA",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": -0.1605,
+   "y": -0.8542
   },
   {
    "biome": "sandy",
+   "game_index": 230,
    "index": 243,
    "locid": 1710555974,
    "name": "SHETE",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": -0.3125,
+   "y": -0.8309
   },
   {
    "biome": "primordial",
+   "game_index": 231,
    "index": 244,
    "locid": 2662394754,
    "name": "SIEMNOT",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": -0.4425,
+   "y": -0.7626
   },
   {
    "biome": "sandy",
+   "game_index": 232,
    "index": 245,
    "locid": 2210014777,
    "name": "SIRIUS",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": -0.5733,
+   "y": -0.6689
   },
   {
    "biome": "primordial",
+   "game_index": 233,
    "index": 246,
    "locid": 1137964607,
    "name": "SKAT BAY",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": -0.4878,
+   "y": -0.564
   },
   {
    "biome": "primordial",
+   "game_index": 234,
    "index": 247,
    "locid": 817785996,
    "name": "SPHERION",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": -0.617,
+   "y": -0.5608
   },
   {
    "biome": "arctic",
+   "game_index": 235,
    "index": 248,
    "locid": 2450040168,
    "name": "STOR THA PRIME",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": -0.7556,
+   "y": -0.5063
   },
   {
    "biome": "moor",
+   "game_index": 236,
    "index": 249,
    "locid": 2826323141,
    "name": "STOUT",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": -0.6258,
+   "y": -0.402
   },
   {
    "biome": "moor",
+   "game_index": 237,
    "index": 250,
    "locid": 462171068,
    "name": "TERMADON",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.8609,
+   "y": -0.3605
   },
   {
    "biome": "primordial",
+   "game_index": 238,
    "index": 251,
    "locid": 3621980142,
    "name": "TIBIT",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": -0.7808,
+   "y": -0.3289
   },
   {
    "biome": "arctic",
+   "game_index": 239,
    "index": 252,
    "locid": 212590513,
    "name": "TIEN KWAN",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "tien_kwan"
+   "setup": "tien_kwan",
+   "x": -0.6269,
+   "y": -0.1265
   },
   {
    "biome": "primordial",
+   "game_index": 240,
    "index": 253,
    "locid": 2225234085,
    "name": "TROOST",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": -0.9022,
+   "y": 0.1555
   },
   {
    "biome": "moor",
+   "game_index": 241,
    "index": 254,
    "locid": 3891463586,
    "name": "UBANEA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": -0.8158,
+   "y": -0.2171
   },
   {
    "biome": "sandy",
+   "game_index": 242,
    "index": 255,
    "locid": 2395107031,
    "name": "USTOTU",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": -0.8069,
+   "y": 0.2075
   },
   {
    "biome": "arctic",
+   "game_index": 243,
    "index": 256,
    "locid": 1244395985,
    "name": "VANDALON IV",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.8408,
+   "y": 0.061
   },
   {
    "biome": "moor",
+   "game_index": 244,
    "index": 257,
    "locid": 568622358,
    "name": "VARYLIA 5",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": -0.7463,
+   "y": 0.3441
   },
   {
    "biome": "sandy",
+   "game_index": 245,
    "index": 258,
    "locid": 3939430458,
    "name": "WASAT",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": -0.6519,
+   "y": 0.4543
   },
   {
    "biome": "arctic",
+   "game_index": 246,
    "index": 259,
    "locid": 2967304390,
    "name": "VEGA BAY",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": -0.7953,
+   "y": 0.4969
   },
   {
    "biome": "moor",
+   "game_index": 247,
    "index": 260,
    "locid": 3383944595,
    "name": "WEZEN",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": -0.8741,
+   "y": 0.3474
   },
   {
    "biome": "primordial",
+   "game_index": 248,
    "index": 261,
    "locid": 1003401731,
    "name": "VINDEMITARIX PRIME",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": -0.561,
+   "y": 0.7708
   },
   {
    "biome": "swamp",
+   "game_index": 249,
    "index": 262,
    "locid": 2901475147,
    "name": "X-45",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_base"
+   "setup": "forest_swamp_base",
+   "x": -0.6895,
+   "y": 0.5909
   },
   {
    "biome": "moor",
+   "game_index": 250,
    "index": 263,
    "locid": 3709010725,
    "name": "YED PRIOR",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": -0.1395,
+   "y": 0.7099
   },
   {
    "biome": "primordial",
+   "game_index": 251,
    "index": 264,
    "locid": 954678793,
    "name": "ZEFIA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": -0.0489,
+   "y": 0.7218
   },
   {
    "biome": "sandy",
+   "game_index": 252,
    "index": 265,
    "locid": 2992138395,
    "name": "ZOSMA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": -0.3555,
+   "y": 0.8834
   },
   {
    "biome": "sandy",
+   "game_index": 253,
    "index": 266,
    "locid": 1468076040,
    "name": "ZZANIAH PRIME",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": -0.1995,
+   "y": 0.9264
   },
   {
    "biome": "swamp",
+   "game_index": 254,
    "index": 267,
    "locid": 948019727,
    "name": "SKITTER",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": 0.1481,
+   "y": 0.9233
   },
   {
    "biome": "sandy",
+   "game_index": 255,
    "index": 268,
    "locid": 2471860090,
    "name": "EUPHORIA III",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": 0.3192,
+   "y": 0.873
   },
   {
    "biome": "sandy",
+   "game_index": 256,
    "index": 269,
    "locid": 1151272818,
    "name": "DIASPORA X",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": 0.5267,
+   "y": 0.7476
   },
   {
    "biome": "moor",
+   "game_index": 257,
    "index": 270,
    "locid": 2675157762,
    "name": "GEMSTONE BLUFFS",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": 0.6666,
+   "y": 0.607
   },
   {
    "biome": "bug_hiveworld",
+   "game_index": 258,
    "index": 271,
    "locid": 2155068571,
    "name": "ZAGON PRIME",
    "planet_type": 11,
    "region": "region_bug_hiveworld",
    "settings_hash": null,
-   "setup": "hiveworld_sandy_base"
+   "setup": "hiveworld_sandy_base",
+   "x": 0.5576,
+   "y": 0.4887
   },
   {
    "biome": "bug_hiveworld",
+   "game_index": 259,
    "index": 272,
    "locid": 1665734336,
    "name": "OMICRON",
    "planet_type": 11,
    "region": "region_bug_hiveworld",
    "settings_hash": null,
-   "setup": "hiveworld_moor_tundra"
+   "setup": "hiveworld_moor_tundra",
+   "x": 0.6839,
+   "y": 0.4867
   },
   {
    "biome": "arctic",
+   "game_index": 260,
    "index": 273,
    "locid": 3598277119,
    "name": "CYBERSTAN",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_cyberstan"
+   "setup": "arctic_cyberstan",
+   "x": -0.4384,
+   "y": 0.6977
   },
   {
    "biome": "oasis",
+   "game_index": 270,
    "index": 274,
    "locid": 2509277034,
    "name": "FRONTERIA",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": 0.502,
+   "y": 0.209
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 275,
    "locid": 2875027973,
    "name": "HETT",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 276,
    "locid": 867908736,
    "name": "WORTHY I",
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": "forest_coniferous_base"
+   "setup": "forest_coniferous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 277,
    "locid": 520511467,
    "name": "PINE TAR",
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": "forest_coniferous_base"
+   "setup": "forest_coniferous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 278,
    "locid": 3331938550,
    "name": "LONE",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 279,
    "locid": 3150403879,
    "name": "PEONY",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 280,
    "locid": 3430946630,
    "name": "CALEFACTORIA",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": 268,
    "index": 281,
    "locid": 2834895362,
    "name": "LUXURIANT",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": 0.874,
+   "y": -0.07
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 282,
    "locid": 3461599670,
    "name": "SERENDIPITY XI",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_autumn"
+   "setup": "forest_deciduous_autumn",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 283,
    "locid": 2944028248,
    "name": "BANKABILITY",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 284,
    "locid": 2106060099,
    "name": "ARGENTIS",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 285,
    "locid": 2701211260,
    "name": "PROBARE",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 286,
    "locid": 1994078506,
    "name": "CYGNIA III",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 287,
    "locid": 3005334329,
    "name": null,
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 288,
    "locid": 3689757614,
    "name": "COLUMBIDAE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 289,
    "locid": 1083476041,
    "name": "PIPIONEM",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 290,
    "locid": 3512800577,
    "name": "SUPERIORIA LV",
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": "forest_coniferous_base"
+   "setup": "forest_coniferous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 291,
    "locid": 3835584257,
    "name": "TANDEM",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 292,
    "locid": 2578681002,
    "name": "RETRIBUTARY",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 293,
    "locid": 3975465670,
    "name": "DEFENSIBLE",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 294,
    "locid": 702284474,
    "name": "WATCHDOG 5",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 295,
    "locid": 4164526636,
    "name": "AQUILA XXXII",
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": "forest_coniferous_base"
+   "setup": "forest_coniferous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 296,
    "locid": 3249246944,
    "name": "ELIGIBLE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 297,
    "locid": 965162446,
    "name": "PROBABILITY",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 298,
    "locid": 2552540432,
    "name": "LINK B",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 299,
    "locid": 1626212068,
    "name": "HOPEFUL",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "magma",
+   "game_index": null,
    "index": 300,
    "locid": 2841221522,
    "name": "BICEP",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "magma",
+   "game_index": null,
    "index": 301,
    "locid": 626417797,
    "name": "ADRENAL 8",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "magma",
+   "game_index": null,
    "index": 302,
    "locid": 1466635519,
    "name": "NEW WISDOM",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "magma",
+   "game_index": 264,
    "index": 303,
    "locid": 1508181823,
    "name": "NEW INSIGHT",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": 0.0,
+   "y": 0.0
   },
   {
    "biome": "oasis",
+   "game_index": 267,
    "index": 304,
    "locid": 1795971311,
    "name": "BIG ROCK",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": 0.944,
+   "y": 0.099
   },
   {
    "biome": "magma",
+   "game_index": 265,
    "index": 305,
    "locid": 664680323,
    "name": "WAYWARD",
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": "desert_magma_base"
+   "setup": "desert_magma_base",
+   "x": 0.0,
+   "y": 0.0
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 306,
    "locid": 2868446843,
    "name": "TERRENE",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 307,
    "locid": 2757180352,
    "name": "ARABILITY",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_autumn"
+   "setup": "forest_deciduous_autumn",
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 308,
    "locid": 3886945884,
    "name": "FAMILY-FRIEND",
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": "forest_coniferous_base"
+   "setup": "forest_coniferous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 309,
    "locid": 2423584147,
    "name": "NASCENCE",
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": "forest_coniferous_base"
+   "setup": "forest_coniferous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 310,
    "locid": 3275461478,
    "name": "FLEDGE",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 311,
    "locid": 3632688076,
    "name": "SAMMELSURIUM",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 312,
    "locid": 2562342867,
    "name": "BALLOT",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 313,
    "locid": 3019919758,
    "name": "RESILIENCE",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 314,
    "locid": 1287745099,
    "name": "GILE",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_autumn"
+   "setup": "forest_deciduous_autumn",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 315,
    "locid": 2755209388,
    "name": "LAMB'S PATCH",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 316,
    "locid": 574108092,
    "name": "FRAKENEERIA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 317,
    "locid": 2901609208,
    "name": "SHIRAHAMA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 318,
    "locid": 833603519,
    "name": "ANDWELL",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 319,
    "locid": 2075913385,
    "name": "LYNX LYNX",
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": "forest_coniferous_base"
+   "setup": "forest_coniferous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 320,
    "locid": 3158883809,
    "name": "ALMINA IV",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 321,
    "locid": 2960440287,
    "name": "AUSPICE",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 322,
    "locid": 2765000052,
    "name": "RAYSTING",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 323,
    "locid": 3502399096,
    "name": "NOSSER",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 324,
    "locid": 2838153097,
    "name": "SATELLARIA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 325,
    "locid": 4255508129,
    "name": "DOUBLET II",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 326,
    "locid": 2586492531,
    "name": "GENERATION",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 327,
    "locid": 3118616277,
    "name": "CIVILITY",
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": "forest_coniferous_base"
+   "setup": "forest_coniferous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 328,
    "locid": 3349220266,
    "name": "SCUTUM CANIS LUPUS",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 329,
    "locid": 1962923154,
    "name": "LOGISTICAE",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 330,
    "locid": 462740898,
    "name": "STOLTHET",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 331,
    "locid": 746457430,
    "name": "AVILA",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 332,
    "locid": 467156125,
    "name": "MANDILARIA",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 333,
    "locid": 3756969656,
    "name": "EMBOLD",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": 272,
    "index": 334,
    "locid": 1657112894,
    "name": "BASQUINE VIII",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_autumn"
+   "setup": "forest_deciduous_autumn",
+   "x": 0.272,
+   "y": -0.775
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 335,
    "locid": 4185462613,
    "name": "LAMBAST",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 336,
    "locid": 62844138,
    "name": "THRASH IV",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 337,
    "locid": 2497327335,
    "name": "MIQÉ",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 338,
    "locid": 276813339,
    "name": "TOR E",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 339,
    "locid": 153780622,
    "name": "PHANTOM 1",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 340,
    "locid": 2047661864,
    "name": "SPOYLE",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 341,
    "locid": 4165395098,
    "name": "WILE",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": 269,
    "index": 342,
    "locid": 803894884,
    "name": "BRILLIANCE",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": 0.341,
+   "y": 0.323
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 343,
    "locid": 2065952231,
    "name": null,
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 344,
    "locid": 3746837729,
    "name": "PIEA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 345,
    "locid": 3050699459,
    "name": "HUSARIA",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 346,
    "locid": 2505794238,
    "name": "OSTEHOVEL",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 347,
    "locid": 572820359,
    "name": "MINERVA",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": 271,
    "index": 348,
    "locid": 2351373725,
    "name": "ZYGOS",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": 0.388,
+   "y": 0.211
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 349,
    "locid": 3761101242,
    "name": null,
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 350,
    "locid": 2042495118,
    "name": "PESTIS",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 351,
    "locid": 3940422141,
    "name": "AMITTERE",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 352,
    "locid": 2111649283,
    "name": "VINGE",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 353,
    "locid": 3169978199,
    "name": null,
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 354,
    "locid": 126536216,
    "name": "KORV",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 355,
    "locid": 2111845990,
    "name": "CONLON COLONY",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_blue"
+   "setup": "forest_primordial_blue",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 356,
    "locid": 2694605575,
    "name": "DEECON",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_spiky"
+   "setup": "desert_sandy_spiky",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 357,
    "locid": 332181063,
    "name": "SVITJOD",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 358,
    "locid": 2891419140,
    "name": null,
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_mineral"
+   "setup": "desert_sandy_mineral",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 359,
    "locid": 2648074741,
    "name": "VACCA",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 360,
    "locid": 3225533687,
    "name": "OTUR",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_acid"
+   "setup": "desert_sandy_acid",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": 99,
    "index": 361,
    "locid": 3251726327,
    "name": "SANGIS",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_autumn"
+   "setup": "forest_deciduous_autumn",
+   "x": -0.156,
+   "y": -0.756
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 362,
    "locid": 3570922568,
    "name": "SIRIUS II",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 363,
    "locid": 532417488,
    "name": "HAMMARBY",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 364,
    "locid": 1788879704,
    "name": "MOMO-1",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 365,
    "locid": 3904473600,
    "name": "LINDOME",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 366,
    "locid": 3476251425,
    "name": "BOHUS",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 367,
    "locid": 1823593404,
    "name": "NIBIRU",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 368,
    "locid": 2181856792,
    "name": "GUNNAR",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_moon"
+   "setup": "desert_sandy_moon",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 369,
    "locid": 3672376337,
    "name": null,
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 370,
    "locid": 514325094,
    "name": "URECTEM",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 371,
    "locid": 1578792227,
    "name": "MÖNSTERÅS II",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 372,
    "locid": 2217667642,
    "name": "MONHEIM",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 373,
    "locid": 2322307250,
    "name": "DUNOONIA",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_autumn"
+   "setup": "forest_deciduous_autumn",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 374,
    "locid": 1209685887,
    "name": "PAYONG",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 375,
    "locid": 696771573,
    "name": "PENNYBRIDGE",
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": "forest_coniferous_base"
+   "setup": "forest_coniferous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 376,
    "locid": 3170157393,
    "name": "UNKNOWN SYSTEM",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_base"
+   "setup": "forest_primordial_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 377,
    "locid": 4218892298,
    "name": "UNREGISTERED SYSTEM",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_purple"
+   "setup": "forest_primordial_purple",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 378,
    "locid": 770494850,
    "name": "UNMAPPED SYSTEM",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 379,
    "locid": 4142342788,
    "name": "RUINED SYSTEM",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 380,
    "locid": 1755828576,
    "name": "ANOMALOUS SYSTEM",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_base"
+   "setup": "arctic_glacier_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 381,
    "locid": 3335590414,
    "name": "CONCEALED SYSTEM",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 382,
    "locid": 2642562384,
    "name": "E-710-RICH SYSTEM",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_tundra"
+   "setup": "forest_moor_tundra",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 383,
    "locid": 376974669,
    "name": "ANNIHILATED SYSTEM",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_red"
+   "setup": "forest_moor_red",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 384,
    "locid": 1186649585,
    "name": "VITAL SYSTEM",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_base"
+   "setup": "forest_moor_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 385,
    "locid": 1009772021,
    "name": "UNINHABITABLE SYSTEM",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": "desert_sandy_base"
+   "setup": "desert_sandy_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 386,
    "locid": 2951703094,
    "name": "UVP ALPHA",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_crimson"
+   "setup": "forest_deciduous_crimson",
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 387,
    "locid": 3749126267,
    "name": "UVP BETA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": "forest_primordial_dead"
+   "setup": "forest_primordial_dead",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 388,
    "locid": 3227753500,
    "name": "UVP GAMMA",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_bleak"
+   "setup": "desert_oasis_bleak",
+   "x": null,
+   "y": null
   },
   {
    "biome": "swamp",
+   "game_index": null,
    "index": 389,
    "locid": 1019995927,
    "name": "UVP DELTA",
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": "forest_swamp_haunted"
+   "setup": "forest_swamp_haunted",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 390,
    "locid": 1604928185,
    "name": null,
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 391,
    "locid": 1456447933,
    "name": null,
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 392,
    "locid": 3845731348,
    "name": null,
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "bug_hiveworld",
+   "game_index": null,
    "index": 393,
    "locid": 1062854722,
    "name": null,
    "planet_type": 11,
    "region": "region_bug_hiveworld",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "magma",
+   "game_index": null,
    "index": 394,
    "locid": 732684243,
    "name": null,
    "planet_type": 12,
    "region": "region_magma",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 395,
    "locid": 2826663161,
    "name": null,
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 396,
    "locid": 361265911,
    "name": null,
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 397,
    "locid": 1677458696,
    "name": null,
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 398,
    "locid": 3910357461,
    "name": null,
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 399,
    "locid": 1910794469,
    "name": null,
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 400,
    "locid": 3510879116,
    "name": null,
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 401,
    "locid": 2562535002,
    "name": null,
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 402,
    "locid": 2878888192,
    "name": null,
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "coniferous",
+   "game_index": null,
    "index": 403,
    "locid": 1279530990,
    "name": null,
    "planet_type": 15,
    "region": "region_coniferous",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 404,
    "locid": 4215810711,
    "name": null,
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 405,
    "locid": 4145041650,
    "name": null,
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 406,
    "locid": 1241569666,
    "name": null,
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 407,
    "locid": 2863039880,
    "name": null,
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 408,
    "locid": 592938292,
    "name": null,
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 409,
    "locid": 1160562414,
    "name": null,
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 410,
    "locid": 2888778618,
    "name": null,
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 411,
    "locid": 563822264,
    "name": null,
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 412,
    "locid": 3092832165,
    "name": "MERIDIA",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 413,
    "locid": 382288955,
    "name": null,
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 414,
    "locid": 3698893031,
    "name": null,
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 415,
    "locid": 3730173571,
    "name": null,
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "rift",
+   "game_index": null,
    "index": 416,
    "locid": 3262397523,
    "name": null,
    "planet_type": 16,
    "region": "region_rift",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "swamp",
+   "game_index": null,
    "index": 417,
    "locid": 196805532,
    "name": null,
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "swamp",
+   "game_index": null,
    "index": 418,
    "locid": 2087568996,
    "name": null,
    "planet_type": 6,
    "region": "region_swamp",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "superearth",
+   "game_index": null,
    "index": 419,
    "locid": 437720334,
    "name": null,
    "planet_type": 10,
    "region": "region_superearth",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "sandy",
+   "game_index": null,
    "index": 420,
    "locid": 2591249663,
    "name": "UNDISCLOSED LOCATION",
    "planet_type": 3,
    "region": "region_sandy",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "primordial",
+   "game_index": null,
    "index": 421,
    "locid": 2591249663,
    "name": "UNDISCLOSED LOCATION",
    "planet_type": 8,
    "region": "region_primordial",
    "settings_hash": null,
-   "setup": null
+   "setup": null,
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 422,
    "locid": 2538761587,
    "name": "DEV_01",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_autumn"
+   "setup": "forest_deciduous_autumn",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 423,
    "locid": 3145142931,
    "name": "DEV_02",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 424,
    "locid": 3408611967,
    "name": "DEV_03",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 425,
    "locid": 2124371897,
    "name": "DEV_04",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_autumn"
+   "setup": "forest_deciduous_autumn",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 426,
    "locid": 785130403,
    "name": "DEV_05",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 427,
    "locid": 652324972,
    "name": "DEV_06",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_base"
+   "setup": "desert_oasis_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 428,
    "locid": 3354959658,
    "name": "DEV_07",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_crimson"
+   "setup": "forest_deciduous_crimson",
+   "x": null,
+   "y": null
   },
   {
    "biome": "deciduous",
+   "game_index": null,
    "index": 429,
    "locid": 3573666373,
    "name": "DEV_08",
    "planet_type": 14,
    "region": "region_deciduous",
    "settings_hash": null,
-   "setup": "forest_deciduous_base"
+   "setup": "forest_deciduous_base",
+   "x": null,
+   "y": null
   },
   {
    "biome": "oasis",
+   "game_index": null,
    "index": 430,
    "locid": 1604430375,
    "name": "DEV_09",
    "planet_type": 13,
    "region": "region_oasis",
    "settings_hash": null,
-   "setup": "desert_oasis_bleak"
+   "setup": "desert_oasis_bleak",
+   "x": null,
+   "y": null
   },
   {
    "biome": "rift",
+   "game_index": null,
    "index": 431,
    "locid": 711960853,
    "name": "VOID SOURCE PLANET",
    "planet_type": 16,
    "region": "region_rift",
    "settings_hash": null,
-   "setup": "forest_rift_active"
+   "setup": "forest_rift_active",
+   "x": null,
+   "y": null
   },
   {
    "biome": "bug_hiveworld",
+   "game_index": null,
    "index": 432,
    "locid": 3823174181,
    "name": null,
    "planet_type": 11,
    "region": "region_generation_testing",
    "settings_hash": null,
-   "setup": "bug_hiveworld"
+   "setup": "bug_hiveworld",
+   "x": null,
+   "y": null
   },
   {
    "biome": "moor",
+   "game_index": null,
    "index": 433,
    "locid": 771961394,
    "name": "HELLMIRE",
    "planet_type": 9,
    "region": "region_moor",
    "settings_hash": null,
-   "setup": "forest_moor_arid"
+   "setup": "forest_moor_arid",
+   "x": null,
+   "y": null
   },
   {
    "biome": "bug_hiveworld",
+   "game_index": null,
    "index": 434,
    "locid": 1062854722,
    "name": null,
    "planet_type": 11,
    "region": "region_bug_hiveworld",
    "settings_hash": null,
-   "setup": "bug_hiveworld"
+   "setup": "bug_hiveworld",
+   "x": null,
+   "y": null
   },
   {
    "biome": "bug_hiveworld",
+   "game_index": null,
    "index": 435,
    "locid": 1062854722,
    "name": null,
    "planet_type": 11,
    "region": "region_bug_hiveworld",
    "settings_hash": null,
-   "setup": "bug_hiveworld"
+   "setup": "bug_hiveworld",
+   "x": null,
+   "y": null
   },
   {
    "biome": "bug_hiveworld",
+   "game_index": null,
    "index": 436,
    "locid": 1062854722,
    "name": null,
    "planet_type": 11,
    "region": "region_bug_hiveworld",
    "settings_hash": null,
-   "setup": "bug_hiveworld"
+   "setup": "bug_hiveworld",
+   "x": null,
+   "y": null
   },
   {
    "biome": "arctic",
+   "game_index": null,
    "index": 437,
    "locid": 212590513,
    "name": "TIEN KWAN",
    "planet_type": 2,
    "region": "region_arctic",
    "settings_hash": null,
-   "setup": "arctic_glacier_coldrocky"
+   "setup": "arctic_glacier_coldrocky",
+   "x": null,
+   "y": null
   }
  ]
 }

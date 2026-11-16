@@ -460,6 +460,12 @@ def build_parser():
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    # engine / selftest / gate 是「转发型」命令：要把后续参数原样交给子命令（引擎/脚本）。
+    # 不能靠 argparse 的 REMAINDER —— 它以 `--` 开头的参数会在本轮就被 argparse 当成未知选项
+    # 报错（M4 实测：`hd2proxy engine --profile X` 直接 usage error）。
+    if argv and argv[0] in ("engine", "selftest", "gate"):
+        handler = {"engine": cmd_engine, "selftest": cmd_selftest, "gate": cmd_gate}[argv[0]]
+        return handler(argparse.Namespace(cmd=argv[0], rest=argv[1:]))
     if not argv or argv[0] in ("-h", "--help"):
         build_parser().print_help()
         return OK if argv else 2

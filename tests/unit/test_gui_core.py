@@ -35,6 +35,13 @@ def test_catalogs_load_and_query():
     # 效果 / 星球 / 物品
     assert "1346" in cat.effect_label(1346)
     assert cat.planet_label(100).startswith("100 ·")
+    # 行号 ≠ 游戏索引：planets.json 的 index 是 planet_data 行，选择器/写 profile 用 game_index
+    assert len(cat.game_planets) >= 250
+    assert cat.planet_row(76).get("name") == "TERREK"          # 行 79 的游戏索引是 76
+    assert cat.planet_row(76).get("game_index") is None or int(cat.planet_row(76)["game_index"]) == 76
+    names = dict(cat.planet_entries())
+    assert 76 in names and "TERREK" in names[76]
+    assert 100 in names and "TRANDOR" in names[100]
     hits = cat.search_items("everlasting")
     assert hits and "Everlasting" in hits[0][1]
     entries = cat.variant_entries()

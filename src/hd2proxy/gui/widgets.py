@@ -81,15 +81,28 @@ class SearchList(tk.Frame):
 
 
 class PlanetPicker(tk.Frame):
-    """星球选择器：下拉 + 可选文本过滤（catalogs.planets 为空时退化为手填 index）。"""
+    """星球选择器：下拉 + 可选文本过滤（catalogs.planets 为空时退化为手填 index）。
+
+    下拉值 = **游戏索引**（引擎/Status 用的编号），不是 planet_data 行号 —— 两者偏移不是常数。
+    旧目录没有 game_index 时退回行号（并在标签里保持一致，避免半新半旧）。
+    """
 
     def __init__(self, parent, catalogs, width=34):
         super().__init__(parent, bg=theme.PANEL)
         self.catalogs = catalogs
         self._labels = []
         self._index_of = {}
-        for p in catalogs.planets:
-            idx = int(p.get("index"))
+        rows = getattr(catalogs, "game_planets", None) or catalogs.planets
+        for p in rows:
+            idx = p.get("game_index")
+            if idx is None:
+                idx = p.get("index")
+            if idx is None:
+                continue
+            try:
+                idx = int(idx)
+            except (TypeError, ValueError):
+                continue
             name = p.get("name") or "?"
             biome = p.get("biome") or "?"
             label = "%d · %s (%s)" % (idx, name, biome)

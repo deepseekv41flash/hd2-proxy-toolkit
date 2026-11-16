@@ -32,12 +32,21 @@ class Catalogs:
             except (TypeError, ValueError):
                 continue
         self.planets = self._load("planets", default={}).get("items") or []
-        self._planet_by_index = {}
+        self._planet_by_index = {}          # planet_data **行号** -> row（离线资料）
+        self._planet_by_game_index = {}     # 游戏索引 -> row（写 profile / 调引擎用这个）
+        self.game_planets = []
         for p in self.planets:
             try:
                 self._planet_by_index[int(p.get("index"))] = p
             except (TypeError, ValueError):
+                pass
+            try:
+                game_index = int(p.get("game_index"))
+            except (TypeError, ValueError):
                 continue
+            self._planet_by_game_index[game_index] = p
+            self.game_planets.append(p)
+        self.game_planets.sort(key=lambda p: int(p.get("game_index")))
         self.items = self._load("items", default={}).get("items") or []
         self._item_by_mix = {}
         for it in self.items:
@@ -133,13 +142,38 @@ class Catalogs:
         name = e.get("name") or e.get("display_name") or "?"
         return "%s · %s" % (eid, name)
 
+    def planet_row(self, game_index):
+        """游戏索引 -> planet_data 行（含 name/biome/坐标）；找不到返回 {}。
+
+        ⚠ 行号 ≠ 游戏索引：`planets.json` 的 `index` 是 planet_data 行号，
+        引擎/Status 用的是 game_index（M4 实机踩坑，详见 data/catalogs/README.md）。
+        """
+        try:
+            return self._planet_by_game_index.get(int(game_index)) or {}
+        except (TypeError, ValueError):
+            return {}
+
     def planet_label(self, index):
-        p = self._planet_by_index.get(int(index) if str(index).isdigit() else -1) or {}
+        p = self.planet_row(index)
+        if not p:
+            try:
+                p = self._planet_by_index.get(int(index)) or {}
+            except (TypeError, ValueError):
+                p = {}
         return "%s · %s (%s)" % (index, p.get("name") or "?", p.get("biome") or "?")
 
     def planet_entries(self):
-        return [(int(p.get("index")), self.planet_label(p.get("index")))
-                for p in self.planets if p.get("index") is not None]
+        """选择器用：[(游戏索引, 标签)]；旧目录（无 game_index）退回行号。"""
+        rows = self.game_planets or self.planets
+        out = []
+        for p in rows:
+            key = p.get("game_index")
+            if key is None:
+                key = p.get("index")
+            if key is None:
+                continue
+            out.append((int(key), self.planet_label(key)))
+        return out
 
     def item_label(self, mix_id):
         it = self._item_by_mix.get(int(mix_id) if str(mix_id).isdigit() else -1) or {}

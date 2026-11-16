@@ -31,7 +31,8 @@ def _tls_get(listen_ip, port, host, path, cafile, timeout=15.0):
     raw = socket.create_connection((listen_ip, port), timeout=timeout)
     tls = ctx.wrap_socket(raw, server_hostname=host)
     try:
-        req = ("GET %s HTTP/1.1\r\nHost: %s\r\nAccept: */*\r\n"
+        req = ("GET %s HTTP/1.1\r\nHost: %s\r\nAccept: application/json\r\n"
+               "Accept-Language: en-US\r\n"
                "User-Agent: hd2proxy-verify\r\nConnection: close\r\n\r\n" % (path, host))
         tls.sendall(req.encode())
         buf = b""
