@@ -1,0 +1,44 @@
+{
+ "version": "0.0.1",
+ "pid": 40152,
+ "uptime_seconds": 1.7,
+ "host": "api.live.prod.thehelldiversgame.com",
+ "listen_ip": "100.67.169.17",
+ "port": 63460,
+ "crl_port": 63461,
+ "mode": "rewrite",
+ "profile": "演示配置",
+ "profile_path": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-i6xpod14\\profile.json",
+ "control_port": 63462,
+ "stats": {
+  "tls": 0,
+  "req": 0,
+  "deny": 0,
+  "rewrite": 0
+ },
+ "cert": {
+  "cert_dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-i6xpod14\\certs",
+  "exists": true,
+  "mode": "ca",
+  "host": "api.live.prod.thehelldiversgame.com",
+  "san": [
+   "api.live.prod.thehelldiversgame.com"
+  ],
+  "not_after": "2026-11-17T12:25:14+00:00",
+  "remaining_hours": 24.0,
+  "thumbprint": "0408C89A80AB7AC9F1B339DC23FC40F66B81F0C7",
+  "trust_subject": "CN=HD2 Variant Mod Session CA",
+  "usable": true,
+  "warnings": []
+ },
+ "planets": [],
+ "capture": {
+  "enabled": true,
+  "dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-i6xpod14\\captures",
+  "paths": [
+   "api/"
+  ]
+ },
+ "rewrites": [],
+ "log": "D:\\mod\\work\\hd2-proxy-toolkit\\logs\\proxy.log"
+}

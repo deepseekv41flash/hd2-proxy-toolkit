@@ -3,6 +3,7 @@
 设计：GUI（M2）只是这些能力的图形壳，**所有动作都能在命令行完成**，便于脚本、CI 与排障。
 
 常用：
+  python -m hd2proxy gui                              # 打开图形界面（M2）
   python -m hd2proxy info                             # 版本与路径
   python -m hd2proxy profils                          # 见 profiles
   python -m hd2proxy profiles list                    # 列出本机 profile
@@ -320,6 +321,22 @@ def cmd_verify(a):
     return OK if result.get("ok") else FAIL
 
 
+def cmd_gui(a):
+    """打开图形界面（Tk）。GUI 只是控制面客户端，关窗不会停引擎。"""
+    import tkinter as tk
+
+    from hd2proxy.gui.app import App
+    try:
+        root = tk.Tk()
+    except tk.TclError as e:
+        print("无法创建窗口（无图形环境？）：%r" % (e,))
+        return FAIL
+    profile = Path(a.profile) if a.profile else None
+    App(root, profile_path=profile)
+    root.mainloop()
+    return OK
+
+
 def cmd_shutdown(a):
     try:
         _out(_api("/shutdown", method="POST", body={}, url=a.url, token=a.token))
@@ -337,6 +354,9 @@ def build_parser():
                                  description="HD2 本机代理工具箱（M1 CLI）")
     ap.add_argument("--version", action="store_true")
     sub = ap.add_subparsers(dest="cmd")
+
+    p = sub.add_parser("gui", help="打开图形界面（Tk；控制面客户端）")
+    p.add_argument("--profile", default="", help="profile 文件路径（默认 state 目录下的 default）")
 
     sub.add_parser("info", help="版本与路径")
 
@@ -414,6 +434,7 @@ def main(argv=None):
         "gate": cmd_gate, "profiles": cmd_profiles, "migrate": cmd_migrate,
         "certs": cmd_certs, "install": cmd_install, "uninstall": cmd_uninstall,
         "status": cmd_status, "verify": cmd_verify, "shutdown": cmd_shutdown,
+        "gui": cmd_gui,
     }[a.cmd]
     return handler(a)
 
