@@ -1,0 +1,11 @@
+{
+ "host": "api.live.prod.thehelldiversgame.com",
+ "listenIp": "100.67.169.17",
+ "port": 443,
+ "crlPort": 8080,
+ "upstreamIp": "",
+ "passthrough": false,
+ "verbose": true,
+ "allowDevFlags": false,
+ "targets": []
+}
