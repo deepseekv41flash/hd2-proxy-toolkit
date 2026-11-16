@@ -1,0 +1,120 @@
+{
+ "capture": {
+  "dir": "",
+  "enabled": false,
+  "max_bytes": 8388608,
+  "paths": [
+   "api/"
+  ],
+  "planet_settings": false,
+  "req_paths": []
+ },
+ "cert": {
+  "auto_renew": true,
+  "days": 2,
+  "min_remaining_hours": 12.0
+ },
+ "experimental": {
+  "customize": {
+   "edits": [],
+   "enabled": false
+  }
+ },
+ "inventory": {
+  "attachments": [],
+  "cosmetics": [],
+  "customization": [],
+  "probe": [],
+  "remove": [],
+  "stratagems": [],
+  "weapons": [
+   {
+    "amount": 1,
+    "isDiscovered": false,
+    "mixId": 2112173638
+   },
+   {
+    "amount": 1,
+    "isDiscovered": false,
+    "mixId": 3388344762
+   },
+   {
+    "amount": 1,
+    "isDiscovered": false,
+    "mixId": 1934208922
+   },
+   {
+    "amount": 1,
+    "isDiscovered": false,
+    "mixId": 2870692210
+   }
+  ]
+ },
+ "items": {
+  "add": [
+   {
+    "id": 2112173638,
+    "template": 3866352840
+   },
+   {
+    "id": 3388344762,
+    "template": 2811723672
+   },
+   {
+    "id": 1934208922,
+    "template": 2852344585
+   },
+   {
+    "id": 2870692210,
+    "template": 3866352840
+   }
+  ],
+  "template": 3866352840
+ },
+ "name": "M4-A 五项（实机通过）",
+ "proxy": {
+  "control_port": 17897,
+  "crl_port": 8080,
+  "host": "api.live.prod.thehelldiversgame.com",
+  "listen_ip": "auto",
+  "passthrough": false,
+  "port": 443,
+  "verbose": false
+ },
+ "schema": 2,
+ "status": {
+  "attacks": [],
+  "campaigns": [],
+  "events": [],
+  "globalEffects": {
+   "1501107": [
+    1346
+   ]
+  },
+  "owner": {},
+  "planet_effects": [
+   {
+    "ids": [
+     1243,
+     1245
+    ],
+    "index": 215
+   }
+  ],
+  "planet_infos": [],
+  "planet_nodes": [],
+  "regions": [],
+  "trials": [
+   1227,
+   1263
+  ],
+  "trials_planet": 76,
+  "variants": []
+ },
+ "warinfo": {
+  "planet_infos": [],
+  "settings_hash": {
+   "100": 721718208
+  }
+ }
+}

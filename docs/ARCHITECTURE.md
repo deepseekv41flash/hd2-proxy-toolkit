@@ -187,7 +187,40 @@ profile (schema v2)
 | 核心 6 | 变种词条 / 全局效果 / 战备试用 / 物品解锁 / 休眠星四件套 / 生态借用 |
 | 延后 3 | 防守战役 / 城市分区 / L2 改装（`deferred=True`，带 `evidence`，GUI 折叠区展示） |
 | 契约 | `apply(profile, planet=None) -> list[str] notes`：只改内存 profile、幂等、不落盘不调引擎 |
-| 值来源 | 研究线与黄金回归里记录的原值（如 settingsHash 2995599666 / 694418289、campaign 51999、effect 1346），不编造 |
+| 值来源 | 研究线与 M4 实机验证过的原值（BICEP settingsHash 2995599666、落叶林 721718208、campaign 51999、effect 1346、模板 itemId 3866352840 等），不编造 |
 
 战备试用在 M3 补了 `status.trials_planet`：试用是「按星球下发」的，之前「只有 trials 没有变种」
 的 profile 会被 `build_status_plan` 静默丢成空计划；现在可以单独指定星球生效（模板自动写入）。
+
+## 10. 星球索引与身份（M4 实机踩坑，产品必须遵守）
+
+三套编号不能混用：
+
+| 编号 | 来源 | 用途 |
+|---|---|---|
+| **行号** `index` | `planet_data` 表行（438 行，名字字母序） | 只用于回查离线资料（名称/生态/坐标）；**不能写进 profile** |
+| **游戏索引** `game_index` | 服务器 `Status`/`warinfo` 的 `planetStatus.index`（273 颗） | 写 profile（variants/planet_effects/trials_planet/owner/settings_hash）、引擎计划、星图节点 |
+| **节点号**（休眠星自定义） | 无游戏索引的星球（165 行） | 四件套 `index` 自选，如 BICEP=300 |
+
+映射来源：`repo-datamined/out/planet/index-names-801.json`（`warinfo planetInfos + planet_data tail
+hashmap` 对齐），`tools/gen_catalogs.py` 按 `row` 合并进 `data/catalogs/planets.json`：
+
+- 行号 ≠ 游戏索引，偏移不是常数（行 79 = TERREK = 游戏 76；行 180 = GACRUX = 游戏 171）；
+- GUI 选择器/写 profile 一律用 `game_index`，`data/catalogs/README.md` 有完整说明；
+- **星球身份由 `settingsHash` 决定**（星图名字/生态/地形），不是 index：
+  拿错行的 hash 会把节点显示成另一颗星（M4 实机：300 号注 TRANDOR 的 hash → 显示 BALDRICK PRIME）；
+  生态借用把 A 星 hash 写到 B 星后，B 星的**名字也会变成 A 星**（预期副作用，不是 bug）；
+- 休眠星带 `waypoints`（就近游戏索引，如 `[180,7]`）星图才有连线；`initialOwner`/`planet_nodes.owner`/
+  `owner` 三处要一致；
+- 变种词条两条通道：`status.variants`（按 owner 过滤，语义正确）与 `status.planet_effects`
+  （原始通道，绕过滤，客户端照样渲染；M4 实机在人类星/虫族星都通过）。靶星必须**有战役可点**，
+  否则星图卡面打不开。
+
+## 11. 抓包（capture）的作用域（M4 观察）
+
+`hooks/capture.py` 在钩子链里保存的是**改写前**的原始响应（`gwe-dump` 日志 + 文件），
+不是改写后的 body。因此：
+
+- 抓包原件用于「服务端原始数据 / 请求路径 / 目录结构」分析；
+- 改写证据看 `logs/proxy.log` 的 `REWRITE*` 行 + 游戏内观察；
+- v0.2 若需要 post-rewrite 证据，可在钩子链末尾另存一份（注意别把账号字段落盘）。

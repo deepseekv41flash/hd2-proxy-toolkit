@@ -8,19 +8,21 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：M3 完成（2026-11-16）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
-> + **Tk GUI 五页** + **6 项能力模板 + 离线预演**（不开游戏就能看到会改什么）全部落地，
-> **293 个单元测试 + 5 个离线自检全绿**；打包在 M5。
+> **当前状态：M4 完成（2026-11-16）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
+> （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
+> **297 个单元测试 + 5 个离线自检全绿**；打包在 M5。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
 > [物品与战备](research/screenshots/gui-inventory.png) ｜ [抓包与日志](research/screenshots/gui-capture.png) ｜
-> [设置](research/screenshots/gui-settings.png)
+> [设置](research/screenshots/gui-settings.png) ｜
+> [M4 实机：PARTION 出 PREDATOR STRAIN](research/screenshots/m4-partion-predator-strain.png)
 
 ## 现在能做什么
 
 ```bash
 python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
 set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
-python tools/check_gate.py                  # 门禁：语法 + 路径 + 293 单测 + 5 个离线自检
+python tools/check_gate.py                  # 门禁：语法 + 路径 + 297 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
@@ -50,14 +52,14 @@ python src/hd2proxy/engine/legacy_proxy.py --config data/legacy/config.example.j
 
 ## v0.1 能力范围（6 项核心）
 
-| # | 能力 | 验证状态（研究线） | 落点 |
+| # | 能力 | 验证状态（研究线 + M4 实机） | 落点 |
 |---|---|---|---|
-| 1 | 变种词条（tag + mechanic 成对） | ✓ 实机 | 战况 · 变种卡 / 「变种词条试用」模板 |
-| 2 | 全局效果（GWE type94） | ✓ 实机 | 战况 · 全局效果卡 / 「全局效果试用」模板 |
-| 3 | 战备试用（type32，≤3） | ✓ 实机 | 「战备试用」模板（`status.trials` + `trials_planet`） |
-| 4 | 物品解锁（武器/配件/外观 + 目录上架） | ✓ 实机 | 物品 · 各分类 / 「物品解锁」模板 |
-| 5 | 休眠星可玩化（planetInfo + 节点 + 战役 + 归属） | ✓ 实机 | 战况 · 休眠星卡 / 「休眠星可玩化」模板 |
-| 6 | 生态借用（`settingsHash`） | ✓ 实机 | 战况 · 生态卡 / 「生态借用」模板 |
+| 1 | 变种词条（tag + mechanic 成对） | ✓✓ M4 实机 | 战况 · 变种卡 / 「变种词条试用」模板 |
+| 2 | 全局效果（GWE type94） | ✓✓ M4 实机 | 战况 · 全局效果卡 / 「全局效果试用」模板 |
+| 3 | 战备试用（type32，≤3） | ✓✓ M4 实机 | 「战备试用」模板（`status.trials` + `trials_planet`） |
+| 4 | 物品解锁（武器/配件/外观 + 目录上架） | ✓✓ M4 实机 | 物品 · 各分类 / 「物品解锁」模板 |
+| 5 | 休眠星可玩化（planetInfo + 节点 + 战役 + 归属） | ✓✓ 研究实机结算 + M4 节点/连线 | 战况 · 休眠星卡 / 「休眠星可玩化」模板 |
+| 6 | 生态借用（`settingsHash`） | ✓✓ M4 实机 | 战况 · 生态卡 / 「生态借用」模板 |
 
 引擎侧保留研究线的全部钩子（防守战役、城市分区、L2 改装等）：它们收在战况页底部
 **「扩展 / 实验」折叠区**，每项标注验证状态、默认收起，v0.2 做正式 UI。
@@ -79,7 +81,7 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 ```
 src/hd2proxy/engine/                    引擎（server / 钩子 / 配置 / 证书 / 安装 / 控制面 / 离线预演 preview.py）
 src/hd2proxy/gui/                       Tk GUI：壳 + 5 页 + widgets + templates.py（能力模板）
-tests/unit/                             单元测试（293 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板）
+tests/unit/                             单元测试（297 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / CLI）
 tests/selftest*.py                      5 个脚本式离线自检（迁自研究线，仅改路径）
 tools/run_selftests.py                  自检总入口（独立证书/数据目录，GATE 判定）
 tools/check_gate.py                     门禁：语法 + 绝对路径 + pytest + 5 自检
@@ -89,6 +91,7 @@ tools/gui_smoke.py                      GUI 冒烟：起真引擎 + 假上游 �
 data/legacy/                            引擎兼容用的原始目录文件（逐字节复制）
 data/catalogs/                          规范化目录（变种/战备/效果/星球/物品/build 指纹）
 data/samples/                           离线预演的样本响应（真实抓包裁剪、无账号字段）
+data/acceptance/                        M4 实机验收配置（m4-a 五项 / m4-b 六项，可复现）
 research/                               技术选型实测脚本与结论（可复现）
 docs/                                   来源与哈希、架构说明
 ```
@@ -115,7 +118,7 @@ docs/                                   来源与哈希、架构说明
 | M1 | 引擎模块化 + schema v2 配置 + 控制 API + 安装/还原 + 自动续证 + 三连验收 | ✅ 2026-11-16 |
 | M2 | Tk GUI 骨架（5 页） | ✅ 2026-11-16 |
 | M3 | 6 项能力模板 + 离线预演 + 延后项折叠入口 | ✅ 2026-11-16 |
-| M4 | 实机逐项验收 | ⏳ 需要你开游戏 |
+| M4 | 实机逐项验收（6/6 PASS，见 docs/ACCEPTANCE-M4.md） | ✅ 2026-11-16 |
 | M5 | PyInstaller 打包 + 文档 + Release | ⏳ |
 
 ## 许可

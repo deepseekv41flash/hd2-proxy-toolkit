@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0 / M1 / M2 / M3 已完成（2026-11-16），M4 待你开游戏验收**
+> 起草 2026-11-16 ｜ 状态：**M0 / M1 / M2 / M3 / M4 已完成（2026-11-16），剩余 M5 打包发布**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -160,7 +160,7 @@ hd2-proxy-toolkit/
 | **M1 引擎+控制面** | 模块化拆分（17 模块）、schema v2、热重载、控制 API、install/uninstall（UAC 自提升）、自动续证、CRL；数据管道：`settings_hash` 走 live warinfo 导入 | 见 §10（213 单测 + 5 自检 + 整链路实测全绿） | 1.5 天 | ✅ **26 分 38 秒**（19:19→19:45） |
 | **M2 GUI 骨架** | Tk 壳 + 5 页 + 状态轮询 + schema 驱动表单 + 星球/效果搜索选择器（以原型为基线） | 见 §11（234 单测；5 页实拍；门禁 PASS） | 1.5 天 | ✅ **约 30 分钟**（19:56→20:26） |
 | **M3 6 项能力** | 6 张能力卡/模板 + 离线预演 + 扩展入口（延后项折叠标注） | 见 §12（293 单测；每项能力 ≥1 条离线预演用例；预演截图） | 1 天 | ✅ **约 25 分钟**（交接档 21:31 → 收尾 21:44，含一次上下文折叠轮） |
-| **M4 实机验收** | 进游戏逐项验证、修现场问题、记录日志证据 | 验收清单逐项 PASS（**需你开游戏配合**） | 0.5 天 | 我 ~**15–20 分钟** + 你 10–15 分钟；**受你与游戏可用性约束** |
+| **M4 实机验收** | 进游戏逐项验证、修现场问题、记录日志证据 | 见 §13 与 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)：**6/6 PASS** + 回读还原 | 0.5 天 | ✅ **约 80 分钟**（21:50→23:05；含 3 轮游戏内复核与 1 次 UAC 安装/还原） |
 | **M5 打包发布** | PyInstaller、README/使用说明/截图、v0.1.0 tag（远端按你意见再定） | 干净路径解压即用；安装→启动→验收→还原 全流程跑通 | 0.5 天 | ~**20–30 分钟**（校准） |
 
 关键路径：M0 → M1 →（M2/M3 可部分并行）→ M4 → M5。M4 必须你在场。
@@ -425,6 +425,49 @@ GATE=PASS
 - **休眠星模板带默认星 300（BICEP）**：坐标/hash 用研究线模板值，说明里明确「换 build 需抓 live warinfo 核对」。
 
 **剩余**：M4 实机逐项验收（需你开游戏，含真 install/uninstall）；M5 PyInstaller 打包 + 发布。
+
+---
+
+## 13. M4 实机交付记录（2026-11-16）
+
+**一句话**：v0.1 的 6 项核心能力在真实游戏里**逐项 PASS**；安装（UAC）→ 三连验证 → 游戏内验证 →
+uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 个真实问题当场修掉。
+完整证据见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)。
+
+| 能力 | 实机观察 | 结论 |
+|---|---|---|
+| 变种词条 | PARTION 卡面 `PREDATOR STRAIN`（截图 `research/screenshots/m4-partion-predator-strain.png`） | ✅ |
+| 全局效果 | 轨道加特林弹幕 → 燃烧版（事件 1501107 + effect 1346） | ✅ |
+| 战备试用 | 战备栏出现 MG-43 / M-105 | ✅ |
+| 物品解锁 | 军械库出现 P-41 / SG-8F / LAS-22 / LAS-13 TRIDENT（目录 +3、库存 +4） | ✅ |
+| 休眠星四件套 | BICEP 节点出现、有连线、可选中（结算见研究阶段 §6.3 前证） | ✅ |
+| 生态借用 | TRANDOR 落地落叶林（名字随 hash 变 UVP ALPHA，预期副作用） | ✅ |
+
+**前置链路**：证书签发（48h ca）→ 真安装 UAC（hosts + LocalMachine 根信任，回读 OK）→
+引擎 `rewrite` 模式 → 三连验证 3/3（Status 200 · 56,973 B 改写后响应）→ 当日 live Status/warinfo
+经 DoH 直连拉取用于挑靶星/预演对照。
+
+**M4 暴露并修掉的问题**
+
+| # | 问题 | 修复位置 |
+|---|---|---|
+| 1 | `planets.json` 的 `index` 是 planet_data 行号，写进 profile 后目标星全错 | `tools/gen_catalogs.py` 合并 `index-names-801.json` → 新增 `game_index`/`x`/`y`；GUI `catalogs.py`/`PlanetPicker` 一律用游戏索引 |
+| 2 | 休眠星显示成别的星（BALDRICK PRIME）、无连线 | settingsHash 决定星球身份 → 模板改 BICEP 自己的 `2995599666` + `waypoints=[180,7]` + owner 统一 2 |
+| 3 | 物品解锁不可见 | 模板改为「目录行 + 库存行成对」注入 |
+| 4 | `hd2proxy engine --profile X` 直接 usage error | `__main__.main()` 对 engine/selftest/gate 整体转发（argparse REMAINDER 不吞 `--` 参数） |
+| 5 | 三连验证 Status 检查 400（`Accept-Language` 缺失） | `verify._tls_get` 补真实客户端语言/内容头 |
+| 6 | 变种模板在人类星被阵营过滤 | 模板改走 `planet_effects` 原始通道；靶星必须「有战役可点」 |
+
+**还原**：停引擎 → `uninstall`（hosts −1 行、`certutil -delstore` rc=0、回读干净）→
+清理研究线遗留 `# variant-mod` 行（本工具只认 `# hd2proxy`）→ 最终 hosts 域名行 0、证书存储匹配 0、
+无残留监听；hosts 备份留 2 份。
+
+**已知限制（记入 docs/ACCEPTANCE-M4.md §5）**：抓包钩子保存的是**改写前**原始响应，
+改写证据以 `logs/proxy.log` 的 `REWRITE*` 行 + 游戏内观察为准（v0.2 可加 post-rewrite 副本）；
+`Mission/Session` 重连仍返回 8012016（研究线定证，v0.1 不承诺）。
+
+**耗时校准**：M4 实际约 **75 分钟**（21:50→23:05），其中我这边操作/排查约 20 分钟、
+游戏内验证与等待约 55 分钟（3 轮复核 + 1 次 UAC 安装/还原），与 §5.1「需你开游戏、wall-clock 取决于你」一致。
 
 ---
 
