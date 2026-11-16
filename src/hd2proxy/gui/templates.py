@@ -14,18 +14,27 @@
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-# ---- 研究线已验证的原值（改动前先核对） -------------------------------------
+# ---- 研究线 / M4 实机已验证的原值（改动前先核对） ---------------------------
 VARIANT_NAME = "掠食变种"          # 虫族双 id 词条：1243 tag + 1245 PREDATOR STRAIN
-GLOBAL_EVENT_ID = "1501113"       # 全局效果通道：globalEvents 里已存在的实验事件
+GLOBAL_EVENT_ID = "1501113"       # 全局效果通道示例事件（须是当前 war 的 globalEvents 之一）
 GLOBAL_EFFECT_ID = 1346           # INCENDIARY GATLING BARRAGE（type94，局内轨道加特林变燃烧）
 TRIAL_IDS = (1227, 1263)          # MG-43 机枪 / M-105 盟友（type32 临时配发，上限 3）
 UNLOCK_WEAPON_ID = 2112173638     # 研究线未发布武器候选（库存键 mixId）
-DORMANT_INDEX = 300               # BICEP（休眠星，可点可结算）
-DORMANT_HASH = 694418289          # BICEP 模板 settingsHash（研究线值；build 变更后要抓 live 核对）
+# 研究线/M4 实机配对的「目录行 + 库存行」（只注库存行客户端不显示，必须成对）
+UNRELEASED_ITEMS = (
+    (2112173638, 3866352840),     # LAS-22？（M4 实机出现）
+    (3388344762, 2811723672),     # P-41 OMBUDSMAN（M4 实机出现）
+    (1934208922, 2852344585),     # SG-8F PUNISHER FIRE OF LIBERTY（M4 实机出现）
+    (2870692210, 3866352840),     # 目录里已存在 → 只靠库存行解锁（M4 实机 = LAS-13 TRIDENT）
+)
+DORMANT_INDEX = 300               # BICEP（本季无游戏索引，自选节点号）
+DORMANT_HASH = 2995599666         # BICEP 行自己的 settingsHash（决定名字/生态，不能借别行）
 DORMANT_POS = {"x": 0.3, "y": -0.55}
 DORMANT_SECTOR = 20
 DORMANT_CAMP_ID = 51999
-BORROW_HASH = 2995599666          # 落叶林：研究线「TRANDOR 变落叶林」实测值
+# 就近星球 waypoints（BICEP 用 180/7；180 = HERTHON SECUNDUS，M4 实机连线正常）
+DORMANT_WAYPOINTS = (180, 7)
+BORROW_HASH = 721718208           # 落叶林：研究线/M4 实机「TRANDOR 变落叶林」实测值
 MAX_HEALTH = 1000000
 REGEN_PER_SECOND = 4.1666665
 CUSTOMIZE_MIX = 2112173638        # L2 改装实验对象
@@ -107,28 +116,38 @@ def _as_int(value):
 
 
 def apply_variant_trial(profile, planet=None):
-    """变种词条：掠食变种（虫族双 id）挂到指定星球。"""
+    """变种词条：掠食变种（虫族双 id）挂到指定星球。
+
+    走 `planet_effects` **原始通道**（绕过引擎的阵营过滤）——M4 实机验证：
+    人类星/虫族星都能出卡面；`status.variants` 那条通道会按 owner 过滤，
+    挂在 TERREK（人类星）上会被丢掉。
+    """
     planet = _need_planet(planet)
-    rows = _rows(_status(profile), "variants")
+    rows = _rows(_status(profile), "planet_effects")
     target = next((r for r in rows
-                   if isinstance(r, dict) and r.get("name") == VARIANT_NAME), None)
+                   if isinstance(r, dict) and _as_int(r.get("index")) == planet), None)
     if target is None:
-        target = {"name": VARIANT_NAME, "planets": []}
+        target = {"index": planet, "ids": []}
         rows.append(target)
-    planets = target.get("planets")
-    if not isinstance(planets, list):
-        planets = target["planets"] = []
-    if planet not in planets:
-        planets.append(planet)
+    ids = target.get("ids")
+    if not isinstance(ids, list):
+        ids = target["ids"] = []
+    added = []
+    for effect_id in (1243, 1245):          # tag + PREDATOR STRAIN
+        if effect_id not in ids:
+            ids.append(effect_id)
+            added.append(effect_id)
     return [
-        "变种词条：%s → 星球 %d（ids 1243 + 1245，faction=terminid）" % (VARIANT_NAME, planet),
-        "这是虫族词条：挂到人类/机器人控制的星球上会被引擎按 owner 过滤掉"
-        "（离线预演会提示「不同阵营」）",
+        "变种词条：星球 %d += PREDATOR STRAIN（ids 1243 + 1245，planet_effects 原始通道）"
+        % planet,
+        "原始通道不按 owner 过滤（人类/机器人星也会显示）；星球必须**有战役可点**，"
+        "否则卡面打不开（M4 实机：TERREK 本季无战役，看不到效果）",
+        "本次新增 %d 个 id；当前该星球共 %d 个" % (len(added), len(ids)),
     ]
 
 
 def apply_global_effect(profile, planet=None):
-    """全局效果：往已存在的实验事件挂 type94 效果。"""
+    """全局效果：往已存在的全局事件挂 type94 效果。"""
     ge = _rows(_status(profile), "globalEffects", dict_like=True)
     ids = ge.get(GLOBAL_EVENT_ID)
     if not isinstance(ids, list):
@@ -138,7 +157,8 @@ def apply_global_effect(profile, planet=None):
     return [
         "全局效果：事件 %s += effect %d（INCENDIARY GATLING BARRAGE，type94）"
         % (GLOBAL_EVENT_ID, GLOBAL_EFFECT_ID),
-        "只有游戏里确实存在事件 %s 时才会改写；样本 data/samples/status.json 里有这个事件",
+        "事件 id 必须是**当前 war 的 globalEvents 之一**（本季 live 是 1501107/1501115，"
+        "M4 实测 1501107 生效）；不在列表里就不会有任何效果，可在「全局效果」卡里改事件 id",
     ]
 
 
@@ -170,44 +190,80 @@ def apply_stratagem_trial(profile, planet=None):
 
 
 def apply_item_unlock(profile, planet=None):
-    """物品解锁：把研究线验证过的未发布武器加进库存。"""
+    """物品解锁：库存行 + 目录行**成对**注入（只注库存行客户端不显示）。
+
+    值来自研究线 / M4 实机配对：`items.add` 克隆同族模板行，库存里加同一个 mixId。
+    M4 实机结果：目录新增 3 行（第 4 个 id 目录里本来就有）+ 库存 4 行 →
+    军械库出现 P-41 OMBUDSMAN / SG-8F PUNISHER FIRE OF LIBERTY / LAS-22 / LAS-13 TRIDENT。
+    """
     inv = _inventory(profile)
     rows = _rows(inv, "weapons")
-    if not any(isinstance(r, dict) and _as_int(r.get("mixId")) == UNLOCK_WEAPON_ID for r in rows):
-        rows.append({"mixId": UNLOCK_WEAPON_ID, "amount": 1, "isDiscovered": False})
+    existing = {_as_int(r.get("mixId")) for r in rows if isinstance(r, dict)}
+    added = []
+    for mix_id, _template in UNRELEASED_ITEMS:
+        if mix_id in existing:
+            continue
+        rows.append({"mixId": mix_id, "amount": 1, "isDiscovered": False})
+        added.append(mix_id)
+    items = profile.get("items")
+    if not isinstance(items, dict):
+        items = {}
+        profile["items"] = items
+    adds = items.get("add")
+    if not isinstance(adds, list):
+        adds = items["add"] = []
+    have_ids = {_as_int(r.get("id")) if isinstance(r, dict) else _as_int(r) for r in adds}
+    for mix_id, template in UNRELEASED_ITEMS:
+        if mix_id in have_ids:
+            continue
+        adds.append({"id": mix_id, "template": template})
+        have_ids.add(mix_id)
+    if items.get("template") is None:
+        items["template"] = UNRELEASED_ITEMS[0][1]
     return [
-        "物品解锁：库存 weapons += mixId %d（研究线未发布武器候选）" % UNLOCK_WEAPON_ID,
-        "「目录上架」（items.add）需要同族模板 itemId；研究线原始配置未固化进本仓，"
-        "需要上架请到「物品与战备」页手动填模板 id",
+        "物品解锁：库存 weapons += %d 件、items.add += %d 行（目录行 + 库存行成对）"
+        % (len(added), len(adds)),
+        "其中 2870692210 目录里已有 → 只靠库存行解锁（M4 实机显示为 LAS-13 TRIDENT）",
+        "目录行要克隆同族模板 itemId（%d 等）；模板行不存在时该行会被引擎跳过"
+        % UNRELEASED_ITEMS[0][1],
     ]
 
 
 def apply_dormant_star(profile, planet=None):
-    """休眠星四件套：warinfo 身份 + status 节点 + 战役 + 归属，必须同 index 全齐。"""
+    """休眠星四件套：warinfo 身份 + status 节点 + 战役 + 归属，必须同 index 全齐。
+
+    配方为研究线实机通过的原值（PROXY-CAPABILITY-TEST-20261111 §6.2/M4）：
+      * settingsHash 必须是**目标星球行自己的**（BICEP = 2995599666）——
+        客户端靠它解析名字/生态；借别行的 hash 会显示成那颗星（M4 实机显示成 BALDRICK PRIME）；
+      * waypoints 必须给就近星球（BICEP 用 180/7），否则星图上没有连线；
+      * initialOwner / planet_nodes.owner / owner 三处一致（BICEP 用 2=虫族）。
+    """
     index = _need_planet(planet) if planet is not None else DORMANT_INDEX
     pos = dict(DORMANT_POS)
     wi = _warinfo(profile)
     infos = _rows(wi, "planet_infos")
     _replace_row(infos, {
         "index": index, "settingsHash": DORMANT_HASH,
-        "position": pos, "waypoints": [], "sector": DORMANT_SECTOR,
-        "maxHealth": MAX_HEALTH, "initialOwner": 1, "disabled": False,
+        "position": pos, "waypoints": list(DORMANT_WAYPOINTS), "sector": DORMANT_SECTOR,
+        "maxHealth": MAX_HEALTH, "initialOwner": 2, "disabled": False,
     })
     st = _status(profile)
     _replace_row(_rows(st, "planet_nodes"), {
-        "index": index, "owner": 1, "health": MAX_HEALTH,
+        "index": index, "owner": 2, "health": MAX_HEALTH,
         "regenPerSecond": REGEN_PER_SECOND, "players": 0, "position": dict(pos),
     })
     _replace_row(_rows(st, "campaigns"), {
         "planet": index, "id": DORMANT_CAMP_ID, "type": 0, "count": 1, "race": 1,
     }, key="planet")
     owners = _rows(st, "owner", dict_like=True)
-    owners[str(index)] = 1
+    owners[str(index)] = 2
     return [
         "休眠星四件套（星球 %d）：warinfo.planet_infos + status.planet_nodes + campaigns + owner"
         % index,
-        "坐标 (%.2f, %.2f)、settingsHash %d 是研究线模板值；换星/换 build 请先用抓包页导入 "
-        "live warinfo 再核对（坐标不能是 0,0）" % (pos["x"], pos["y"], DORMANT_HASH),
+        "settingsHash %d 是 BICEP 自己的（决定卡面名字/生态）；waypoints=%s 让星图有连线；"
+        "owner 三处统一为 2（虫族）"
+        % (DORMANT_HASH, list(DORMANT_WAYPOINTS)),
+        "换星时请换 settingsHash 为目标行自己的值，并在 live warinfo 里核对坐标（不能是 0,0）",
     ]
 
 
@@ -218,9 +274,11 @@ def apply_ecosystem_borrow(profile, planet=None):
     sh = _rows(wi, "settings_hash", dict_like=True)
     sh[str(planet)] = BORROW_HASH
     return [
-        "生态借用：星球 %d 的 settingsHash → %d（落叶林，研究线「TRANDOR 变落叶林」实测值）"
+        "生态借用：星球 %d 的 settingsHash → %d（落叶林，研究线/M4 实机值）"
         % (planet, BORROW_HASH),
-        "改的是客户端拿到的星球生成设置；目标星建议选人类控制星，且只在局内可见",
+        "settingsHash 同时决定「星球身份」——M4 实机把 TRANDOR 写成该 hash 后，"
+        "星图上名字变成了落叶林那颗星（UVP ALPHA），属预期机制变化",
+        "只在局内可见（落地地形）；目标星需有战役可进",
     ]
 
 
@@ -294,22 +352,26 @@ def apply_l2_customize(profile, planet=None):
 
 TEMPLATES = [
     Template("variant_trial", "变种词条试用",
-             "把虫族变种「掠食变种」（双 id 1243+1245）挂到一颗星球上，星图出 PREDATOR STRAIN。",
+             "把虫族变种「掠食变种」（双 id 1243+1245）以原始通道挂到目标星球，星图卡面出 PREDATOR STRAIN"
+             "（不按 owner 过滤；星球需有战役可点）。",
              apply_variant_trial, needs_planet=True),
     Template("global_effect", "全局效果试用",
-             "给实验事件 1501113 挂 type94 效果 1346：局内轨道加特林变燃烧。",
+             "给当前 war 的全局事件挂 type94 效果 1346：局内轨道加特林变燃烧"
+             "（事件 id 不在 live globalEvents 里则不生效，可在卡片里改）。",
              apply_global_effect),
     Template("stratagem_trial", "战备试用",
              "往目标星球的临时配发栏加 MG-43 机枪 / M-105 盟友（type32，上限 3 条）。",
              apply_stratagem_trial, needs_planet=True),
     Template("item_unlock", "物品解锁",
-             "把研究线验证过的未发布武器（mixId 2112173638）加进库存。",
+             "未发布武器：目录行（克隆同族模板）+ 库存行成对注入，军械库出现 LAS-22 / P-41 / SG-8F 等。",
              apply_item_unlock),
     Template("dormant_star", "休眠星可玩化",
-             "给休眠星补身份四件套：warinfo.planet_infos + status 节点 + 战役 + 归属，星图上可点可结算。",
+             "给休眠星补身份四件套：warinfo 身份（settingsHash 决定名字/生态）+ 节点 + 战役 + 归属，"
+             "带就近连线，星图上可点可开局。",
              apply_dormant_star),
     Template("ecosystem_borrow", "生态借用",
-             "把落叶林的 settingsHash（2995599666）写到目标星球，改星球生态/地形/天气。",
+             "把落叶林的 settingsHash（721718208）写到目标星球，局内地形变落叶林"
+             "（该 hash 同时决定星球身份，星图名字会变成源星）。",
              apply_ecosystem_borrow, needs_planet=True),
     Template("defense_campaign", "防守战役伪造",
              "在目标星球上造一场防守战役（type4 战役 + 反向攻击边 + 防守事件 + 归属）。",

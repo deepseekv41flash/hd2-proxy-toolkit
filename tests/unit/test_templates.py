@@ -78,15 +78,20 @@ def test_templates_are_idempotent(template):
     assert first == second, "%s 第二次 apply 不应改变 profile" % template.tid
 
 
-def test_variant_template_plan_and_preview():
+def test_variant_template_uses_raw_channel():
+    """M4 实机：TERREK 是人类星，selection 通道会被 owner 过滤；原始通道才行。"""
     prof = _profile()
-    notes = templates.apply_variant_trial(prof, 100)
-    assert any("星球 100" in n for n in notes)
+    notes = templates.apply_variant_trial(prof, 76)
+    assert any("星球 76" in n for n in notes)
+    assert prof["status"]["planet_effects"] == [{"index": 76, "ids": [1243, 1245]}]
     spec = config.to_engine_spec(prof, _catalog())
-    assert spec.status_plan == {100: {"variants": [
-        {"name": "掠食变种", "ids": [1243, 1245], "faction": "terminid"}], "trials": []}}
+    assert spec.status_extra["planet_effects"] == [{"index": 76, "ids": [1243, 1245]}]
+    assert spec.status_plan is None
     res = preview.preview(prof, fixtures="status")
-    assert res["fixtures"]["status"]["counts"]["effects"] == 2
+    summaries = [c["summary"] for c in res["fixtures"]["status"]["changes"]]
+    # 样本里 planet 76 已经有 1243（真实抓包如此）→ 只有 1245 算新增；重复的不会重复写
+    assert "星球 76 追加效果 1245" in summaries
+    assert "星球 76 追加效果 1243" not in summaries
 
 
 def test_stratagem_template_works_without_variants():
@@ -120,15 +125,19 @@ def test_global_effect_template():
                res["fixtures"]["status"]["changes"])
 
 
-def test_item_unlock_template():
+def test_item_unlock_template_pairs_catalog_and_inventory():
+    """只注库存行客户端不显示；目录行必须成对（M4 实机：目录 +3、库存 +4）。"""
     prof = _profile()
     templates.apply_item_unlock(prof)
-    assert prof["inventory"]["weapons"] == [
-        {"mixId": 2112173638, "amount": 1, "isDiscovered": False}]
+    mix_ids = [r["mixId"] for r in prof["inventory"]["weapons"]]
+    assert mix_ids == [mix for mix, _tpl in templates.UNRELEASED_ITEMS]
+    assert prof["items"]["add"] == [{"id": mix, "template": tpl}
+                                    for mix, tpl in templates.UNRELEASED_ITEMS]
     spec = config.to_engine_spec(prof, _catalog())
-    assert spec.inventory["items"][0]["mixId"] == 2112173638
+    assert spec.inventory["items"][0]["mixId"] == mix_ids[0]
+    assert spec.items["add"][0]["template"] == templates.UNRELEASED_ITEMS[0][1]
     res = preview.preview(prof, fixtures="inventory")
-    assert any("2112173638" in c["summary"] for c in
+    assert any(str(mix_ids[0]) in c["summary"] for c in
                res["fixtures"]["inventory"]["changes"])
 
 
@@ -137,11 +146,15 @@ def test_dormant_star_template_four_pieces():
     templates.apply_dormant_star(prof, 300)
     wi = prof["warinfo"]
     assert [r["index"] for r in wi["planet_infos"]] == [300]
-    assert wi["planet_infos"][0]["settingsHash"] == 694418289
+    info = wi["planet_infos"][0]
+    assert info["settingsHash"] == 2995599666       # BICEP 行自己的 hash（决定身份）
+    assert info["waypoints"] == [180, 7]            # 就近星球 -> 星图连线
+    assert info["initialOwner"] == 2
     st = prof["status"]
     assert st["planet_nodes"][0]["index"] == 300
+    assert st["planet_nodes"][0]["owner"] == 2
     assert st["campaigns"][0]["planet"] == 300
-    assert st["owner"]["300"] == 1
+    assert st["owner"]["300"] == 2
     spec = config.to_engine_spec(prof, _catalog())
     assert spec.warinfo["planet_infos"][0]["index"] == 300
     assert spec.status_extra["planet_nodes"][0]["index"] == 300
@@ -156,9 +169,9 @@ def test_dormant_star_template_defaults_to_bicep():
 def test_ecosystem_borrow_template():
     prof = _profile()
     templates.apply_ecosystem_borrow(prof, 100)
-    assert prof["warinfo"]["settings_hash"] == {"100": 2995599666}
+    assert prof["warinfo"]["settings_hash"] == {"100": 721718208}
     spec = config.to_engine_spec(prof, _catalog())
-    assert spec.warinfo["settings_hash"] == {"100": 2995599666}
+    assert spec.warinfo["settings_hash"] == {"100": 721718208}
     res = preview.preview(prof, fixtures="warinfo")
     assert any("星球 100 生态 settingsHash" in c["summary"] for c in
                res["fixtures"]["warinfo"]["changes"])

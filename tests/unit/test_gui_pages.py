@@ -278,7 +278,8 @@ def test_status_template_bar_applies_first_core_template(root, app):
     assert "变种词条试用" == page.tpl_var.get()
     page.tpl_planet.set(76)
     page._apply_template_pick()
-    assert app.profile["status"]["variants"] == [{"name": "掠食变种", "planets": [76]}]
+    # M4 后模板改走 planet_effects 原始通道（不按 owner 过滤）
+    assert app.profile["status"]["planet_effects"] == [{"index": 76, "ids": [1243, 1245]}]
     assert app.dirty == 1
     assert app.texts and "模板已应用" in app.texts[-1][0]
     assert "星球 76" in app.texts[-1][1]
