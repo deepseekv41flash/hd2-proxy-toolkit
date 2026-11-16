@@ -88,6 +88,19 @@ def _int(v, default=None):
         return default
 
 
+def _num(v):
+    """数值归一化：int/float 原样（float 保留小数），其它返回 None。"""
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return float(v) if isinstance(v, float) else v
+    try:
+        f = float(str(v).strip())
+    except (TypeError, ValueError):
+        return None
+    return int(f) if f.is_integer() else f
+
+
 def _as_list(v):
     return list(v) if isinstance(v, list) else []
 
@@ -204,8 +217,10 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
                 info[k] = _int(row[k])
         if isinstance(row.get("position"), dict):
             pos = row["position"]
-            if _int(pos.get("x")) is not None and _int(pos.get("y")) is not None:
-                info["position"] = {"x": _int(pos["x"]), "y": _int(pos["y"])}
+            # 坐标是浮点（星图位置），不能用 int 归一化，否则 0.3 会被截成 0
+            px, py = _num(pos.get("x")), _num(pos.get("y"))
+            if px is not None and py is not None:
+                info["position"] = {"x": px, "y": py}
         if isinstance(row.get("waypoints"), list):
             info["waypoints"] = [w for w in (_int(x) for x in row["waypoints"]) if w is not None]
         infos.append(info)

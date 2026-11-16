@@ -202,3 +202,16 @@ def test_paths_state_dir_env(monkeypatch, tmp_path):
     assert paths.state_dir() == tmp_path / "s"
     assert paths.profile_dir() == tmp_path / "s" / "profiles"
     assert paths.engine_state_file() == tmp_path / "s" / "engine.json"
+
+
+def test_planet_infos_position_keeps_float():
+    """休眠星四件套的 warinfo 坐标是浮点：校验后不能被截成 0（GUI 曾踩到）。"""
+    prof = config.default_profile()
+    prof["warinfo"]["planet_infos"] = [{
+        "index": 300, "settingsHash": 2995599666,
+        "position": {"x": 0.3, "y": -0.55},
+    }]
+    doc, errors, _ = config.validate(prof)
+    assert errors == []
+    pos = doc["warinfo"]["planet_infos"][0]["position"]
+    assert abs(pos["x"] - 0.3) < 1e-9 and abs(pos["y"] + 0.55) < 1e-9

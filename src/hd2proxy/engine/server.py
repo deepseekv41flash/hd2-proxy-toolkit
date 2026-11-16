@@ -435,6 +435,16 @@ def port_owner_report(port):
 # ==== M1：引擎上下文 + 启动入口 ===============================================
 
 
+
+def _capture_state(proxy) -> dict:
+    """抓包状态快照（控制面 /status 用）：enabled/dir/paths。"""
+    cap = {}
+    if proxy.spec is not None and isinstance(proxy.spec.capture, dict):
+        cap = proxy.spec.capture
+    return {"enabled": bool(cap.get("enabled")), "dir": cap.get("dir") or "",
+            "paths": list(cap.get("paths") or [])}
+
+
 class EngineContext:
     """控制面 / GUI 需要的运行期上下文（单实例）。"""
 
@@ -479,6 +489,7 @@ class EngineContext:
             "stats": dict(proxy.stats),
             "cert": _certs.cert_status(self.cert_dir),
             "planets": self.mod.target_planets(),
+            "capture": _capture_state(proxy),
             "rewrites": list(proxy.rewrites)[-50:],
             "log": str(paths.PROXY_LOG),
         }
@@ -579,7 +590,7 @@ def main(argv=None):
     crl_port = int(cfg.get("crlPort", 8080))
 
     # ---- 2. 监听 IP：不能是回环（19411 之后客户端拒绝回环连接） ---------------
-    if not listen_ip:
+    if not listen_ip or str(listen_ip).strip().lower() == "auto":
         try:
             from . import sysprobe
             listen_ip = sysprobe.resolve_listen_ip("auto")
