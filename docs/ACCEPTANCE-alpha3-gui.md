@@ -42,13 +42,14 @@
 - `research/screenshots/alpha3-preview-report.png` — 离线预演报告
 - `research/screenshots/alpha3-restore-plan.png` — 还原计划 dry-run
 
-## 本轮发现的小问题（候选 alpha.4）
+## 本轮发现的小问题（已在 alpha.4 修复）
 
-1. 「切换直通」只切换引擎运行时状态（控制面 `/passthrough`），不改 profile；随后点「应用配置」
-   会按 profile 把直通恢复，容易让用户以为开关失效。建议 toggle 时同步内存 profile + `mark_dirty`。
-2. 证书签发窗「下一步：python -m hd2proxy install …」在打包版里不可执行；应改为
-   `hd2proxy.exe install …` 或直接引导到 GUI 的「安装计划」。
-3. 离线预演 / 计划 / 证书弹窗长行不换行，左右被裁，看不全内容（轻微 UI 问题）。
+1. ~~「切换直通」不写回 profile，随后「应用配置」会按旧 profile 把直通恢复~~
+   → alpha.4 已修：切换成功即写回内存 profile 并标记「未保存」（实测日志 `passthrough=False` 热重载保持）。
+2. ~~证书签发窗提示 `python -m hd2proxy install …` 在打包版不可执行~~
+   → alpha.4 已修：冻结模式提示 `hd2proxy.exe install …`（CLI 实测输出已验证）。
+3. ~~离线预演 / 计划 / 证书弹窗长行不换行、左右被裁~~
+   → alpha.4 已修：按词换行 + 从开头显示（截图 `alpha4-preview-wrapped.png` 在 build/shots，未入库）。
 
 ## 备注：用 computer use 测打包版 GUI 的经验
 
