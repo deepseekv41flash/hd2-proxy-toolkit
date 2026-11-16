@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.0-alpha.2` 已发布（2026-11-17，修复双击退出）**
+> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.0-alpha.3` 已发布（2026-11-17，修复 GUI 启动引擎弹窗/按钮失效）**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -504,6 +504,17 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
   切「战况改写」页渲染正常；点「离线预演」弹只读结果窗口；`hd2proxy.exe` 无参数也打开 GUI。
   截图：`research/screenshots/alpha2-gui-status.png` / `alpha2-gui-preview.png` / `alpha2-cli-noargs-gui.png`。
 - 发布：`v0.1.0-alpha.2`（prerelease），alpha.1 在 Release Notes 顶部标注被取代。
+
+### 14.2 alpha.3 修复（2026-11-17，用户报「点启动引擎出现第二个 GUI 窗口」）
+
+- 根因：`gui/client.py` 按源码模式拼 CLI 命令：`engine_argv` 用
+  `[sys.executable, legacy_proxy.py, --profile …]`，`run_cli` 用
+  `[sys.executable, "-m", "hd2proxy", …]`；冻结后 `sys.executable` 是 `hd2proxy-gui.exe`，
+  子进程变成「GUI exe + 非法参数」→ windowed exe 弹 PyInstaller 错误对话框（第二个窗口），
+  且证书/安装/验证/启动引擎等按钮在打包版全部失效（本会话最小冻结探针验证）。
+- 修复：`client._bundle_cli_exe()` + `cli_argv()`：冻结时改用同目录 `hd2proxy.exe` 跑
+  `engine` / `certs renew` / `install` / `verify` 等子命令；源码模式保持 `python -m hd2proxy`。
+- 回归测试：冻结/源码两种模式的 `cli_argv`、`engine_argv` 断言（301 passed）。
 
 ---
 

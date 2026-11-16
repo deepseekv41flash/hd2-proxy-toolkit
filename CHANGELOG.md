@@ -2,6 +2,16 @@
 
 本项目遵循「里程碑 + 语义化版本」：`0.x` 阶段接口/数据结构可能变动，发布 alpha/beta 时显式标注。
 
+## v0.1.0-alpha.3（2026-11-17）— 修复 GUI「启动引擎」弹出第二个窗口/按钮失效
+
+- **修复**：打包版 GUI 按源码模式拼 CLI 命令（`[sys.executable, legacy_proxy.py, …]` /
+  `[sys.executable, "-m", "hd2proxy", …]`），冻结后 sys.executable 是 gui exe，子进程变成
+  「GUI exe + 非法参数」→ windowed 版弹 PyInstaller 错误对话框（用户看到的第二个窗口），
+  「签发/续期证书、安装计划、还原计划、验证三连、启动引擎」等按钮在打包版全部失效。
+  改为冻结时用同目录 `hd2proxy.exe` 跑子命令（源码模式不变）。
+- 新增回归测试：冻结/源码两种模式下的 `cli_argv` 与 `engine_argv` 断言（301 passed）。
+- 其余同 alpha.2。
+
 ## v0.1.0-alpha.2（2026-11-17）— 修复双击 exe 直接退出
 
 - **修复**：`hd2proxy.exe` 双击（无参数）时打印 CLI 帮助后 `exit 2`、看起来「自动退出且没有 GUI」。

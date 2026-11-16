@@ -24,6 +24,29 @@ REPO = SRC.parent
 ENGINE_SCRIPT = SRC / "hd2proxy" / "engine" / "legacy_proxy.py"
 
 
+def _bundle_cli_exe():
+    """打包模式返回同目录的 CLI exe（hd2proxy.exe）；源码模式返回 None。
+
+    为什么必须这么做：冻结后 sys.executable 是「gui exe」，它本身没有 `engine` /
+    `certs renew` 这类子命令入口语义 —— 直接把它当解释器拼 `[exe, legacy_proxy.py, …]`
+    会变成「GUI exe + 一个非法参数」，windowed 版会弹 PyInstaller 错误对话框（用户看到的
+    "第二个 GUI 窗口"），且证书/安装类按钮全部失效。
+    """
+    if not getattr(sys, "frozen", False):
+        return None
+    exe = Path(sys.executable)
+    sibling = exe.with_name("hd2proxy.exe")
+    return sibling if sibling.exists() else exe
+
+
+def cli_argv(args):
+    """拼「跑 CLI 子命令」的 argv：冻结走同目录 CLI exe，源码走 python -m hd2proxy。"""
+    exe = _bundle_cli_exe()
+    if exe is not None:
+        return [str(exe)] + [str(a) for a in args]
+    return [sys.executable, "-m", "hd2proxy"] + [str(a) for a in args]
+
+
 class EngineError(RuntimeError):
     pass
 
@@ -114,14 +137,13 @@ class EngineClient:
     # ---- 进程管理 ------------------------------------------------------
     def engine_argv(self, profile_path, cert_dir, listen_ip=None, control_port=None,
                     extra=()):
-        argv = [sys.executable, str(ENGINE_SCRIPT),
-                "--profile", str(profile_path), "--cert-dir", str(cert_dir)]
+        args = ["engine", "--profile", str(profile_path), "--cert-dir", str(cert_dir)]
         if listen_ip:
-            argv += ["--listen-ip", str(listen_ip)]
+            args += ["--listen-ip", str(listen_ip)]
         if control_port is not None:
-            argv += ["--control-port", str(int(control_port))]
-        argv += list(extra)
-        return argv
+            args += ["--control-port", str(int(control_port))]
+        args += list(extra)
+        return cli_argv(args)
 
     def start_engine(self, profile_path, cert_dir, listen_ip=None, control_port=None,
                      allow_loopback=False, extra=()):
@@ -163,13 +185,14 @@ class EngineClient:
 
     # ---- CLI 桥（安装/证书等一次性动作） --------------------------------
     def run_cli(self, args, timeout=180):
-        """跑 `python -m hd2proxy <args>`；返回 (code, output)。输出用于 GUI 展示。"""
+        """跑 CLI 子命令（源码=`python -m hd2proxy`，打包=同目录 `hd2proxy.exe`）；返回 (code, output)。"""
         env = os.environ.copy()
-        env["PYTHONPATH"] = str(SRC) + os.pathsep + env.get("PYTHONPATH", "")
+        if _bundle_cli_exe() is None:       # 源码模式需要把 src/ 塞进 PYTHONPATH
+            env["PYTHONPATH"] = str(SRC) + os.pathsep + env.get("PYTHONPATH", "")
         env.setdefault("PYTHONUTF8", "1")
         env.setdefault("PYTHONIOENCODING", "utf-8")
         try:
-            r = subprocess.run([sys.executable, "-m", "hd2proxy", *args],
+            r = subprocess.run(cli_argv(args),
                                cwd=str(REPO), env=env, capture_output=True,
                                text=True, encoding="utf-8", errors="replace",
                                timeout=timeout)

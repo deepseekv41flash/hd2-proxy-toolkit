@@ -4,6 +4,7 @@
 """
 
 import json
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -209,3 +210,45 @@ def test_cli_gui_subcommand_exists():
                             "PYTHONPATH": str(REPO / "src")})
     assert r.returncode == 0, r.stderr
     assert "--profile" in r.stdout
+
+
+# ---------------------------------------------------------------- 冻结模式的 CLI 桥
+
+def test_cli_argv_frozen_uses_sibling_cli_exe(tmp_path, monkeypatch):
+    """alpha.2 的 bug：冻结后 sys.executable 是 gui exe，直接拼 `[exe, legacy_proxy.py]`
+    会弹第二个窗口/证书按钮失效。冻结模式必须改用同目录 hd2proxy.exe。"""
+    from hd2proxy.gui import client as gc
+
+    gui = tmp_path / "hd2proxy-gui.exe"
+    cli = tmp_path / "hd2proxy.exe"
+    gui.write_bytes(b"")
+    cli.write_bytes(b"")
+    monkeypatch.setattr(sys, "executable", str(gui))
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+
+    assert gc.cli_argv(["certs", "renew"]) == [str(cli), "certs", "renew"]
+    argv = gc.EngineClient(state_file=tmp_path / "e.json").engine_argv(
+        tmp_path / "p.json", tmp_path / "certs", control_port=17897)
+    assert argv[0] == str(cli)
+    assert argv[1] == "engine"
+    assert "--profile" in argv and "--cert-dir" in argv and "--control-port" in argv
+    assert str(gc.ENGINE_SCRIPT) not in argv          # 不能再出现源码路径
+
+
+def test_cli_argv_frozen_without_sibling_falls_back(tmp_path, monkeypatch):
+    from hd2proxy.gui import client as gc
+
+    gui = tmp_path / "hd2proxy-gui.exe"
+    gui.write_bytes(b"")
+    monkeypatch.setattr(sys, "executable", str(gui))
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    assert gc.cli_argv(["info"]) == [str(gui), "info"]
+
+
+def test_cli_argv_source_mode_keeps_python_m(monkeypatch):
+    from hd2proxy.gui import client as gc
+
+    monkeypatch.delattr(sys, "frozen", raising=False)
+    argv = gc.cli_argv(["info"])
+    assert argv[1:3] == ["-m", "hd2proxy"]
+    assert argv[-1] == "info"
