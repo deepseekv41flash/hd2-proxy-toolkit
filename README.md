@@ -8,8 +8,11 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：M1 完成（2026-11-16）** —— 引擎已模块化、配置面/控制面/安装还原/证书自动续期/三连验收
-> 全部落地，213 个单元测试 + 5 个离线自检全绿；GUI 在 M2、打包在 M5。
+> **当前状态：M2 完成（2026-11-16）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> + **Tk GUI 五页**全部落地，233 个单元测试 + 5 个离线自检全绿；打包在 M5。
+> 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
+> [物品与战备](research/screenshots/gui-inventory.png) ｜ [抓包与日志](research/screenshots/gui-capture.png) ｜
+> [设置](research/screenshots/gui-settings.png)
 
 ## 现在能做什么
 
@@ -24,6 +27,7 @@ python tools/check_gate.py                  # 门禁：语法 + 路径 + 213 单
 M1 起也可以用 CLI 走完整流程（详细见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)）：
 
 ```bash
+python -m hd2proxy gui                            # 打开图形界面（M2；5 页）
 python -m hd2proxy info                        # 版本 / 路径 / 引擎是否在跑
 python -m hd2proxy certs renew --days 1        # 签发会话证书（ca 模式，≤2 天）
 python -m hd2proxy install --dry-run --listen-ip <本机非回环IP>   # 只看计划，不改系统
@@ -89,7 +93,7 @@ docs/                                 来源与哈希、后续架构说明
 |---|---|---|
 | M0 | 仓库骨架 + 引擎迁移 + 5 自检绿 + catalogs | ✅ 2026-11-16 |
 | M1 | 引擎模块化 + schema v2 配置 + 控制 API + 安装/还原 + 自动续证 + 三连验收 | ✅ 2026-11-16 |
-| M2 | Tk GUI 骨架（5 页） | ⏳ |
+| M2 | Tk GUI 骨架（5 页） | ✅ 2026-11-16 |
 | M3 | 6 项能力卡 + 离线预演 | ⏳ |
 | M4 | 实机逐项验收 | ⏳ |
 | M5 | PyInstaller 打包 + 文档 + Release | ⏳ |

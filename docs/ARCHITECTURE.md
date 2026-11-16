@@ -122,3 +122,29 @@ GUI / CLI / 脚本通过它发现引擎。所有请求要求 `X-HD2-Token`（或
 | 线上语义 | `tests/selftest*.py` | 5 个脚本式集成自检（与 M0 相同断言） |
 
 门禁：`python tools/check_gate.py` = 语法 + 绝对路径 + pytest + 5 个脚本自检。
+
+
+## 7. GUI 层（M2）
+
+```
+src/hd2proxy/gui/
+├─ app.py        App 壳：顶栏（profile 保存/应用 + 状态 pill）/ 左侧 5 页导航 / 底部状态行；
+│                profile 在内存中编辑，改完点「应用配置」→ PUT /config 热更新（引擎未运行则保存文件）
+├─ theme.py      调色板/字体/ttk 样式 + 小部件工厂（card/section/table/pill/button/ScrollText）
+├─ widgets.py    SearchList（搜索+列表）/ PlanetPicker（星球下拉）/ RowEditor（可删行表）
+├─ catalogs.py   只读数据目录封装（变种/战备/效果/星球/物品/build），缺文件降级不崩
+├─ client.py     EngineClient：engine.json 发现 + token API（显式绕系统代理）+ 引擎子进程管理与日志环
+└─ pages/        overview / status_page / inventory / capture / settings
+```
+
+要点：
+
+- **GUI 只是控制面客户端**：不碰 hosts/证书/游戏；安装/还原通过 CLI 子进程（dry-run 展示计划），
+  引擎是独立进程 —— 关窗不会打断游戏会话。
+- **profile 是唯一数据面**：页面只改内存里的 schema v2 dict + `mark_dirty()`，统一「保存/应用」；
+  热更新走 PUT /config，无需重启代理。
+- **轮询在后台线程**（0.6s），Tk 主线程只渲染；窗口销毁时停轮询（避免 Tk 状态异常）。
+- 截图工具 `tools/gui_smoke.py`：起真引擎 + 假上游 → 逐页截图，是 M2 的验收证据。
+
+M2 遗留打磨项（不影响使用）：战况页 6 张卡在 780 高度下需要纵向滚动（已可滚）；
+物品名称依赖 catalogs（约 391/1671 有名字，其余显示类别）；`settingsHash` 生态借用需先导入 live warinfo。
