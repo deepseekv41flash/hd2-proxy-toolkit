@@ -9,7 +9,17 @@
   「GUI exe + 非法参数」→ windowed 版弹 PyInstaller 错误对话框（用户看到的第二个窗口），
   「签发/续期证书、安装计划、还原计划、验证三连、启动引擎」等按钮在打包版全部失效。
   改为冻结时用同目录 `hd2proxy.exe` 跑子命令（源码模式不变）。
-- 新增回归测试：冻结/源码两种模式下的 `cli_argv` 与 `engine_argv` 断言（301 passed）。
+- 新增回归测试：冻结/源码两种模式下的 `cli_argv` 与 `engine_argv` 断言。
+- **修复（打包 GUI 实测发现）**：子进程中文输出乱码。冻结版 PyInstaller 引导器的 stdout 编码
+  由控制台代码页决定（中文 Windows = cp936），`PYTHONUTF8` / `PYTHONIOENCODING` 对冻结进程
+  **无效**（四种组合实测输出字节完全相同）→ GUI 里「安装计划（dry-run）」等结果整段变成 `?`。
+  现在 GUI 收原始字节再解码：UTF-8 优先、失败回退 GBK；引擎日志流式读取同样处理。
+- **修复（打包 GUI 实测发现）**：冻结版把 `logs/`、`runtime/` 写在 exe 旁边；若用户把目录放到
+  Program Files 等只读位置会静默写失败（日志丢失、`打开日志` 报 FileNotFoundError 原文）。
+  现在冻结版这两类运行期目录统一落在可写状态目录（`%LOCALAPPDATA%\HD2ProxyStudio`），
+  源码模式仍在仓库内；「打开日志 / 打开状态目录」在文件不存在时给一句人话提示而不是抛原始异常。
+- 新增回归测试：`decode_output` UTF-8/GBK、`run_cli` GBK 解码、`open_path` 友好提示、
+  冻结版 logs/runtime 落状态目录（共 **308 passed**）。
 - 其余同 alpha.2。
 
 ## v0.1.0-alpha.2（2026-11-17）— 修复双击 exe 直接退出

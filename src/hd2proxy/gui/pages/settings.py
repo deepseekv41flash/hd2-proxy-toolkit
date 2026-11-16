@@ -101,11 +101,11 @@ class SettingsPage(Page):
                  anchor="e", width=13).grid(row=row, column=0, sticky="e", pady=2)
         widget.grid(row=row, column=1, sticky="w", padx=(8, 0), pady=2)
 
-    def _open(self, path):
-        try:
-            os.startfile(str(path))     # noqa: S606 - Windows 打开资源管理器
-        except Exception as e:          # noqa: BLE001
-            messagebox.showerror("打开失败", repr(e))
+    def _open(self, path, label="目录", hint="引擎运行过之后才会有内容"):
+        from ..openutil import open_path
+        if not open_path(path, self.app.toast, label=label, hint=hint):
+            return
+        return True
 
     def _save_as(self):
         name = self.var_name.get().strip() or "新配置"

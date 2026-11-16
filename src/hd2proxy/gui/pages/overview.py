@@ -145,9 +145,6 @@ class OverviewPage(Page):
         self.app.run_bg(lambda: self.app.client.run_cli(args), done, busy="签发证书…")
 
     def _open_log(self):
-        import os
+        from ..openutil import open_path
         from ...engine import paths
-        try:
-            os.startfile(str(paths.PROXY_LOG))
-        except Exception as e:      # noqa: BLE001
-            self.app.toast("打开日志失败：%r" % (e,), error=True)
+        open_path(paths.PROXY_LOG, self.app.toast, label="日志文件")

@@ -514,7 +514,8 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
   且证书/安装/验证/启动引擎等按钮在打包版全部失效（本会话最小冻结探针验证）。
 - 修复：`client._bundle_cli_exe()` + `cli_argv()`：冻结时改用同目录 `hd2proxy.exe` 跑
   `engine` / `certs renew` / `install` / `verify` 等子命令；源码模式保持 `python -m hd2proxy`。
-- 回归测试：冻结/源码两种模式的 `cli_argv`、`engine_argv` 断言（301 passed）。
+- 回归测试：冻结/源码两种模式的 `cli_argv`、`engine_argv` 断言。
+- 打包 GUI 逐页实测补充修复：①冻结子进程 GBK 输出解码回退（GUI 里 CLI 结果不再乱码）；②冻结版 logs/runtime 落状态目录 + 「打开日志」友好提示（308 passed）。
 
 ---
 

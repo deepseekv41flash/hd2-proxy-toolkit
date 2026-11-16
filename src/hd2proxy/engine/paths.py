@@ -32,9 +32,27 @@ LEGACY_DIR = DATA_DIR / "legacy"          # 研究线原始目录（引擎兼容
 CATALOGS_DIR = DATA_DIR / "catalogs"      # 产品规范化目录（GUI 用）
 SAMPLES_DIR = DATA_DIR / "samples"        # 离线预演用的样本响应（裁剪过、无账号字段）
 
-# 运行期数据（logs / runtime）：VMOD_DATA 可覆盖（测试隔离用）
+def _state_home() -> Path:
+    """本机状态目录：默认 %LOCALAPPDATA%/HD2ProxyStudio，可用 HD2PROXY_STATE 覆盖。"""
+    env = os.environ.get("HD2PROXY_STATE")
+    if env:
+        return Path(env)
+    base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
+    if base:
+        return Path(base) / "HD2ProxyStudio"
+    return Path.home() / ".hd2proxy"
+
+
+# 运行期数据（logs / runtime）：VMOD_DATA 可覆盖（测试隔离用）。
+# 冻结版一律放状态目录：打包后 REPO_ROOT = exe 所在目录，用户可能把它放在 Program Files
+# 或只读盘里，那里写 logs/runtime 会静默失败（日志丢失）✓ 源码模式仍写仓库内，方便开发查看。
 _DATA_HOME = os.environ.get("VMOD_DATA")
-BASEDIR = Path(_DATA_HOME) if _DATA_HOME else REPO_ROOT
+if _DATA_HOME:
+    BASEDIR = Path(_DATA_HOME)
+elif getattr(sys, "frozen", False):
+    BASEDIR = _state_home()
+else:
+    BASEDIR = REPO_ROOT
 LOGDIR = BASEDIR / "logs"
 PROXY_LOG = LOGDIR / "proxy.log"
 AUDIT_LOG = LOGDIR / "audit.log"
@@ -84,13 +102,7 @@ CUSTOMIZE_STATE = RUNTIME / "customize_inject.json"
 # ---- 本机状态目录（M1 新增：profile / engine.json / 抓包默认目录） ----------
 def state_dir() -> Path:
     """本机状态目录：默认 %LOCALAPPDATA%/HD2ProxyStudio，可用 HD2PROXY_STATE 覆盖。"""
-    env = os.environ.get("HD2PROXY_STATE")
-    if env:
-        return Path(env)
-    base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
-    if base:
-        return Path(base) / "HD2ProxyStudio"
-    return Path.home() / ".hd2proxy"
+    return _state_home()
 
 
 def profile_dir() -> Path:

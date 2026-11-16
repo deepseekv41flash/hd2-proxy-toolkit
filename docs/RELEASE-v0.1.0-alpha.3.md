@@ -23,6 +23,39 @@
 
 源码模式保持 `python -m hd2proxy` 不变；新增冻结/源码两种模式的 `cli_argv`/`engine_argv` 回归测试。
 
+## 打包 GUI 实测又抓到两个问题（同版本一并修掉）
+
+发布前用 computer-use 在**打包后的 exe** 上逐页实测，另外发现两处冻结模式才有的毛病：
+
+1. **子进程中文变成一串 `?`**：冻结版 PyInstaller 引导器的 stdout 编码由控制台代码页决定
+   （中文 Windows = cp936），`PYTHONUTF8` / `PYTHONIOENCODING` 对冻结进程**不生效**
+   （四种组合实测输出字节完全相同），而 GUI 按 UTF-8 解码 → 「安装计划（dry-run）」整段乱码。
+   现在 GUI 收原始字节：先按 UTF-8 解，失败回退 GBK；引擎日志流同样处理。
+2. **日志目录跟着 exe 走**：冻结版把 `logs/`、`runtime/` 写在 exe 旁边，若整个目录被放到
+   Program Files / 只读位置会静默写失败——日志丢失、点「打开日志」直接弹
+   `FileNotFoundError(2, '系统找不到指定的文件。')` 原文。现在冻结版这两类目录统一落在
+   `%LOCALAPPDATA%\HD2ProxyStudio`（源码模式仍在仓库内），并且文件不存在时给一句人话提示。
+
+## 打包版 GUI 逐页实测（computer use，2026-11-17）
+
+在**解压后的 `hd2proxy-gui.exe`** 上逐页点击验证（不是源码模式）：
+
+| 项 | 结果 | 证据 |
+|---|---|---|
+| 5 页导航（总览/战况改写/物品与战备/抓包与日志/设置） | ✅ 全部可切换、内容正确 | `research/screenshots/alpha3-gui-*.png` |
+| 战况改写：应用模板 | ✅ 内存生效（顶栏变「未保存」+ 说明弹窗） | — |
+| 战况改写：离线预演 | ✅ 打开报告窗（直通模式不改写、samples 路径、增量说明） | — |
+| 总览：安装计划（dry-run） | ✅ CLI 桥走通，中文输出正常（本版修复后） | `alpha3-gui-install-plan.png` |
+| 抓包与日志页 / 设置页渲染 | ✅ 字段与目录全部正确 | `alpha3-gui-capture.png` / `alpha3-gui-settings.png` |
+| 打开日志（文件还没生成） | ✅ 一句人话提示，不再抛 `FileNotFoundError` 原文 | — |
+| 保存配置 / 启动引擎 / 签发证书 | ⚠ 本次测试环境不可用（见下） | — |
+
+> **测试环境限制（不是产品缺陷）**：本机把从 agent shell 启动的**未签名本地 PyInstaller exe**
+> 放在 **Low 完整性级别**（实测令牌 integrity RID=4096，而 python/pwsh 是 Medium 8192），
+> Low IL 无权写 `%LOCALAPPDATA%` → 保存配置/写 profile/启动引擎在本环境必然 `PermissionError(13)`。
+> 同一台机器上用 Medium 权限跑同一段保存逻辑是成功的，真实用户双击运行是 Medium，
+> 因此这三项归为「本次环境测不到」，不是 alpha.3 的回归。
+
 ## 下载
 
 | 文件 | 说明 |

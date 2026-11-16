@@ -252,3 +252,95 @@ def test_cli_argv_source_mode_keeps_python_m(monkeypatch):
     argv = gc.cli_argv(["info"])
     assert argv[1:3] == ["-m", "hd2proxy"]
     assert argv[-1] == "info"
+
+
+# ---------------------------------------------------------------- 子进程输出编码
+
+def test_decode_output_utf8_bytes():
+    from hd2proxy.gui.client import decode_output
+    assert decode_output("安装计划".encode("utf-8")) == "安装计划"
+    assert decode_output(b"") == ""
+    assert decode_output(None) == ""
+    assert decode_output("已经是文本") == "已经是文本"
+
+
+def test_decode_output_gbk_bytes_falls_back():
+    """冻结版 PyInstaller exe 的 stdout 是控制台代码页（中文 Windows = cp936），
+    PYTHONUTF8/PYTHONIOENCODING 对冻结进程无效（实测四种组合字节相同）→ 必须回退 GBK，
+    否则 GUI 里「安装计划」会显示成一串 ？。"""
+    from hd2proxy.gui.client import decode_output
+
+    text = "== 安装计划（dry-run，不改系统）==\n  1. 监听地址：100.67.169.17（可用）\n"
+    assert decode_output(text.encode("gbk")) == text
+
+
+def test_run_cli_decodes_gbk_output(monkeypatch, tmp_path):
+    """run_cli 用原始字节 + decode_output，不能让 GBK 输出变成 U+FFFD。"""
+    import subprocess as sp
+
+    from hd2proxy.gui import client as gc
+
+    fake = sp.CompletedProcess(args=["x"], returncode=0,
+                               stdout="已保存：默认".encode("gbk"), stderr=b"")
+
+    monkeypatch.setattr(gc.subprocess, "run", lambda *a, **k: fake)
+    code, out = gc.EngineClient(state_file=tmp_path / "e.json").run_cli(["profiles", "list"])
+    assert code == 0
+    assert "已保存" in out and "\ufffd" not in out
+
+
+# ---------------------------------------------------------------- 打开文件/目录
+
+def test_open_path_missing_gives_friendly_toast(tmp_path):
+    from hd2proxy.gui.openutil import open_path
+
+    msgs = []
+    ok = open_path(tmp_path / "nope.log", lambda m, error=False: msgs.append((m, error)),
+                   label="日志文件")
+    assert ok is False
+    assert msgs and msgs[0][1] is True
+    assert "还不存在" in msgs[0][0] and "日志文件" in msgs[0][0]
+
+
+def test_open_path_existing_calls_startfile(tmp_path, monkeypatch):
+    from hd2proxy.gui import openutil
+
+    f = tmp_path / "ok.log"
+    f.write_text("x", encoding="utf-8")
+    called = []
+    monkeypatch.setattr(openutil.os, "startfile", lambda p: called.append(p), raising=False)
+    assert openutil.open_path(f, lambda *a, **k: None, label="日志文件") is True
+    assert called == [str(f)]
+
+
+# ---------------------------------------------------------------- 冻结版日志目录可写
+
+def test_paths_frozen_puts_logs_under_state_dir(tmp_path, monkeypatch):
+    """打包版 exe 可能被放到只读目录（Program Files / 只读盘）；logs/runtime 必须落在
+    可写的状态目录，否则引擎日志静默丢失、GUI「打开日志」永远找不到文件。"""
+    import importlib
+
+    from hd2proxy.engine import paths as paths_mod
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "LocalAppData"))
+    monkeypatch.delenv("VMOD_DATA", raising=False)
+    monkeypatch.delenv("HD2PROXY_STATE", raising=False)
+    try:
+        reloaded = importlib.reload(paths_mod)
+        state = tmp_path / "LocalAppData" / "HD2ProxyStudio"
+        assert reloaded.LOGDIR == state / "logs"
+        assert reloaded.PROXY_LOG == state / "logs" / "proxy.log"
+        assert reloaded.RUNTIME == state / "runtime"
+    finally:
+        monkeypatch.undo()
+        importlib.reload(paths_mod)
+
+
+def test_paths_source_mode_keeps_repo_logs():
+    """源码模式不能跟着冻结版改：开发者要看仓库里的 logs/。"""
+    from hd2proxy.engine import paths as paths_mod
+
+    if getattr(sys, "frozen", False):
+        pytest.skip("frozen")
+    assert paths_mod.LOGDIR == paths_mod.REPO_ROOT / "logs"

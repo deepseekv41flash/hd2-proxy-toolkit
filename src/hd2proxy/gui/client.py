@@ -47,6 +47,30 @@ def cli_argv(args):
     return [sys.executable, "-m", "hd2proxy"] + [str(a) for a in args]
 
 
+def decode_output(data):
+    """把子进程原始输出字节解码成文本（UTF-8 优先，回退 GBK）。
+
+    为什么不能只用 text=True+encoding=utf-8：冻结版是 PyInstaller 引导器，它的 stdout
+    编码由控制台代码页决定（中文 Windows = cp936），PYTHONUTF8 / PYTHONIOENCODING 对冻结
+    进程**无效**（实测四种组合输出字节完全相同）→ 按 UTF-8 解会变成一串 ？（U+FFFD）。
+    所以这里自己解：先严格 UTF-8；失败说明是 GBK 输出，用 cp936 解 ✓
+    """
+    if not data:
+        return ""
+    if isinstance(data, str):
+        return data
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        pass
+    for enc in ("gbk", "cp936", "mbcs"):
+        try:
+            return data.decode(enc)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    return data.decode("utf-8", "replace")
+
+
 class EngineError(RuntimeError):
     pass
 
@@ -158,7 +182,7 @@ class EngineClient:
         env.setdefault("PYTHONIOENCODING", "utf-8")
         self.proc = subprocess.Popen(
             argv, cwd=str(REPO), env=env, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
+            stderr=subprocess.STDOUT,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         self._log_thread = threading.Thread(target=self._pump_log, daemon=True)
         self._log_thread.start()
@@ -168,9 +192,11 @@ class EngineClient:
         proc = self.proc
         if proc is None or proc.stdout is None:
             return
-        for line in proc.stdout:
+        # 按原始字节读、用 decode_output 逐行解（冻结版引擎输出是 GBK，见 decode_output）✓
+        for raw in proc.stdout:
+            line = decode_output(raw).rstrip("\r\n")
             with self._log_lock:
-                self.log_lines.append(line.rstrip("\n"))
+                self.log_lines.append(line)
 
     def wait_ready(self, timeout=25.0):
         deadline = time.time() + timeout
@@ -194,9 +220,8 @@ class EngineClient:
         try:
             r = subprocess.run(cli_argv(args),
                                cwd=str(REPO), env=env, capture_output=True,
-                               text=True, encoding="utf-8", errors="replace",
                                timeout=timeout)
-            return r.returncode, (r.stdout or "") + (r.stderr or "")
+            return r.returncode, decode_output(r.stdout) + decode_output(r.stderr)
         except subprocess.TimeoutExpired:
             return 124, "命令超时（%ss）：%s" % (timeout, " ".join(args))
         except Exception as e:      # noqa: BLE001

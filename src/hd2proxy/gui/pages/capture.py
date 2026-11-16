@@ -200,10 +200,8 @@ class CapturePage(Page):
         self.app.toast("日志显示已清空（引擎日志文件未动）")
 
     def _open_log(self):
-        try:
-            os.startfile(str(paths.PROXY_LOG))       # noqa: S606 - Windows 打开日志
-        except Exception as e:                       # noqa: BLE001
-            self.app.toast("打开日志失败：%r" % (e,), error=True)
+        from ..openutil import open_path
+        open_path(paths.PROXY_LOG, self.app.toast, label="日志文件")
 
     # ---------------------------------------------------------------- 状态
     def refresh(self):

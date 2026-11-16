@@ -11,7 +11,7 @@
 > **当前状态：v0.1.0-alpha.3 已发布（2026-11-17，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **301 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.1.0-alpha.3`（见下方「下载」）。
+> **308 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.1.0-alpha.3`（见下方「下载」）。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
 > [物品与战备](research/screenshots/gui-inventory.png) ｜ [抓包与日志](research/screenshots/gui-capture.png) ｜
 > [设置](research/screenshots/gui-settings.png) ｜
@@ -60,7 +60,7 @@ hd2proxy.exe uninstall
 ```bash
 python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
 set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
-python tools/check_gate.py                  # 门禁：语法 + 路径 + 301 单测 + 5 个离线自检
+python tools/check_gate.py                  # 门禁：语法 + 路径 + 308 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
