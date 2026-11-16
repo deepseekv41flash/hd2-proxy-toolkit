@@ -35,3 +35,11 @@ def captured(monkeypatch):
 def test_forwarding_commands_pass_through_all_args(captured, cmd, rest):
     assert cli.main([cmd] + rest) == 0
     assert captured[cmd] == rest
+
+
+def test_no_args_opens_gui(monkeypatch):
+    """双击 exe（无参数）应打开 GUI；alpha.1 的行为是打印帮助后 exit 2。"""
+    calls = []
+    monkeypatch.setattr(cli, "cmd_gui", lambda a: calls.append(a.profile) or 0)
+    assert cli.main([]) == 0
+    assert calls == [""]

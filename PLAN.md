@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；首个预览版 `v0.1.0-alpha.1` 已发布（2026-11-16）**
+> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.0-alpha.2` 已发布（2026-11-17，修复双击退出）**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -492,6 +492,18 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 2. `make_archive` 的 base 名带版本点号，`Path.with_suffix` 误裁 → 用返回值；
 3. zip 里数据在 `_internal/data`，用户看不到 → 构建时把 `data/` 再铺一份到 exe 旁（便携可改），
    干净路径验证改用 exe 旁 `data/`。
+
+### 14.1 alpha.2 修复（2026-11-17，用户报「release exe 双击自动退出、没有 GUI」）
+
+- 根因：`hd2proxy.exe` 是控制台 CLI，双击（无参数）→ 打印帮助后 `exit 2`，控制台立即关闭；
+  GUI 本身正常（`hd2proxy.exe gui` 实测窗口存活），属发布 UX 设计问题。
+- 修复：① 无参数默认打开 GUI；② 新增 windowed 的 `hd2proxy-gui.exe`（无控制台，双击即用）；
+  ③ 打包改为单 bundle 双 exe（共用 `_internal`），冒烟新增「两个 GUI 入口存活 + 窗口标题」与
+  「无参数打开 GUI」回归断言。
+- 实测（打包后 exe，DSH computer use 实际打开+操作）：`hd2proxy-gui.exe` 窗口正常、无控制台；
+  切「战况改写」页渲染正常；点「离线预演」弹只读结果窗口；`hd2proxy.exe` 无参数也打开 GUI。
+  截图：`research/screenshots/alpha2-gui-status.png` / `alpha2-gui-preview.png` / `alpha2-cli-noargs-gui.png`。
+- 发布：`v0.1.0-alpha.2`（prerelease），alpha.1 在 Release Notes 顶部标注被取代。
 
 ---
 

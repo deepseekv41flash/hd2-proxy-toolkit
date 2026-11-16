@@ -1,19 +1,20 @@
-"""M5 打包发布：PyInstaller onedir + ZIP + SHA256 + 冒烟 + 干净路径验证。
+"""M5 打包发布：PyInstaller（单 bundle 双 exe）+ ZIP + SHA256 + 冒烟 + 干净路径验证。
+
+产物（一个 onedir 目录里放两个 exe，共用 _internal）：
+  hd2proxy.exe       控制台 CLI（engine/install/uninstall/preview/verify/…；双击也会开 GUI）
+  hd2proxy-gui.exe   windowed GUI（双击无控制台，给普通用户用）
+  data/              可编辑数据（legacy / catalogs / samples / acceptance）
 
 用法（在仓库根）：
   python tools/build_dist.py                # 构建 + 冒烟 + 打包 + 干净路径验证
   python tools/build_dist.py --skip-build   # 只做打包/验证（复用已有 dist）
-  python tools/build_dist.py --no-zip       # 只构建 + 冒烟（方便反复调 spec）
+  python tools/build_dist.py --no-zip       # 只构建 + 冒烟（方便反复调）
 
-产物：
-  dist/hd2proxy/                                    onedir 目录（exe + _internal/data）
-  dist/hd2proxy-toolkit-v<版本>-windows-x64.zip    分发包
-  dist/SHA256SUMS.txt                               校验和（zip + exe）
-
-设计要点：
-  * `data/` 打进去（legacy / catalogs / samples / acceptance），保证解压即用；
-  * 冒烟用**打包后的 exe**（不是源码），验证 --version / info / preview 三条路径；
-  * 干净路径验证：把 zip 解到临时目录再跑 preview，证明不依赖仓库/本机路径。
+冒烟项（都用打包后的 exe）：
+  * `--version` / `info` / `preview`（CLI）
+  * `hd2proxy.exe` 无参数 → 应打开 GUI 并存活（v0.1.0-alpha.1 的「双击即退出」修复）
+  * `hd2proxy-gui.exe` 双击等价 → GUI 窗口存活
+  * zip 解压到临时目录 → 用包内 data 再跑一次 preview（干净路径）
 """
 
 import argparse
@@ -28,13 +29,56 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from hd2proxy import __version__  # noqa: E402  （显示版本，如 0.1.0-alpha.1）
+from hd2proxy import __version__  # noqa: E402  （显示版本，如 0.1.0-alpha.2）
 
 NAME = "hd2proxy"
 DIST = ROOT / "dist"
 BUILD = ROOT / "build" / "pyinstaller"
 ZIP_NAME = "hd2proxy-toolkit-v%s-windows-x64" % __version__
-EXE = DIST / NAME / (NAME + ".exe")
+
+SPEC = '''# -*- mode: python ; coding: utf-8 -*-
+# 由 tools/build_dist.py 生成（不入库）：同一个 bundle 里构建 console CLI + windowed GUI 两个 exe。
+from pathlib import Path
+
+ROOT = Path(r"__ROOT__")
+SRC = ROOT / "src"
+DATA = ROOT / "data"
+
+a_cli = Analysis(
+    [str(ROOT / "tools" / "pyinstaller_entry.py")],
+    pathex=[str(SRC)], binaries=[], datas=[(str(DATA), "data")],
+    hiddenimports=[], hookspath=[], hooksconfig={}, runtime_hooks=[],
+    excludes=[], noarchive=False, optimize=0,
+)
+pyz_cli = PYZ(a_cli.pure)
+exe_cli = EXE(pyz_cli, a_cli.scripts, [], exclude_binaries=True, name="hd2proxy",
+              debug=False, bootloader_ignore_signals=False, strip=False, upx=False,
+              console=True, disable_windowed_traceback=False, argv_emulation=False,
+              target_arch=None, codesign_identity=None, entitlements_file=None)
+
+a_gui = Analysis(
+    [str(ROOT / "tools" / "pyinstaller_gui_entry.py")],
+    pathex=[str(SRC)], binaries=[], datas=[],
+    hiddenimports=[], hookspath=[], hooksconfig={}, runtime_hooks=[],
+    excludes=[], noarchive=False, optimize=0,
+)
+pyz_gui = PYZ(a_gui.pure)
+exe_gui = EXE(pyz_gui, a_gui.scripts, [], exclude_binaries=True, name="hd2proxy-gui",
+              debug=False, bootloader_ignore_signals=False, strip=False, upx=False,
+              console=False, disable_windowed_traceback=False, argv_emulation=False,
+              target_arch=None, codesign_identity=None, entitlements_file=None)
+
+coll = COLLECT(exe_cli, a_cli.binaries, a_cli.datas, exe_gui, a_gui.binaries,
+               strip=False, upx=False, upx_exclude=[], name="__NAME__")
+'''
+
+
+def exe_path(name: str) -> Path:
+    return DIST / NAME / (name + ".exe")
+
+
+CLI_EXE = exe_path("hd2proxy")
+GUI_EXE = exe_path("hd2proxy-gui")
 
 
 def run(cmd, *, timeout=600, check=True):
@@ -48,33 +92,64 @@ def run(cmd, *, timeout=600, check=True):
                           errors="replace", env=env)
 
 
+def _gui_env():
+    env = dict(os.environ)
+    env.setdefault("PYTHONUTF8", "1")
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    return env
+
+
+def _main_window_title(process_name: str) -> str:
+    r = run(["powershell", "-NoProfile", "-Command",
+             "(Get-Process '%s' -ErrorAction SilentlyContinue | "
+             "Where-Object { $_.MainWindowTitle } | Select-Object -First 1"
+             ").MainWindowTitle" % process_name], check=False, timeout=60)
+    return (r.stdout or "").strip()
+
+
+def _smoke_gui(label: str, exe: Path):
+    """启动 exe，等 6s 确认进程存活且有主窗口，然后强杀。"""
+    proc = subprocess.Popen([str(exe)], env=_gui_env())
+    try:
+        time.sleep(6)
+        if proc.poll() is not None:
+            raise SystemExit("%s 启动后退出（rc=%s）" % (label, proc.returncode))
+        title = _main_window_title(exe.stem)
+        if not title:
+            raise SystemExit("%s 进程存活但没有主窗口（GUI 未打开）" % label)
+        print("  OK  %s 窗口存活（pid=%s，标题非空）" % (label, proc.pid))
+    finally:
+        proc.kill()
+        try:
+            proc.wait(timeout=10)
+        except Exception:                          # noqa: BLE001
+            pass
+
+
 def build():
     for d in (DIST, BUILD):
         if d.exists():
             shutil.rmtree(d)
+    BUILD.mkdir(parents=True, exist_ok=True)
+    spec = BUILD / (NAME + ".spec")
+    spec.write_text(SPEC.replace("__ROOT__", ROOT.as_posix())
+                   .replace("__NAME__", NAME), encoding="utf-8")
     result = run([
         sys.executable, "-m", "PyInstaller",
-        "--noconfirm", "--clean", "--onedir",
-        "--name", NAME,
-        "--paths", ROOT / "src",
-        "--add-data", "%s;data" % (ROOT / "data"),
-        "--distpath", DIST,
-        "--workpath", BUILD,
-        "--specpath", BUILD,
-        ROOT / "tools" / "pyinstaller_entry.py",
+        "--noconfirm", "--clean",
+        "--distpath", DIST, "--workpath", BUILD,
+        spec,
     ])
-    tail = (result.stdout or "").strip().splitlines()[-3:]
+    tail = (result.stdout or "").strip().splitlines()[-2:]
     for line in tail:
         print("  " + line)
-    if not EXE.exists():
-        raise SystemExit("构建失败：%s 不存在" % EXE)
+    for exe in (CLI_EXE, GUI_EXE):
+        if not exe.exists():
+            raise SystemExit("构建失败：%s 不存在" % exe)
 
 
 def stage_data():
-    """把 data/ 复制到 exe 旁边：用户可直接改 catalogs/acceptance（便携目录）。
-
-    _internal/data 里也有一份（双保险）；paths.py 在冻结模式下优先用 exe 旁那份。
-    """
+    """把 data/ 复制到 exe 旁边：用户可直接改 catalogs/acceptance（便携目录）。"""
     target = DIST / NAME / "data"
     if target.exists():
         shutil.rmtree(target)
@@ -84,21 +159,24 @@ def stage_data():
 
 
 def smoke():
-    """用打包后的 exe 跑三条最关键的路径（版本 / 路径 / 离线预演）。"""
+    """打包后 exe 冒烟：CLI 三条路径 + 两个 GUI 入口（含 alpha.1 双击退出回归）。"""
     checks = [
         (["--version"], __version__),
         (["info"], "state_dir"),
-        # 中文输出在不同控制台编码下会变乱码；用 ASCII 稳定串（脚本仍会打印全文）
         (["preview", "--profile", ROOT / "data" / "acceptance" / "m4-b.json",
           "--fixture", "status"], "Status"),
     ]
     for args, needle in checks:
-        r = run([EXE] + args, check=False)
+        r = run([CLI_EXE] + args, check=False)
         out = (r.stdout or "") + (r.stderr or "")
         if r.returncode != 0 or needle not in out:
             raise SystemExit("冒烟失败 %s（rc=%s，找不到 %r）\n%s"
                              % (args, r.returncode, needle, out[-1500:]))
         print("  OK  hd2proxy.exe %s" % " ".join(str(x) for x in args))
+    # 双击 CLI exe（无参数）应当打开 GUI，而不是打印帮助后退出
+    _smoke_gui("hd2proxy.exe（无参数）", CLI_EXE)
+    # 专用 windowed GUI exe（双击无控制台）
+    _smoke_gui("hd2proxy-gui.exe", GUI_EXE)
 
 
 def make_zip():
@@ -111,7 +189,7 @@ def make_zip():
 
 def write_sha256(zip_path):
     lines = []
-    for path in (zip_path, EXE):
+    for path in (zip_path, CLI_EXE, GUI_EXE):
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         lines.append("%s  %s" % (digest, path.relative_to(DIST).as_posix()))
     out = DIST / "SHA256SUMS.txt"
@@ -127,10 +205,13 @@ def verify_clean_path(zip_path):
     tmp = Path(tempfile.mkdtemp(prefix="hd2proxy-dist-"))
     try:
         shutil.unpack_archive(str(zip_path), str(tmp))
-        exe = tmp / NAME / (NAME + ".exe")
-        profile = tmp / NAME / "data" / "acceptance" / "m4-b.json"
-        r = run([exe, "preview", "--profile", profile, "--fixture", "status"],
-                check=False, timeout=120)
+        root = tmp / NAME
+        for exe in ("hd2proxy.exe", "hd2proxy-gui.exe"):
+            if not (root / exe).exists():
+                raise SystemExit("zip 里缺少 %s" % exe)
+        profile = root / "data" / "acceptance" / "m4-b.json"
+        r = run([root / "hd2proxy.exe", "preview", "--profile", profile,
+                 "--fixture", "status"], check=False, timeout=120)
         out = (r.stdout or "") + (r.stderr or "")
         if r.returncode != 0 or not any(k in out for k in ("合计", "Status")):
             raise SystemExit("干净路径验证失败（rc=%s）\n%s" % (r.returncode, out[-1500:]))
@@ -140,15 +221,16 @@ def verify_clean_path(zip_path):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="打包 hd2proxy（PyInstaller onedir + zip）")
+    ap = argparse.ArgumentParser(description="打包 hd2proxy（PyInstaller 单 bundle 双 exe + zip）")
     ap.add_argument("--skip-build", action="store_true", help="复用已有 dist 产物")
     ap.add_argument("--no-zip", action="store_true", help="不打包 zip/校验和/干净路径验证")
     a = ap.parse_args(argv)
 
     t0 = time.time()
     if a.skip_build:
-        if not EXE.exists():
-            raise SystemExit("--skip-build 但 %s 不存在" % EXE)
+        for exe in (CLI_EXE, GUI_EXE):
+            if not exe.exists():
+                raise SystemExit("--skip-build 但 %s 不存在" % exe)
     else:
         build()
     stage_data()

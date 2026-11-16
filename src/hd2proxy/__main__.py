@@ -483,9 +483,17 @@ def main(argv=None):
     if argv and argv[0] in ("engine", "selftest", "gate"):
         handler = {"engine": cmd_engine, "selftest": cmd_selftest, "gate": cmd_gate}[argv[0]]
         return handler(argparse.Namespace(cmd=argv[0], rest=argv[1:]))
-    if not argv or argv[0] in ("-h", "--help"):
+    if not argv:
+        # 双击 exe / 无参数：默认打开 GUI（CLI 用法显式 --help）
+        try:
+            return cmd_gui(argparse.Namespace(profile=""))
+        except Exception as e:      # noqa: BLE001 —— 无图形环境时退回帮助
+            print("无法打开图形界面（%r）；CLI 用法见 --help" % (e,))
+            build_parser().print_help()
+            return FAIL
+    if argv[0] in ("-h", "--help"):
         build_parser().print_help()
-        return OK if argv else 2
+        return OK
     a = build_parser().parse_args(argv)
     if a.version:
         import hd2proxy
