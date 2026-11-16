@@ -119,13 +119,15 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 ```
 src/hd2proxy/engine/                    引擎（server / 钩子 / 配置 / 证书 / 安装 / 控制面 / 离线预演 preview.py）
 src/hd2proxy/gui/                       Tk GUI：壳 + 5 页 + widgets + templates.py（能力模板）
-tests/unit/                             单元测试（297 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / CLI）
+tests/unit/                             单元测试（311 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / CLI）
 tests/selftest*.py                      5 个脚本式离线自检（迁自研究线，仅改路径）
 tools/run_selftests.py                  自检总入口（独立证书/数据目录，GATE 判定）
 tools/check_gate.py                     门禁：语法 + 绝对路径 + pytest + 5 自检
 tools/gen_session_certs.py              会话证书签发（ca 模式，≤2 天硬上限）
 tools/gen_catalogs.py                   数据目录生成（GUI 用，来自研究仓产物）
 tools/gui_smoke.py                      GUI 冒烟：起真引擎 + 假上游 → 五页截图
+tools/sign_local.ps1                    本机自签代码签名（装当前用户信任库 + 签 exe，见 docs/SIGNING-LOCAL.md）
+tools/sync_release_area.py              把打包产物同步到「release 产物测试区」（解包最新版 + 归档旧 zip）
 data/legacy/                            引擎兼容用的原始目录文件（逐字节复制）
 data/catalogs/                          规范化目录（变种/战备/效果/星球/物品/build 指纹）
 data/samples/                           离线预演的样本响应（真实抓包裁剪、无账号字段）

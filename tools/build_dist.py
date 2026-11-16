@@ -246,10 +246,27 @@ def verify_clean_path(zip_path):
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def sync_test_area(zip_path):
+    """可选：把本次产物同步到「release 产物测试区」（--test-area 或 HD2PROXY_TEST_AREA）。
+
+    测试区 = 专门用来验证发布产物的目录：解包最新版到 current/、归档旧 zip、写 VERSION.txt。
+    没设就不做（CI/普通构建不需要）。
+    """
+    area = getattr(sync_test_area, "area", "") or os.environ.get("HD2PROXY_TEST_AREA", "")
+    if not area:
+        return
+    sys.path.insert(0, str(ROOT / "tools"))
+    from sync_release_area import sync
+    print("+ 同步 release 测试区: %s" % area)
+    sync(area, str(zip_path))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="打包 hd2proxy（PyInstaller 单 bundle 双 exe + zip）")
     ap.add_argument("--skip-build", action="store_true", help="复用已有 dist 产物")
     ap.add_argument("--no-zip", action="store_true", help="不打包 zip/校验和/干净路径验证")
+    ap.add_argument("--test-area", default="",
+                    help="同步产物到 release 测试区目录（也可用 HD2PROXY_TEST_AREA）")
     a = ap.parse_args(argv)
 
     # 控制台可能是 GBK：子进程输出里偶有 U+FFFD，直接 print 会 UnicodeEncodeError 假失败
@@ -258,6 +275,8 @@ def main(argv=None):
             stream.reconfigure(errors="replace")
         except (AttributeError, OSError, ValueError):
             pass
+
+    sync_test_area.area = a.test_area
 
     t0 = time.time()
     if a.skip_build:
@@ -273,6 +292,7 @@ def main(argv=None):
         zip_path = make_zip()
         write_sha256(zip_path)
         verify_clean_path(zip_path)
+        sync_test_area(zip_path)
     print("done: %.1fs" % (time.time() - t0))
     return 0
 

@@ -16,6 +16,9 @@
   `HD2PROXY_SIGN=1` 在构建后自动签名。用途仅为**本机测试不被 SmartScreen 拦**，
   对外分发无增益（别人仍看到未知发布者）。详见 `docs/SIGNING-LOCAL.md`。
 - 新增回归测试：`_cli_hint` 冻结/源码、`apply_passthrough` 写回、保存后 passthrough 往返（**311 passed**）。
+- 新增开发侧工具 `tools/sync_release_area.py`：把打包产物同步到「release 产物测试区」
+  （解包最新版到 `current/`、归档旧 zip、写 `VERSION.txt`）；`build_dist.py` 支持
+  `--test-area` / `HD2PROXY_TEST_AREA` 构建完自动同步，发版后测试直接双击测试区里的 exe。
 
 ## v0.1.0-alpha.3（2026-11-17）— 修复 GUI「启动引擎」弹出第二个窗口/按钮失效
 
