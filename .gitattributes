@@ -1,0 +1,5 @@
+# 统一 LF（跨平台一致）；Windows 脚本仍可正常执行
+* text=auto eol=lf
+*.png binary
+*.crl binary
+*.cer binary
