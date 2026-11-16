@@ -37,6 +37,7 @@ DEFAULT_PROFILE = {
     "status": {
         "variants": [],
         "trials": [],
+        "trials_planet": None,
         "planet_effects": [],
         "globalEffects": {},
         "campaigns": [],
@@ -135,6 +136,9 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
     if not isinstance(raw, dict):
         return default_profile(), ["profile 不是 JSON 对象"], warnings
     for k in raw:
+        # `_` 前缀是本进程内部附加的元数据（如 load_profile_file 的 `_warnings`），不是用户键
+        if k.startswith("_"):
+            continue
         if k not in _KNOWN_TOP:
             warnings.append("未知顶层键 %r（已忽略）" % k)
     doc = _deep_merge(DEFAULT_PROFILE, {k: v for k, v in raw.items() if k in _KNOWN_TOP})
@@ -256,6 +260,18 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
         elif v not in trials:
             trials.append(v)
     st["trials"] = trials
+    # 战备试用是「按星球下发」的（引擎把它并进该星的 planetActiveEffects），
+    # 所以只有 trials 没有变种时也要知道挂到哪颗星；null = 跟随变种星球。
+    tp = st.get("trials_planet")
+    if tp in (None, "", 0):
+        st["trials_planet"] = None
+    else:
+        tpv = _int(tp)
+        if tpv is None or not (1 <= tpv <= _PLANET_MAX):
+            errors.append("status.trials_planet 必须是星球号 1..400（或 null）")
+            st["trials_planet"] = None
+        else:
+            st["trials_planet"] = tpv
     pe = []
     for row in _as_list(st.get("planet_effects")):
         if not isinstance(row, dict):
@@ -471,14 +487,20 @@ def _resolve_variant(catalog_doc, name):
 
 
 def build_status_plan(profile: dict, catalog_doc=None) -> tuple[dict, list[str]]:
-    """把 profile 的 variants/trials 变成引擎的 explicit plan：{planet: {variants, trials}}。"""
+    """把 profile 的 variants/trials 变成引擎的 explicit plan：{planet: {variants, trials}}。
+
+    战备试用是「按星球下发」的（引擎把它并进该星的 planetActiveEffects），所以：
+      * `status.trials_planet` 已指定 → 试用只挂那颗星（没变种也能单独生效）；
+      * 未指定 → 跟随变种星球（旧行为）；
+      * 两者都没有 → 试用无处可挂，给 warning（不静默丢）。
+    """
     warnings = []
     st = _as_dict(profile.get("status"))
     variants = [v for v in (st.get("variants") or []) if isinstance(v, dict)]
     trials = [_int(x) for x in (st.get("trials") or []) if _int(x)]
     if not variants and not trials:
         return {}, warnings
-    resolved = []
+    plan = {}
     for row in variants:
         entry = _resolve_variant(catalog_doc, row.get("name"))
         if not entry:
@@ -489,13 +511,23 @@ def build_status_plan(profile: dict, catalog_doc=None) -> tuple[dict, list[str]]
             warnings.append("变种 %r 没有指定 planets（本版不做「自动跟随当前星球」），已跳过"
                             % row.get("name"))
             continue
-        resolved.append((planets, entry))
-    plan = {}
-    for planets, entry in resolved:
         for planet in planets:
-            spec = plan.setdefault(planet, {"variants": [], "trials": list(trials)})
+            spec = plan.setdefault(planet, {"variants": [], "trials": []})
             if entry not in spec["variants"]:
                 spec["variants"].append(entry)
+
+    if trials:
+        trial_planet = _int(st.get("trials_planet"))
+        if trial_planet is not None and 1 <= trial_planet <= _PLANET_MAX:
+            targets = [trial_planet]
+        else:
+            targets = list(plan)
+        if not targets:
+            warnings.append("战备试用需要目标星球：请在 status.trials_planet 里选一颗星"
+                            "（试用按星球下发，未写星球不会生效）")
+        for planet in targets:
+            plan.setdefault(planet, {"variants": [], "trials": []})["trials"] = list(trials)
+
     for planet in list(plan):
         if not plan[planet]["variants"] and not plan[planet]["trials"]:
             del plan[planet]

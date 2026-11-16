@@ -5,6 +5,7 @@
 - `rotate_logs` 启动时把超过 512KB 的日志挪成 .log.1（只留一份）。
 """
 
+import contextlib
 import threading
 import time
 
@@ -15,10 +16,28 @@ _lock = threading.Lock()
 # 1.04 起默认只留“必要日志”：启动/计划/改写/错误。
 # 每条请求的 REQ/RESP 只有 --verbose（或 config.verbose=true）时才写。
 VERBOSE = False
+# 离线预演等「纯计算」场景要完全静音：不 print、不写 proxy.log。
+# 为什么不做成参数：钩子内部是 `log(...)` 直接调用，参数传不进去；进程级开关最省事
+# （预演跑在 GUI/CLI 进程里，和引擎不同进程，不存在跨线程污染）。
+SILENT = False
 _THROTTLE = {}          # key -> (last_logged_ts, count)
 
 
+@contextlib.contextmanager
+def quiet():
+    """临时静音所有日志（离线预演用）。"""
+    global SILENT
+    old = SILENT
+    SILENT = True
+    try:
+        yield
+    finally:
+        SILENT = old
+
+
 def log(msg, audit=False):
+    if SILENT:
+        return
     line = time.strftime("%H:%M:%S ") + msg
     with _lock:
         try:

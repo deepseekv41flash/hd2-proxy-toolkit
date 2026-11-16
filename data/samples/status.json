@@ -1,0 +1,96 @@
+{
+ "campaigns": [
+  {
+   "count": 1,
+   "id": 500,
+   "planetIndex": 76,
+   "race": 1,
+   "type": 0
+  }
+ ],
+ "globalEvents": [
+  {
+   "effectIds": [
+    1,
+    2
+   ],
+   "eventId": 1501113
+  }
+ ],
+ "jointOperations": [
+  {
+   "hqNodeIndex": 1,
+   "id": 7001,
+   "planetIndex": 200
+  }
+ ],
+ "planetActiveEffects": [
+  {
+   "galacticEffectId": 1195,
+   "index": 100
+  },
+  {
+   "galacticEffectId": 1243,
+   "index": 76
+  }
+ ],
+ "planetAttacks": [
+  {
+   "source": 76,
+   "target": 100
+  }
+ ],
+ "planetEvents": [
+  {
+   "campaignId": 500,
+   "eventType": 1,
+   "expireTime": 2,
+   "health": 100,
+   "id": 7001,
+   "jointOperationIds": [
+    7001
+   ],
+   "maxHealth": 200,
+   "planetIndex": 200,
+   "potentialBuildUp": 0,
+   "race": 3,
+   "startTime": 1
+  }
+ ],
+ "planetRegions": [
+  {
+   "availabilityFactor": 1,
+   "health": 1,
+   "isAvailable": true,
+   "owner": 1,
+   "planetIndex": 76,
+   "players": 0,
+   "regerPerSecond": 0,
+   "regionIndex": 0
+  }
+ ],
+ "planetStatus": [
+  {
+   "index": 100,
+   "owner": 2
+  },
+  {
+   "index": 76,
+   "owner": 1
+  },
+  {
+   "index": 200,
+   "owner": 3
+  },
+  {
+   "index": 300,
+   "owner": 4
+  },
+  {
+   "index": 158,
+   "owner": 2
+  }
+ ],
+ "time": 1700000000,
+ "warId": 801
+}

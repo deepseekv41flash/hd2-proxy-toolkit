@@ -20,6 +20,7 @@ REPO_ROOT = Path(os.environ.get("HD2PROXY_ROOT") or _HERE.parents[3])
 DATA_DIR = Path(os.environ.get("HD2PROXY_DATA") or (REPO_ROOT / "data"))
 LEGACY_DIR = DATA_DIR / "legacy"          # 研究线原始目录（引擎兼容层读这里）
 CATALOGS_DIR = DATA_DIR / "catalogs"      # 产品规范化目录（GUI 用）
+SAMPLES_DIR = DATA_DIR / "samples"        # 离线预演用的样本响应（裁剪过、无账号字段）
 
 # 运行期数据（logs / runtime）：VMOD_DATA 可覆盖（测试隔离用）
 _DATA_HOME = os.environ.get("VMOD_DATA")

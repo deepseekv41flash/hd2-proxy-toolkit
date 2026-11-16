@@ -3,15 +3,16 @@
 设计：GUI（M2）只是这些能力的图形壳，**所有动作都能在命令行完成**，便于脚本、CI 与排障。
 
 常用：
-  python -m hd2proxy gui                              # 打开图形界面（M2）
+  python -m hd2proxy gui                              # 打开图形界面（M2/M3）
   python -m hd2proxy info                             # 版本与路径
-  python -m hd2proxy profils                          # 见 profiles
+  python -m hd2proxy profiles                         # 列出本机 profile
   python -m hd2proxy profiles list                    # 列出本机 profile
   python -m hd2proxy migrate                          # 旧 config.json/runtime -> profile
   python -m hd2proxy certs status                     # 证书状态（有效期/指纹/告警）
   python -m hd2proxy certs renew                      # 重新签发（ca 模式，≤2 天）
   python -m hd2proxy install --profile <p> --dry-run   # 只打印将改动什么（安全）
   python -m hd2proxy install --profile <p>             # 真安装（需要一次 UAC）
+  python -m hd2proxy preview --profile <p>             # 离线预演：不开游戏看会改什么
   python -m hd2proxy engine --profile <p>              # 起引擎（前台）
   python -m hd2proxy status                            # 读运行中引擎状态
   python -m hd2proxy verify                            # 三连验收（TLS/CRL/Status）
@@ -37,7 +38,8 @@ ROOT = SRC.parent
 ENGINE = SRC / "hd2proxy" / "engine" / "legacy_proxy.py"
 TOOLS = ROOT / "tools"
 
-from hd2proxy.engine import certs, config as cfgmod, installer, paths, sysprobe  # noqa: E402
+from hd2proxy.engine import (certs, config as cfgmod, installer, paths,  # noqa: E402
+                             preview as preview_mod, sysprobe)
 
 OK, FAIL = 0, 2
 
@@ -321,6 +323,38 @@ def cmd_verify(a):
     return OK if result.get("ok") else FAIL
 
 
+def cmd_preview(a):
+    """离线预演：把 profile 套到 data/samples 的样本响应上，看会改客户端什么。
+
+    不开游戏、不装证书、不改 hosts —— 纯读文件计算；退出码只表示「profile 能不能读」，
+    不表示「会不会生效」（那要看增量与 warnings）。
+    """
+    if a.profile:
+        path = Path(a.profile)
+    elif a.name:
+        path = cfgmod.profile_path(a.name)
+    else:
+        print("需要 --profile <路径> 或 --name <profile 名>。现有 profile：")
+        for row in cfgmod.list_profiles():
+            print("  · %s  (%s)" % (row.get("title") or row.get("name"), row.get("path")))
+        return FAIL
+    if not path.exists():
+        print("profile 不存在：%s" % path)
+        return FAIL
+    try:
+        profile = cfgmod.load_profile_file(path)
+    except Exception as e:      # noqa: BLE001
+        print("profile 读取失败：%r" % (e,))
+        return FAIL
+    fixtures = None if a.fixture == "all" else [a.fixture]
+    result = preview_mod.preview(profile, samples_dir=(a.samples or None), fixtures=fixtures)
+    if a.json:
+        _out(result)
+    else:
+        print(preview_mod.format_text(result))
+    return OK
+
+
 def cmd_gui(a):
     """打开图形界面（Tk）。GUI 只是控制面客户端，关窗不会停引擎。"""
     import tkinter as tk
@@ -407,6 +441,14 @@ def build_parser():
     p.add_argument("--plan", default="")
     p.add_argument("--elevated", action="store_true")
 
+    p = sub.add_parser("preview", help="离线预演：套 data/samples 看 profile 会改什么（不开游戏）")
+    p.add_argument("--profile", default="", help="profile 文件路径")
+    p.add_argument("--name", default="", help="state 目录下的 profile 名（与 --profile 二选一）")
+    p.add_argument("--fixture", default="all", choices=["all"] + list(preview_mod.FIXTURE_NAMES),
+                   help="只跑某一类响应（默认 all）")
+    p.add_argument("--samples", default="", help="样本目录（默认 data/samples）")
+    p.add_argument("--json", action="store_true", help="输出结构化 JSON（默认人读文本）")
+
     for name, helptext in (("status", "读运行中引擎的状态"),
                            ("verify", "三连验收（TLS/CRL/Status）"),
                            ("shutdown", "让引擎优雅退出")):
@@ -434,7 +476,7 @@ def main(argv=None):
         "gate": cmd_gate, "profiles": cmd_profiles, "migrate": cmd_migrate,
         "certs": cmd_certs, "install": cmd_install, "uninstall": cmd_uninstall,
         "status": cmd_status, "verify": cmd_verify, "shutdown": cmd_shutdown,
-        "gui": cmd_gui,
+        "gui": cmd_gui, "preview": cmd_preview,
     }[a.cmd]
     return handler(a)
 

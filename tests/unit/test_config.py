@@ -32,6 +32,15 @@ def test_unknown_top_key_warns_not_errors():
     assert any("mystery" in w for w in warnings)
 
 
+def test_internal_underscore_keys_are_not_unknown():
+    """load_profile_file 会挂 `_warnings`；再次 validate 不能把它当用户拼错的键报出来。"""
+    prof = config.default_profile()
+    prof["_warnings"] = ["来自上一次校验"]
+    _, errors, warnings = config.validate(prof)
+    assert errors == []
+    assert not any("_warnings" in w for w in warnings)
+
+
 @pytest.mark.parametrize("mutate,needle", [
     (lambda p: p.update(schema=1), "schema"),
     (lambda p: p["proxy"].update(listen_ip="127.0.0.1"), "回环"),
