@@ -16,6 +16,7 @@ pytest.importorskip("tkinter")
 import tkinter as tk                                   # noqa: E402
 
 from hd2proxy.engine import config                     # noqa: E402
+from hd2proxy.gui import templates                     # noqa: E402
 from hd2proxy.gui import theme                         # noqa: E402
 from hd2proxy.gui.catalogs import Catalogs             # noqa: E402
 from hd2proxy.gui.pages.capture import CapturePage     # noqa: E402
@@ -49,6 +50,7 @@ class FakeApp:
         self.last_status = None
         self.client = FakeClient()
         self.toasts = []
+        self.texts = []
         self.dirty = 0
         self._cert_dir = tmp_path / "state" / "certs"
         self._cert_dir.mkdir(parents=True, exist_ok=True)
@@ -68,6 +70,9 @@ class FakeApp:
         except Exception as e:            # noqa: BLE001 - 与 App 一样把异常交给 on_done
             result = e
         on_done(result)
+
+    def show_text(self, title, content):
+        self.texts.append((title, content))
 
     def last_toast(self):
         return self.toasts[-1] if self.toasts else (None, False)
@@ -262,6 +267,58 @@ def test_status_borrow_and_owner_flip(root, app):
     assert app.profile["status"]["owner"] == {"76": 3}
     page._del_owner(0)
     assert app.profile["status"]["owner"] == {}
+
+
+# ---------------------------------------------------------------- M3：模板 / 预演 / 折叠区
+
+
+def test_status_template_bar_applies_first_core_template(root, app):
+    page = _make(StatusPage, root, app)
+    assert page.tpl_box.current() == 0            # 默认选中第一个核心模板
+    assert "变种词条试用" == page.tpl_var.get()
+    page.tpl_planet.set(76)
+    page._apply_template_pick()
+    assert app.profile["status"]["variants"] == [{"name": "掠食变种", "planets": [76]}]
+    assert app.dirty == 1
+    assert app.texts and "模板已应用" in app.texts[-1][0]
+    assert "星球 76" in app.texts[-1][1]
+
+
+def test_status_template_without_planet_toasts_error(root, app):
+    page = _make(StatusPage, root, app)
+    page.tpl_planet.var.set("")                   # 模拟没选星球
+    page.tpl_box.current(2)                       # 战备试用：需要星球
+    page._apply_template_pick()
+    assert app.last_toast()[1] is True
+    assert app.profile["status"]["trials"] == []
+    assert app.profile["status"]["variants"] == []
+    assert app.dirty == 0
+
+
+def test_status_deferred_fold_and_apply(root, app):
+    page = _make(StatusPage, root, app)
+    assert page._deferred_open is False
+    page._toggle_deferred()
+    assert page._deferred_open is True
+    assert page._deferred_body.winfo_manager() == "pack"
+    page.tpl_planet.set(158)
+    page._apply_template(templates.DEFERRED_TEMPLATES[0])   # 防守战役
+    assert app.profile["status"]["campaigns"][0]["type"] == 4
+    assert app.dirty == 1
+    page._toggle_deferred()
+    assert page._deferred_open is False
+
+
+def test_status_preview_calls_engine_preview(root, app):
+    page = _make(StatusPage, root, app)
+    page.tpl_planet.set(100)
+    page.tpl_box.current(0)
+    page._apply_template_pick()                   # 先加一个变种，预演才有增量
+    page._preview_profile()
+    assert app.texts and "离线预演" in app.texts[-1][0]
+    body = app.texts[-1][1]
+    assert "战况 Status" in body and "合计" in body
+    assert "增量" in app.last_toast()[0]
 
 
 # ---------------------------------------------------------------- InventoryPage

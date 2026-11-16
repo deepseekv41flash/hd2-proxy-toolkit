@@ -427,6 +427,10 @@ class App:
             _TextDialog(self.root, title, out)
         self.run_bg(lambda: self.client.run_cli(args), done, busy=title)
 
+    def show_text(self, title, content):
+        """只读文本窗口（能力模板说明 / 离线预演结果等）。"""
+        _TextDialog(self.root, title, content)
+
     # ---------------------------------------------------------------- 关闭
     def _on_root_destroy(self, event=None):
         """窗口被直接 destroy（测试/异常）时也要停轮询线程，避免之后 Tk 状态异常。"""

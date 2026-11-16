@@ -3,14 +3,20 @@
 页面只读写 `app.profile`（schema v2）并调 `app.mark_dirty()`；**不直接调引擎** ——
 引擎由右上角「应用配置」热更新（GUI 只是控制面客户端）。
 
+M3 在顶部加「能力模板」条（一键写入研究线已验证的组合）与「离线预演」按钮
+（把 profile 套到 data/samples 上，不开游戏就能看会改什么）；底部是「扩展 / 实验」折叠区，
+放引擎已实现但 v0.1 界面不主推的延后项，并显式标注验证状态。
+
 版式：2 列卡片网格放在纵向滚动画布里；卡片内部一律「控件铺满宽度、纵向排」，不写死像素宽
 （1180x780 + Windows DPI 缩放下也不会把右侧控件裁掉）。窗口窄于 SINGLE_COL_BELOW 时退成单列。
 """
 
+import copy
 import tkinter as tk
 from tkinter import ttk
 
-from .. import theme
+from ...engine import preview as preview_mod
+from .. import templates, theme
 from ..widgets import PlanetPicker, RowEditor, SearchList
 from . import Page
 
@@ -44,6 +50,7 @@ class StatusPage(Page):
                                    font=theme.F_S)
         self.engine_lbl.pack(side="right")
 
+        self._build_template_bar()
         self._cards = []
         self._single_col = None
         grid = self._scroll_body()
@@ -56,6 +63,7 @@ class StatusPage(Page):
         self._build_dormant(grid, 1, 1)
         self._build_borrow(grid, 2, 0)
         self._build_owner(grid, 2, 1)
+        self._build_deferred(grid)
 
     def _scroll_body(self):
         """纵向滚动区（只滚 Y，不出现横向滚动条）。返回内层 frame，卡片往它逐格 grid。"""
@@ -117,6 +125,14 @@ class StatusPage(Page):
             else:
                 card.grid_configure(row=i // 2, column=i % 2,
                                     padx=(22, 8) if i % 2 == 0 else (8, 22))
+        box = getattr(self, "_deferred_box", None)
+        if box is not None:
+            if single:
+                box.grid_configure(row=len(self._cards), column=0, columnspan=1,
+                                   padx=(22, 22))
+            else:
+                box.grid_configure(row=(len(self._cards) + 1) // 2, column=0,
+                                   columnspan=2, padx=(22, 22))
 
     def _card(self, parent, row, col, title, sub=""):
         """自绘能力卡（PANEL 底 + BORDER 边），返回可放内容的 body。"""
@@ -145,6 +161,132 @@ class StatusPage(Page):
                        anchor="w", justify="left", wraplength=HINT_WRAP)
         lbl.pack(fill="x", pady=(4, 0))
         return lbl
+
+    # ---- 顶部：能力模板 / 离线预演 -------------------------------------
+    def _build_template_bar(self):
+        bar = tk.Frame(self, bg=theme.PANEL, highlightbackground=theme.BORDER,
+                       highlightthickness=1)
+        bar.pack(fill="x", padx=22, pady=(0, 8))
+        row = tk.Frame(bar, bg=theme.PANEL)
+        row.pack(fill="x", padx=10, pady=(8, 4))
+        tk.Label(row, text="能力模板", bg=theme.PANEL, fg=theme.GOLD,
+                 font=theme.F_H).pack(side="left")
+        self.tpl_var = tk.StringVar()
+        self.tpl_box = ttk.Combobox(row, textvariable=self.tpl_var, state="readonly",
+                                    values=[t.title for t in templates.CORE_TEMPLATES],
+                                    width=16)
+        self.tpl_box.pack(side="left", padx=(8, 6))
+        if templates.CORE_TEMPLATES:
+            self.tpl_box.current(0)
+        self.tpl_planet = PlanetPicker(row, self.app.catalogs, width=22)
+        self.tpl_planet.pack(side="left", padx=(0, 6))
+        theme.button(row, "应用模板", command=self._apply_template_pick).pack(side="left")
+        theme.button(row, "离线预演", command=self._preview_profile).pack(side="right")
+        self.tpl_hint = tk.Label(bar, text="", bg=theme.PANEL, fg=theme.DIM,
+                                 font=theme.F_S, anchor="w", justify="left")
+        self.tpl_hint.pack(fill="x", padx=10, pady=(0, 6))
+        # 说明文字随窗口宽度换行（不写死 wraplength，窗口窄了也不会被裁）
+        bar.bind("<Configure>",
+                 lambda e: self.tpl_hint.configure(wraplength=max(240, e.width - 24)))
+        self.tpl_box.bind("<<ComboboxSelected>>", lambda _e: self._update_template_hint())
+        self._update_template_hint()
+
+    def _selected_template(self):
+        tpls = templates.CORE_TEMPLATES
+        if not tpls:
+            return None
+        idx = self.tpl_box.current()
+        if 0 <= idx < len(tpls):
+            return tpls[idx]
+        return tpls[0]
+
+    def _update_template_hint(self):
+        tpl = self._selected_template()
+        if tpl is None:
+            return
+        hint = tpl.desc
+        if tpl.needs_planet:
+            hint += "（需要右边的目标星球）"
+        hint += "  ·  模板只改内存配置，点右上角「应用配置」才热更新"
+        self.tpl_hint.configure(text=hint)
+
+    def _apply_template_pick(self):
+        tpl = self._selected_template()
+        if tpl is not None:
+            self._apply_template(tpl)
+
+    def _apply_template(self, tpl):
+        try:
+            notes = tpl.apply(self.app.profile, self.tpl_planet.get())
+        except ValueError as e:
+            self.app.toast(str(e), error=True)
+            return
+        self.app.mark_dirty()
+        self.refresh()
+        self.app.toast("已应用模板「%s」—— 点「应用配置」热更新到引擎" % tpl.title)
+        self.app.show_text("模板已应用 · %s" % tpl.title,
+                           "\n".join("· " + n for n in notes)
+                           + "\n\n下一步：右上角「应用配置」热更新；不进游戏可先点「离线预演」看增量。")
+
+    def _preview_profile(self):
+        profile = copy.deepcopy(self.app.profile)
+
+        def done(result):
+            if isinstance(result, Exception):
+                self.app.toast("离线预演失败", error=True)
+                self.app.show_text("离线预演失败", repr(result))
+                return
+            self.app.toast("离线预演：%d 处增量，%d 类响应会被改写"
+                           % (result["totals"]["changes"], result["totals"]["applied"]))
+            self.app.show_text("离线预演（不开游戏）", preview_mod.format_text(result))
+
+        self.app.run_bg(lambda: preview_mod.preview(profile), done, busy="离线预演中…")
+
+    # ---- 底部：扩展 / 实验（延后项折叠） --------------------------------
+    def _build_deferred(self, parent):
+        box = tk.Frame(parent, bg=theme.PANEL, highlightbackground=theme.BORDER,
+                       highlightthickness=1, padx=12, pady=10)
+        box.grid(row=3, column=0, columnspan=2, sticky="nsew",
+                 padx=(22, 22), pady=(0, 12))
+        self._deferred_box = box
+        self._deferred_open = False
+        head = tk.Frame(box, bg=theme.PANEL)
+        head.pack(fill="x")
+        self.deferred_btn = theme.button(
+            head, "▸ 扩展 / 实验（%d 项延后能力）" % len(templates.DEFERRED_TEMPLATES),
+            command=self._toggle_deferred)
+        self.deferred_btn.pack(side="left")
+        tk.Label(head, text="  引擎已实现，v0.1 不主推；每项都标了验证状态",
+                 bg=theme.PANEL, fg=theme.DIM, font=theme.F_S).pack(side="left")
+        self._deferred_body = tk.Frame(box, bg=theme.PANEL)
+        for tpl in templates.DEFERRED_TEMPLATES:
+            row = tk.Frame(self._deferred_body, bg=theme.PANEL2, padx=8, pady=6)
+            row.pack(fill="x", pady=2)
+            left = tk.Frame(row, bg=theme.PANEL2)
+            left.pack(side="left", fill="x", expand=True)
+            tk.Label(left, text=tpl.title, bg=theme.PANEL2, fg=theme.FG,
+                     font=theme.F_B, anchor="w").pack(fill="x")
+            tk.Label(left, text=tpl.desc, bg=theme.PANEL2, fg=theme.MUTED,
+                     font=theme.F_S, anchor="w", justify="left",
+                     wraplength=520).pack(fill="x")
+            ok = "✓" in (tpl.evidence or "")
+            tk.Label(left, text="验证状态：" + (tpl.evidence or "未标注"),
+                     bg=theme.PANEL2, fg=theme.GOLD if ok else theme.RED,
+                     font=theme.F_S, anchor="w", justify="left",
+                     wraplength=520).pack(fill="x")
+            theme.button(row, "应用", command=lambda t=tpl: self._apply_template(t)).pack(
+                side="right", padx=(8, 0))
+
+    def _toggle_deferred(self):
+        self._deferred_open = not self._deferred_open
+        if self._deferred_open:
+            self._deferred_body.pack(fill="x", pady=(6, 0))
+            self.deferred_btn.configure(text="▾ 扩展 / 实验（%d 项延后能力）"
+                                        % len(templates.DEFERRED_TEMPLATES))
+        else:
+            self._deferred_body.pack_forget()
+            self.deferred_btn.configure(text="▸ 扩展 / 实验（%d 项延后能力）"
+                                        % len(templates.DEFERRED_TEMPLATES))
 
     # ---- 1. 变种词条 ---------------------------------------------------
     def _build_variants(self, parent, row, col):
