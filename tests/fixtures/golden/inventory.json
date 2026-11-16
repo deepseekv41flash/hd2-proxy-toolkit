@@ -1,0 +1,64 @@
+{
+ "counts": {
+  "added": 2,
+  "removed": 1
+ },
+ "output": {
+  "customization": [
+   {
+    "activeIndex": 0,
+    "index": 0,
+    "mixId32": 3000,
+    "modes": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "slots": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8
+    ]
+   },
+   {
+    "activeIndex": 0,
+    "index": 1,
+    "mixId32": 4161086429,
+    "modes": [
+     1,
+     0,
+     0,
+     0
+    ],
+    "slots": [
+     9,
+     10,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  ],
+  "items": [
+   {
+    "amount": 1,
+    "isDiscovered": true,
+    "mixId": 1000
+   },
+   {
+    "amount": 1,
+    "isDiscovered": false,
+    "mixId": 2112173638
+   }
+  ]
+ }
+}

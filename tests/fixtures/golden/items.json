@@ -1,0 +1,39 @@
+{
+ "counts": {
+  "added": 2
+ },
+ "output": [
+  {
+   "buyPrice": [],
+   "itemId": 100,
+   "mixId": 100,
+   "progressionCategory": 0,
+   "tags": []
+  },
+  {
+   "itemId": 200,
+   "mixId": 200,
+   "progressionCategory": 3,
+   "tags": [
+    "x"
+   ]
+  },
+  {
+   "itemId": 2112173638,
+   "mixId": 2112173638,
+   "progressionCategory": 3,
+   "tags": [
+    "x"
+   ]
+  },
+  {
+   "itemId": 300,
+   "mixId": 300,
+   "parentId": 200,
+   "progressionCategory": 2,
+   "tags": [
+    "x"
+   ]
+  }
+ ]
+}

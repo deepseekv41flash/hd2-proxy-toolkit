@@ -1,0 +1,31 @@
+{
+ "customization": [
+  {
+   "activeIndex": 0,
+   "index": 1,
+   "mixId32": 4161086429,
+   "modes": [
+    1
+   ],
+   "slots": [
+    9,
+    10
+   ]
+  }
+ ],
+ "enabled": true,
+ "items": [
+  {
+   "amount": 1,
+   "isDiscovered": false,
+   "mixId": 2112173638
+  },
+  {
+   "amount": 5,
+   "mixId": 1000
+  }
+ ],
+ "remove": [
+  2000
+ ]
+}

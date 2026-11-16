@@ -1,0 +1,36 @@
+{
+ "customization": [
+  {
+   "activeIndex": 0,
+   "index": 0,
+   "mixId32": 3000,
+   "modes": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "slots": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ]
+  }
+ ],
+ "items": [
+  {
+   "amount": 1,
+   "isDiscovered": true,
+   "mixId": 1000
+  },
+  {
+   "amount": 2,
+   "mixId": 2000
+  }
+ ]
+}

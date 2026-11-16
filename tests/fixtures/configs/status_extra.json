@@ -1,0 +1,66 @@
+{
+ "attacks": [
+  {
+   "source": 100,
+   "target": 300
+  }
+ ],
+ "campaigns": [
+  {
+   "count": 2,
+   "id": 51999,
+   "planet": 300,
+   "race": 1,
+   "type": 4
+  }
+ ],
+ "events": [
+  {
+   "endOffset": 7200,
+   "eventType": 2,
+   "health": 900000,
+   "maxHealth": 1000000,
+   "planet": 300,
+   "race": 2,
+   "startOffset": -30
+  }
+ ],
+ "globalEffects": {
+  "1501113": [
+   1346
+  ]
+ },
+ "owner": {
+  "158": 1
+ },
+ "planet_effects": [
+  {
+   "ids": [
+    1306,
+    1309
+   ],
+   "index": 76
+  }
+ ],
+ "planet_nodes": [
+  {
+   "health": 800000,
+   "index": 301,
+   "owner": 1,
+   "players": 3,
+   "position": {
+    "x": 0.11,
+    "y": -0.22
+   },
+   "regenPerSecond": 4.5
+  }
+ ],
+ "regions": [
+  {
+   "maxHealth": 400000,
+   "owner": 3,
+   "planet": 200,
+   "regionIndex": 1
+  }
+ ]
+}

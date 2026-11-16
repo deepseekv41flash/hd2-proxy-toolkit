@@ -1,0 +1,30 @@
+{
+ "edits": [
+  {
+   "allIndexes": false,
+   "mixId": 2112173638,
+   "slots": {
+    "1": 3905063732
+   }
+  },
+  {
+   "baseSlots": [
+    7,
+    7,
+    7,
+    7,
+    7,
+    7,
+    7,
+    7
+   ],
+   "createIfMissing": true,
+   "mixId": 999,
+   "slots": {
+    "0": 5
+   }
+  }
+ ],
+ "enabled": true,
+ "logEdits": false
+}

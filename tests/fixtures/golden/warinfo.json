@@ -1,0 +1,41 @@
+{
+ "counts": {
+  "changed": 2
+ },
+ "output": {
+  "planetInfos": [
+   {
+    "index": 76,
+    "initialOwner": 1,
+    "maxHealth": 1000,
+    "position": {
+     "x": 0.1,
+     "y": 0.2
+    },
+    "settingsHash": 2995599666
+   },
+   {
+    "index": 100,
+    "settingsHash": 222
+   },
+   {
+    "disabled": false,
+    "index": 301,
+    "initialOwner": 2,
+    "maxHealth": 1000000,
+    "planetBiomeId32": 0,
+    "planetNameId32": 0,
+    "position": {
+     "x": 0.3,
+     "y": -0.55
+    },
+    "sector": 20,
+    "settingsHash": 2995599666,
+    "waypoints": [
+     180,
+     7
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "add": [
+  2112173638,
+  {
+   "id": 300,
+   "parentId": 200,
+   "progressionCategory": 2,
+   "template": 200
+  }
+ ],
+ "enabled": true,
+ "template": 200
+}

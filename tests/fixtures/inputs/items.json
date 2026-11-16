@@ -1,0 +1,17 @@
+[
+ {
+  "buyPrice": [],
+  "itemId": 100,
+  "mixId": 100,
+  "progressionCategory": 0,
+  "tags": []
+ },
+ {
+  "itemId": 200,
+  "mixId": 200,
+  "progressionCategory": 3,
+  "tags": [
+   "x"
+  ]
+ }
+]

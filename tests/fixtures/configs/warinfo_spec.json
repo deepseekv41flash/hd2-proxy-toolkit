@@ -1,0 +1,22 @@
+{
+ "planet_infos": [
+  {
+   "index": 301,
+   "initialOwner": 2,
+   "maxHealth": 1000000,
+   "position": {
+    "x": 0.3,
+    "y": -0.55
+   },
+   "sector": 20,
+   "settingsHash": 2995599666,
+   "waypoints": [
+    180,
+    7
+   ]
+  }
+ ],
+ "settings_hash": {
+  "76": 2995599666
+ }
+}

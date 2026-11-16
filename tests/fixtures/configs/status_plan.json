@@ -1,0 +1,59 @@
+{
+ "100": {
+  "trials": [
+   1227,
+   1263,
+   1254,
+   1152
+  ],
+  "variants": [
+   {
+    "faction": "terminid",
+    "ids": [
+     1243,
+     1245
+    ],
+    "name": "掠食变种"
+   }
+  ]
+ },
+ "200": {
+  "trials": [],
+  "variants": [
+   {
+    "faction": "automaton",
+    "ids": [
+     1360,
+     1361
+    ],
+    "name": "生化人"
+   }
+  ]
+ },
+ "300": {
+  "trials": [],
+  "variants": [
+   {
+    "faction": "universal",
+    "ids": [
+     1401,
+     1400
+    ],
+    "name": "重兵部署"
+   }
+  ]
+ },
+ "301": {
+  "trials": [],
+  "variants": [
+   {
+    "faction": "automaton",
+    "ids": [
+     1248,
+     1249
+    ],
+    "name": "灼热部队"
+   }
+  ]
+ }
+}
