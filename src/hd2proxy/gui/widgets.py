@@ -130,12 +130,127 @@ class PlanetPicker(tk.Frame):
         return False
 
 
+class PickDropdown(tk.Frame):
+    """一行高的可搜索下拉选择器（替代 3 行小列表，2026-11-17 用户要求）。
+
+    为什么要有：变种词条 / 全局效果 / 星球词条这类「条目多、但要选一个」的地方，原来用
+    3 行高的 SearchList —— 只能看到 3 条、还占版面。改成和星球选择一样的下拉：收起时一行，
+    点开是原生 ttk::Combobox 弹窗（带滚动条），输入关键词实时过滤候选。
+
+    items: [(key, label), ...]；`get()` 返回选中 key；`select_index()` / `set_key()` 供测试与回填。
+    """
+
+    def __init__(self, parent, items=None, width=40, on_pick=None, popup_rows=12):
+        super().__init__(parent, bg=theme.PANEL)
+        self.on_pick = on_pick
+        self._items = []
+        self._labels = []
+        self._key_of = {}
+        self._key = None
+        self.var = tk.StringVar()
+        self.box = ttk.Combobox(self, textvariable=self.var, values=[],
+                                width=width, state="normal", height=popup_rows,
+                                font=theme.F_B)
+        self.box.pack(side="left", fill="x", expand=True)
+        self.count = tk.Label(self, text="", bg=theme.PANEL, fg=theme.DIM, font=theme.F_S)
+        self.count.pack(side="left", padx=(6, 0))
+        self.box.bind("<KeyRelease>", self._on_key)
+        self.box.bind("<<ComboboxSelected>>", self._on_selected)
+        self.box.bind("<Return>", self._on_return)
+        self.set_items(items or [])
+
+    # ---- 数据 ---------------------------------------------------------
+    def set_items(self, items):
+        self._items = list(items or [])
+        self._labels, self._key_of = [], {}
+        for key, label in self._items:
+            label = str(label)
+            self._labels.append(label)
+            self._key_of.setdefault(label, key)
+        self._key = None
+        self.var.set("")
+        self.box.configure(values=self._labels)
+        self._update_count(len(self._labels))
+
+    def _update_count(self, shown):
+        total = len(self._labels)
+        self.count.configure(text="共 %d 条" % total if shown == total
+                             else "%d/%d" % (shown, total))
+
+    def _filtered_labels(self, query):
+        query = (query or "").strip().lower()
+        if not query:
+            return list(self._labels)
+        return [label for label in self._labels if query in label.lower()]
+
+    # ---- 交互 ---------------------------------------------------------
+    def _on_key(self, event):
+        if event.keysym in ("Up", "Down", "Return", "Escape", "Tab", "Left", "Right",
+                            "Home", "End", "Prior", "Next", "Shift_L", "Shift_R",
+                            "Control_L", "Control_R"):
+            return
+        hits = self._filtered_labels(self.var.get())
+        self.box.configure(values=hits)
+        self._update_count(len(hits))
+
+    def _open(self):
+        try:
+            self.box.tk.call("ttk::combobox::Post", self.box)
+        except tk.TclError:
+            pass
+
+    def _on_selected(self, _event=None):
+        key = self._key_of.get(self.var.get())
+        if key is None:
+            return
+        self._key = key
+        self.box.configure(values=self._labels)      # 选完恢复全量候选
+        self._update_count(len(self._labels))
+        if self.on_pick:
+            self.on_pick(key)
+
+    def _on_return(self, _event=None):
+        label = self.var.get()
+        if label in self._key_of:
+            self._on_selected()
+        else:
+            hits = self._filtered_labels(label)
+            if len(hits) == 1:
+                self.var.set(hits[0])
+                self._on_selected()
+            else:
+                self._open()
+        return "break"
+
+    # ---- 读写 ---------------------------------------------------------
+    def get(self):
+        return self._key
+
+    def select_index(self, index):
+        """按下标选中（测试 / 键盘回车用）：等价于在下拉里点第 index 项。"""
+        if 0 <= index < len(self._items):
+            self.var.set(self._labels[index])
+            self._on_selected()
+            return self._key
+        self._key = None
+        return None
+
+    def set_key(self, key):
+        for label, known in self._key_of.items():
+            if known == key:
+                self.var.set(label)
+                self._key = key
+                return True
+        return False
+
+
 class RowEditor(tk.Frame):
     """可删行的只读表（配合“添加/删除”按钮）。"""
 
-    def __init__(self, parent, columns, height=4, on_change=None):
+    def __init__(self, parent, columns, height=4, on_change=None, autosize=False):
         super().__init__(parent, bg=theme.PANEL)
         self.on_change = on_change
+        self.autosize = autosize
         f, self.tv = theme.table(self, columns, height=height)
         f.pack(fill="both", expand=True)
         bar = tk.Frame(self, bg=theme.PANEL)
@@ -146,6 +261,9 @@ class RowEditor(tk.Frame):
 
     def set_rows(self, rows, hint=""):
         theme.fill_table(self.tv, rows)
+        if self.autosize:
+            # 至少 2 行、最多 8 行；5 个变种就显示 5 行（原来固定 2 行只能看到 2 条）
+            self.tv.configure(height=max(2, min(len(rows), 8)))
         self.hint.configure(text=hint or "%d 条" % len(rows))
 
     def remove_selected(self):

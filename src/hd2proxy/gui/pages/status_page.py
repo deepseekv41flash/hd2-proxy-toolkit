@@ -17,7 +17,7 @@ from tkinter import ttk
 
 from ...engine import preview as preview_mod
 from .. import templates, theme
-from ..widgets import PlanetPicker, RowEditor, SearchList
+from ..widgets import PickDropdown, PlanetPicker, RowEditor
 from . import Page
 
 MAX_HEALTH = 1000000
@@ -291,19 +291,19 @@ class StatusPage(Page):
     # ---- 1. 变种词条 ---------------------------------------------------
     def _build_variants(self, parent, row, col):
         body = self._card(parent, row, col, "变种词条", "双 id 成对 · status.variants")
-        self.variant_list = SearchList(body, items=self.app.catalogs.variant_entries(),
-                                       height=3, on_pick=self._pick_variant)
-        self.variant_list.pack(fill="x")
+        self.variant_dd = PickDropdown(body, items=self.app.catalogs.variant_entries(),
+                                       on_pick=self._pick_variant)
+        self.variant_dd.pack(fill="x")
         bar = tk.Frame(body, bg=theme.PANEL)
         bar.pack(fill="x", pady=(6, 0))
         self.variant_pick = PlanetPicker(bar, self.app.catalogs, width=PICK_WIDTH)
         self.variant_pick.pack(side="left", fill="x", expand=True)
         theme.button(bar, "添加到方案", command=self._add_variant).pack(side="left",
                                                                        padx=(8, 0))
-        self.variant_ids_lbl = self._hint(body, "选中变种后显示 dual ids")
+        self.variant_ids_lbl = self._hint(body, "在下方下拉里选变种（可输入关键词），这里显示 dual ids")
         self.variant_editor = RowEditor(
             body, [("变种", 90), ("星球", 80), ("ids", 120)], height=2,
-            on_change=self._del_variant)
+            on_change=self._del_variant, autosize=True)
         self.variant_editor.pack(fill="x", pady=(6, 0))
 
     def _pick_variant(self, name):
@@ -314,7 +314,7 @@ class StatusPage(Page):
                                        % (name, ids, meta.get("faction") or "?"))
 
     def _add_variant(self):
-        name = self._sel_variant or self.variant_list.get_selected()
+        name = self._sel_variant or self.variant_dd.get()
         if not name:
             self.app.toast("先在变种列表里选一个变种", error=True)
             return
@@ -367,18 +367,17 @@ class StatusPage(Page):
         self._label(bar, "事件 id").pack(side="left")
         self.var_event_id = tk.StringVar(value="1501113")
         theme.entry(bar, self.var_event_id, width=12).pack(side="left", padx=(6, 0))
-        self.global_list = SearchList(body, items=self.app.catalogs.effect_entries(),
-                                      height=3)
-        self.global_list.pack(fill="x", pady=(6, 0))
+        self.global_dd = PickDropdown(body, items=self.app.catalogs.effect_entries())
+        self.global_dd.pack(fill="x", pady=(6, 0))
         theme.button(body, "添加效果", command=self._add_global).pack(anchor="w", pady=(6, 0))
-        self._hint(body, "同事件 id 去重；效果 id 见下表")
+        self._hint(body, "点下拉选择 effect（可输入关键词过滤）；同事件 id 去重")
         self.global_editor = RowEditor(
             body, [("事件 id", 90), ("effect id", 130)], height=2,
-            on_change=self._del_global)
+            on_change=self._del_global, autosize=True)
         self.global_editor.pack(fill="x", pady=(6, 0))
 
     def _add_global(self):
-        effect = self.global_list.get_selected()
+        effect = self.global_dd.get()
         if effect is None:
             self.app.toast("先在效果列表里选一个 effect", error=True)
             return
@@ -424,14 +423,14 @@ class StatusPage(Page):
         body = self._card(parent, row, col, "星球词条", "绕阵营过滤 · planet_effects")
         self.pe_pick = PlanetPicker(body, self.app.catalogs, width=PICK_WIDTH)
         self.pe_pick.pack(fill="x")
-        self.pe_list = SearchList(body, items=self.app.catalogs.effect_entries(), height=3)
-        self.pe_list.pack(fill="x", pady=(6, 0))
+        self.pe_dd = PickDropdown(body, items=self.app.catalogs.effect_entries())
+        self.pe_dd.pack(fill="x", pady=(6, 0))
         theme.button(body, "添加词条", command=self._add_planet_effect).pack(
             anchor="w", pady=(6, 0))
-        self._hint(body, "同星球合并去重（绕过阵营过滤，可挂到任意星）")
+        self._hint(body, "先下拉选 effect（可输入关键词），再选星球；同星球合并去重（绕过阵营过滤）")
         self.pe_editor = RowEditor(
             body, [("星球", 90), ("effect ids", 160)], height=2,
-            on_change=self._del_planet_effect)
+            on_change=self._del_planet_effect, autosize=True)
         self.pe_editor.pack(fill="x", pady=(6, 0))
 
     def _pe_row(self, planet, create=True):
@@ -446,7 +445,7 @@ class StatusPage(Page):
         if planet is None:
             self.app.toast("先选一颗星球", error=True)
             return
-        effect = self.pe_list.get_selected()
+        effect = self.pe_dd.get()
         if effect is None:
             self.app.toast("先在效果列表里选一个 effect", error=True)
             return

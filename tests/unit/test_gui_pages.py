@@ -178,8 +178,8 @@ def test_status_page_refresh_and_status(root, app):
 
 def test_status_add_variant_and_dedup(root, app):
     page = _make(StatusPage, root, app)
-    page.variant_list.listbox.selection_set(0)
-    name = page.variant_list.get_selected()
+    page.variant_dd.select_index(0)
+    name = page.variant_dd.get()
     page.variant_pick.set(76)
     page._add_variant()
     assert app.profile["status"]["variants"] == [{"name": name, "planets": [76]}]
@@ -194,23 +194,22 @@ def test_status_add_variant_and_dedup(root, app):
 
 def test_status_empty_selection_toasts(root, app):
     page = _make(StatusPage, root, app)
-    page.variant_list.listbox.selection_clear(0, "end")
-    page._add_variant()
+    page._add_variant()                        # 下拉没选中任何变种
     assert app.last_toast()[1] is True
     assert app.profile["status"]["variants"] == []
 
 
 def test_status_effects_dedup_and_merge(root, app):
     page = _make(StatusPage, root, app)
-    page.global_list.listbox.selection_set(0)
-    effect = page.global_list.get_selected()
+    page.global_dd.select_index(0)
+    effect = page.global_dd.get()
     page._add_global()
     assert app.profile["status"]["globalEffects"] == {"1501113": [effect]}
     page._add_global()                        # 同事件同 effect：去重
     assert app.profile["status"]["globalEffects"] == {"1501113": [effect]}
     page.pe_pick.set(100)
-    page.pe_list.listbox.selection_set(1)
-    effect2 = page.pe_list.get_selected()
+    page.pe_dd.select_index(1)
+    effect2 = page.pe_dd.get()
     page._add_planet_effect()
     page._add_planet_effect()                 # 同星球同 effect：去重
     assert app.profile["status"]["planet_effects"] == [{"index": 100, "ids": [effect2]}]
@@ -596,3 +595,62 @@ def test_inventory_refresh_heals_old_profile_without_catalog_row(inv_page, app):
     assert app.profile["items"]["add"] == [{"id": SHEAR_MIX, "template": SHEAR_TEMPLATE}]
     page.refresh()                                  # 幂等：不会重复补
     assert app.profile["items"]["add"] == [{"id": SHEAR_MIX, "template": SHEAR_TEMPLATE}]
+
+
+# ---- 变种词条 / 全局效果 / 星球词条：3 行小列表 -> 下拉选择器（2026-11-17 用户要求）--------
+def _key_event(keysym="a"):
+    from types import SimpleNamespace
+    return SimpleNamespace(keysym=keysym)
+
+
+def test_status_dropdowns_list_all_entries(root, app):
+    page = _make(StatusPage, root, app)
+    assert page.variant_dd._labels == [label for _k, label in app.catalogs.variant_entries()]
+    assert len(page.global_dd._labels) == len(app.catalogs.effect_entries()) > 50
+    assert page.pe_dd._labels == page.global_dd._labels
+    assert "共 %d 条" % len(page.variant_dd._labels) in page.variant_dd.count.cget("text")
+
+
+def test_status_dropdown_filters_on_typing(root, app):
+    page = _make(StatusPage, root, app)
+    dd = page.variant_dd
+    total = len(dd._labels)
+    dd.var.set("掠食")
+    dd._on_key(_key_event())
+    shown = list(dd.box.cget("values"))
+    assert 0 < len(shown) < total and all("掠食" in v for v in shown)
+    assert "共" not in dd.count.cget("text") or "/" in dd.count.cget("text")
+    dd.var.set("")                              # 清空关键词 -> 恢复全量
+    dd._on_key(_key_event("BackSpace"))
+    assert len(dd.box.cget("values")) == total
+
+
+def test_status_dropdown_pick_sets_ids_hint(root, app):
+    page = _make(StatusPage, root, app)
+    page.variant_dd.select_index(0)
+    name = page.variant_dd.get()
+    assert name and page._sel_variant == name
+    assert "ids" in page.variant_ids_lbl.cget("text")
+
+
+def test_status_editors_grow_with_rows(root, app):
+    """5 个变种/效果时表要显示 5 行（原来固定 2 行 → 用户只看到 2 条）。"""
+    page = _make(StatusPage, root, app)
+    names = [name for name, _label in app.catalogs.variant_entries()][:5]
+    app.profile["status"]["variants"] = [{"name": n, "planets": [100]} for n in names]
+    page._render_variants()
+    assert len(page.variant_editor.tv.get_children()) == 5
+    assert int(page.variant_editor.tv.cget("height")) == 5
+    app.profile["status"]["globalEffects"] = {"1501113": [1243, 1245, 1276, 1400, 1401]}
+    page._render_global()
+    assert int(page.global_editor.tv.cget("height")) == 5
+    app.profile["status"]["planet_effects"] = [{"index": 100 + i, "ids": [1243]} for i in range(5)]
+    page._render_planet_effects()
+    assert int(page.pe_editor.tv.cget("height")) == 5
+
+
+def test_status_editors_shrink_back_to_two_rows(root, app):
+    page = _make(StatusPage, root, app)
+    app.profile["status"]["variants"] = []
+    page._render_variants()
+    assert int(page.variant_editor.tv.cget("height")) == 2
