@@ -239,9 +239,11 @@ def load_variant_overlay(path: Path | None) -> dict[str, Any]:
         log(f"note: 没有覆盖层 {path}（按纯源目录生成）")
         return {}
     doc = load_json(Path(path), "变种覆盖层 variant_overlay.json", dict)
-    for key in ("items", "groups", "aliases", "remove"):
-        if key in doc and not isinstance(doc[key], (dict, list)):
-            raise SourceError(f"variant_overlay.json 的 {key} 类型异常: {type(doc[key]).__name__}")
+    for key, expect in (("items", dict), ("aliases", dict), ("groups", list), ("remove", list)):
+        if key in doc and not isinstance(doc[key], expect):
+            raise SourceError(
+                f"variant_overlay.json 的 {key} 类型异常: {type(doc[key]).__name__}（应为 {expect.__name__}）"
+            )
     return doc
 
 

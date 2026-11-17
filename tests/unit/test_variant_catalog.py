@@ -245,6 +245,17 @@ def test_overlay_none_is_noop():
     assert gen.apply_variant_overlay(source, {}) == source
 
 
+def test_overlay_loader_validates_key_types(tmp_path):
+    """覆盖层的键类型写错要立刻炸（items 必须是对象、groups/remove 必须是数组）。"""
+    gen = _gen_catalogs_module()
+    assert gen.load_variant_overlay(tmp_path / "missing.json") == {}      # 文件不存在 = 没有覆盖
+    bad = tmp_path / "variant_overlay.json"
+    bad.write_text('{"items": []}', encoding="utf-8")
+    with pytest.raises(gen.SourceError) as exc:
+        gen.load_variant_overlay(bad)
+    assert "items" in str(exc.value)
+
+
 def test_engine_catalog_is_generated_from_the_same_source(tmp_path):
     """引擎目录的键序/结尾格式必须稳定（M0 迁入的那份文件逐字节可比）。"""
     gen = _gen_catalogs_module()
