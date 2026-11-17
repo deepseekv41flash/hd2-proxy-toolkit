@@ -204,10 +204,21 @@ class Catalogs:
         it = self._item_by_mix.get(int(mix_id) if str(mix_id).isdigit() else -1) or {}
         return item_display_label(mix_id, it)
 
-    def search_items(self, text, limit=80):
+    def item_category(self, mix_id):
+        """物品的类别（items.json 的 `category`：weapon / attachment / cosmetic / stratagem）。
+
+        解析不到返回 None（例如只存在于目录里的条目、探测文件里的混类条目）。
+        """
+        it = self._item_by_mix.get(int(mix_id) if str(mix_id).isdigit() else -1) or {}
+        return it.get("category")
+
+    def search_items(self, text, limit=80, category=None):
+        """关键词搜索物品；`category` 给定就只返回该类别（各 tab 的筛选器靠它）。"""
         q = (text or "").strip().lower()
         out = []
         for it in self.items:
+            if category is not None and it.get("category") != category:
+                continue
             mix = it.get("mix_id") or it.get("item_id")
             if mix is None:
                 continue

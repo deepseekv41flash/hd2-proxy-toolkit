@@ -348,6 +348,52 @@ def test_inventory_add_remove_and_summary(inv_page, app):
     assert "武器 0" in page.sum_lbl.cget("text")
 
 
+def test_inventory_tabs_only_show_their_own_category(inv_page):
+    """四个 tab 是筛选器：外观里不能出现附件（2026-11-17 用户报的问题）。
+
+    判定用物品内部名当指纹：`TUBE REDDOT` / `Vertical Grip` 一定属于附件；
+    `Shear` / `Veto` 一定属于武器。
+    """
+    page = inv_page
+    labels = {key: list(page._lists[key].listbox.get(0, "end"))
+              for key in ("weapons", "attachments", "cosmetics", "stratagems")}
+    assert labels["attachments"] and any("TUBE REDDOT" in x for x in labels["attachments"])
+    assert labels["cosmetics"] and not any("TUBE REDDOT" in x or "Vertical Grip" in x
+                                           for x in labels["cosmetics"])
+    assert any("Shear" in x for x in labels["weapons"])
+    assert not any("Shear" in x for x in labels["cosmetics"] + labels["attachments"])
+    assert labels["stratagems"] and all("内部名未解" in x for x in labels["stratagems"])
+    # 每个 tab 的条目数 = min(列表填充上限 80, 该类别总数)
+    for key, category in (("weapons", "weapon"), ("attachments", "attachment"),
+                          ("cosmetics", "cosmetic"), ("stratagems", "stratagem")):
+        total = len(page.app.catalogs.search_items("", limit=100000, category=category))
+        assert len(labels[key]) == min(80, total), (key, len(labels[key]), total)
+
+
+def test_inventory_search_keeps_category_filter(inv_page):
+    """关键词搜索也不能越界：附件 tab 搜 grip 有结果，外观 tab 搜 grip 必须为空。"""
+    page = inv_page
+    page._keywords["attachments"].set("grip")
+    page._search_items("attachments")
+    assert page._lists["attachments"].listbox.size() > 0
+    page._keywords["cosmetics"].set("grip")
+    page._search_items("cosmetics")
+    assert page._lists["cosmetics"].listbox.size() == 0
+
+
+def test_inventory_add_rejects_cross_category(inv_page, app):
+    """兜底：万一列表被塞进异类条目，也不许写进错类别的 profile 列表。"""
+    page = inv_page
+    attachment_mix, attachment_label = page.app.catalogs.search_items(
+        "", limit=1, category="attachment")[0]
+    page._lists["cosmetics"].set_items([(attachment_mix, attachment_label)])
+    page._lists["cosmetics"].listbox.selection_set(0)
+    page._add_item("cosmetics")
+    assert app.profile["inventory"].get("cosmetics") in (None, [])
+    text, error = app.last_toast()
+    assert error and "附件" in text
+
+
 def test_inventory_catalog_add_dedup(inv_page, app):
     page = inv_page
     page.catalog_list.listbox.selection_set(0)

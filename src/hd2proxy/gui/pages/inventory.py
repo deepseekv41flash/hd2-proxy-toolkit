@@ -16,6 +16,9 @@ from . import Page
 EDIT_TABS = (("weapons", "武器"), ("attachments", "附件"),
              ("cosmetics", "外观"), ("stratagems", "战备"))
 TAB_NAMES = dict(EDIT_TABS)
+# key -> items.json 的 `category` 值（每个 tab 的列表只显示这一类；2026-11-17 用户报「外观里冒出附件」）
+TAB_CATEGORY = {"weapons": "weapon", "attachments": "attachment",
+                "cosmetics": "cosmetic", "stratagems": "stratagem"}
 
 
 class InventoryPage(Page):
@@ -78,7 +81,7 @@ class InventoryPage(Page):
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         right = tk.Frame(body, bg=theme.BG)
         right.grid(row=0, column=1, sticky="nsew")
-        items = self.app.catalogs.search_items("")
+        items = self.app.catalogs.search_items("", category=TAB_CATEGORY[key])
         lst = SearchList(left, items=items, height=12)
         lst.pack(fill="both", expand=True)
         self._lists[key] = lst
@@ -92,9 +95,9 @@ class InventoryPage(Page):
         self._editors[key] = editor
 
     def _search_items(self, key):
-        """关键词 -> catalogs.search_items（全量目录里查，limit 200）。"""
+        """关键词 -> catalogs.search_items（只在本 tab 的类别里查，limit 200）。"""
         kw = self._keywords[key].get().strip()
-        items = self.app.catalogs.search_items(kw, limit=200)
+        items = self.app.catalogs.search_items(kw, limit=200, category=TAB_CATEGORY[key])
         self._lists[key].set_items(items)
         self._filled[key] = bool(items)
         self.app.toast("%s：命中 %d 条" % (TAB_NAMES.get(key, key), len(items)))
@@ -112,6 +115,14 @@ class InventoryPage(Page):
             return
         if amount < 1:
             self.app.toast("数量必须 >= 1", error=True)
+            return
+        picked_category = self.app.catalogs.item_category(mix)
+        if picked_category is not None and picked_category != TAB_CATEGORY[key]:
+            self.app.toast("%s 属于「%s」，不能加到%s列表（四个 tab 各自只收同类物品）"
+                           % (self.app.catalogs.item_label(mix),
+                              {"weapon": "武器", "attachment": "附件", "cosmetic": "外观",
+                               "stratagem": "战备"}.get(picked_category, picked_category),
+                              TAB_NAMES[key]), error=True)
             return
         rows = self._inventory().setdefault(key, [])
         if any(isinstance(r, dict) and int(r.get("mixId") or 0) == int(mix) for r in rows):

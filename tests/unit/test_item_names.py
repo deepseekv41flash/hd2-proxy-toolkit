@@ -134,6 +134,28 @@ def test_search_items_matches_names():
     assert any("附件" in label for _mix, label in cat.search_items("附件", limit=30))
 
 
+def test_search_items_category_filter_keeps_attachment_names_out_of_cosmetics():
+    """分类筛选的数据层保证：外观列表里不出现附件内部名，反之亦然。"""
+    cat = Catalogs()
+    cosmetics = cat.search_items("", limit=100000, category="cosmetic")
+    attachments = cat.search_items("", limit=100000, category="attachment")
+    assert attachments and cosmetics
+    assert not any("TUBE REDDOT" in label or "Vertical Grip" in label for _mix, label in cosmetics)
+    assert any("TUBE REDDOT" in label for _mix, label in attachments)
+    weapons = cat.search_items("", limit=100000, category="weapon")
+    assert any("Shear" in label for _mix, label in weapons)
+    stratagems = cat.search_items("", limit=100000, category="stratagem")
+    assert len(stratagems) == 30
+    # 类别之间不重叠，且四类之和 + 未分类 = 全部
+    total = len(cat.items)
+    categorized = sum(len(cat.search_items("", limit=100000, category=c))
+                      for c in ("weapon", "attachment", "cosmetic", "stratagem"))
+    assert categorized < total                       # 另有 15 条混类探测条目（category=None）
+    assert cat.item_category(4591677) == "attachment"
+    assert cat.item_category(2112173638) == "weapon"
+    assert cat.item_category(1) is None
+
+
 # ---------------------------------------------------------------- 生成器规则
 
 

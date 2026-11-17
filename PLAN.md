@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.1-alpha.2` 已发布（2026-11-17，物品内部名补齐到 1544/1671，含 dlbin 路线的武器名）**
+> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.1-alpha.3` 已发布（2026-11-17，修复物品与战备四个 tab 不按类别筛选）**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -616,6 +616,20 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
   客户端靠服务端/商店响应关联；当前抓包没有 store/season 响应 ⇒ 30 条战备保持「内部名未解」。
   下一步：用本产品的抓包功能抓一次战备/商店页面，再做 itemId→locid→名字的映射。
 - 单测 373 → **375 passed**。
+
+---
+
+### 14.8 v0.1.1-alpha.3（2026-11-17，四个 tab 不筛选类别）
+
+- 用户报：「外观」里出现 `TUBE REDDOT 1,5x`、`Vertical Grip` 等明显属于附件的东西。
+- 根因：`InventoryPage._build_edit_tab` 四个 tab 都用 `catalogs.search_items("")` 填全量列表，
+  只改标题 —— 列表内容完全相同（不是数据分类错，是界面没用 `category` 字段）。
+- 修复：`Catalogs.search_items(text, limit, category=...)` + `item_category()`；
+  四个 tab 按 `weapon/attachment/cosmetic/stratagem` 过滤（武器 24 / 附件 1176 / 外观 426 / 战备 30）；
+  搜索带类别过滤；`_add_item` 加兜底：异类条目拒绝并提示正确类别。
+- 15 条 `category=None` 的混类探测条目（`inventory_probe_inject.json`）不进四个 tab，
+  只在「目录追加」里出现。
+- 回归测试 +4 → **379 passed**（tab 只显示本类 / 搜索不越界 / 跨类拒绝 / 数据层分类保证）。
 
 ---
 
