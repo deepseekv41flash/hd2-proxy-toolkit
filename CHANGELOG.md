@@ -6,6 +6,25 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.1.1-alpha.1（2026-11-17）— 「物品与战备」显示物品内部名（不再只有 id）
+
+- **新增（小规模功能更新）**：「物品与战备」页的物品列表/编辑器原来只显示 `mixId · attachment`
+  这种「id + 英文类别」，1671 条里只有 391 条有名字，其余无法辨认。现在补**内部名**（本地化译名暂不做）：
+  - 附件：服务端目录行 `itemId` = 武器改装选项 id → 选项内部名（如 `TUBE REDDOT 1,5x`、`Vertical Grip`）；
+  - 外观：目录行 `itemId` = 外观表行 id → 外观表名字（已有的显示名逻辑，本次合并进同一解析）；
+  - 武器 / 战备等类别：目录行只有 id、本机没有可用的名字来源 → **留空并明确标注**
+    「内部名未解」，不编造。
+  - 结果：**1520 / 1671** 条有名字（原 391）；列表与编辑器显示 `mixId · 名字`，搜索框可按名字搜
+    （如搜 `reddot` / `vertical grip` 直接命中）。
+- 数据侧：`data/catalogs/items.json` 每条新增 `catalog_category`（目录类别：2=附件、3=外观、11=战备…），
+  已解析出名字的再带 `name_source`（`catalog-option` / `armor-table`），便于回溯。
+- 新增仓库内数据源 `data/sources/progression_item_catalog.json`：服务端 `/api/Progression/items`
+  抓包的紧凑索引（3020 行 mixId→itemId/类别，含原始抓包 sha256）；其余名字来源来自
+  repo-datamined 的武器改装选项表与 variant-net 的外观表。
+- 单测 364 → **373**（新增 `tests/unit/test_item_names.py` 9 条：名字覆盖、抽样映射、GUI 标签/搜索、
+  生成器解析规则与类别冲突报错）。
+- 规则：本版是**功能更新** ⇒ 版本位 `0.1.0` → `0.1.1`，阶段重置 `alpha.1`。
+
 ## v0.1.0-alpha.5（2026-11-17）— 变种目录补齐（Caustic / Noxious）+ 版本规则与发版工具
 
 - **修复（用户报）**：「变种」里虫族少了 **Caustic Strain** 和 **Noxious Strain**。根因是两层：

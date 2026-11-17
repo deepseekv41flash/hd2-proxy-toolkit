@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.0-alpha.5` 已发布（2026-11-17，变种目录补齐 Caustic/Noxious + 版本规则与发版工具）**
+> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.1-alpha.1` 已发布（2026-11-17，物品与战备页显示物品内部名）**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -580,6 +580,26 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
+
+### 14.6 v0.1.1-alpha.1（2026-11-17，「物品与战备」只有 id 没有名字）
+
+- 用户报：物品与战备页所有物品只显示 `mixId · attachment`，无法辨认；要求先显示**内部名**
+  （本地化译名暂不做，工作量太大）。这是**小规模功能更新** ⇒ `0.1.0` → `0.1.1`，阶段重置 `alpha.1`。
+- 名字来源（2026-11-17 定位）：
+  - **附件**：服务端 `/api/Progression/items` 行的 `itemId` = 武器改装选项 id；选项内部名在
+    `generated_weapon_customization_settings` 的解析产物
+    `repo-datamined/refs/weapon-customization-options-26251122.json`（342 条）。1404/1455 附件行命中。
+  - **外观**：目录行 `itemId` = 外观表行 id（已有 `armor_rows_parsed.json` 的 names）。
+  - **武器 / 战备**：目录 id 与本地表（weapon keys、entity index、stratagem settings）均无已知映射
+    （试过 murmur32/djb2/crc32/fnv 与各类内部名变体，0 命中）⇒ 留空并在界面标「内部名未解」。
+- 落地：新增仓库内数据源 `data/sources/progression_item_catalog.json`（3020 行紧凑索引，含抓包 sha256）；
+  `tools/gen_catalogs.py` 增 `enrich_item_names()`（附件/外观补名，只填空缺不覆盖）；
+  `gui/catalogs.py` 统一 `item_display_label()`（有名字显示名字，无名字显示类别 +「内部名未解」）；
+  `data/catalogs/items.json` 每条加 `catalog_category`（有名字的再加 `name_source`）。
+- 覆盖：**1520 / 1671** 有名字（原 391），搜索框可按内部名搜（`reddot` / `vertical grip`）。
+- 回归测试 +9 → **373 passed**（`tests/unit/test_item_names.py`）。
+
+---
 
 ## 附：本轮不做
 

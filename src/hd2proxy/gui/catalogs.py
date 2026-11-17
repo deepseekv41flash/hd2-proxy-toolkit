@@ -10,6 +10,31 @@ from pathlib import Path
 from ..engine import paths
 
 
+# 物品类别中文名（items.json 的 `category` 字段；来自库存配置文件的粗分类）
+ITEM_CATEGORY_LABELS = {
+    "weapon": "武器",
+    "attachment": "附件",
+    "cosmetic": "外观",
+    "stratagem": "战备",
+    "universal": "通用",
+}
+
+
+def item_display_label(mix_id, item):
+    """物品列表/编辑器的统一显示：`mixId · 名字`；没有名字时写明类别与「内部名未解」。
+
+    名字优先用目录里解出的显示名/内部名（2026-11-17 起 items.json 会带内部名：
+    附件=改装选项内部名，外观=外观表名）；解不出来就明确标注，绝不编造。
+    """
+    item = item or {}
+    name = (item.get("name") or "").strip()
+    if name:
+        return "%s · %s" % (mix_id, name)
+    category = ITEM_CATEGORY_LABELS.get(str(item.get("category") or "").strip(),
+                                        item.get("category") or "?")
+    return "%s · %s（内部名未解）" % (mix_id, category)
+
+
 class Catalogs:
     def __init__(self, catalogs_dir=None):
         self.dir = Path(catalogs_dir) if catalogs_dir else paths.CATALOGS_DIR
@@ -177,17 +202,16 @@ class Catalogs:
 
     def item_label(self, mix_id):
         it = self._item_by_mix.get(int(mix_id) if str(mix_id).isdigit() else -1) or {}
-        return "%s · %s" % (mix_id, it.get("name") or it.get("category") or "?")
+        return item_display_label(mix_id, it)
 
     def search_items(self, text, limit=80):
         q = (text or "").strip().lower()
         out = []
         for it in self.items:
-            name = (it.get("name") or "")
             mix = it.get("mix_id") or it.get("item_id")
             if mix is None:
                 continue
-            label = "%s · %s" % (mix, name or it.get("category") or "?")
+            label = item_display_label(mix, it)
             if not q or q in label.lower():
                 out.append((int(mix), label))
                 if len(out) >= limit:

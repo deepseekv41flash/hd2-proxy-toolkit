@@ -22,6 +22,11 @@
 本仓库输入（可写、随仓库走）：
   <repo>/data/sources/variant_overlay.json   变种目录覆盖层（源目录冻结之后由线上证据确认的变种；
                                              例如 2026-11-17 补的 腐蚀变种/毒瘴变种）
+  <repo>/data/sources/progression_item_catalog.json
+                                             服务端物品目录的紧凑索引（mixId -> itemId/类别）。
+                                             用来给 items.json 补「内部名」：附件选项名从
+                                             repo-datamined 的 weapon-customization-options 表取，
+                                             外观名从 variant-net 的外观表取。
 
 只读约定：
   1. 三个源目录只读；脚本只写本仓库内两个固定产物：
@@ -74,6 +79,7 @@ DEFAULT_OUT = REPO_ROOT / "data" / "catalogs"
 # 变种覆盖层（本仓库输入；源目录 variant_mod 冻结后新增的变种写这里）与引擎目录输出
 DEFAULT_OVERLAY = REPO_ROOT / "data" / "sources" / "variant_overlay.json"
 DEFAULT_LEGACY_OUT = REPO_ROOT / "data" / "legacy" / "variant_catalog.json"
+DEFAULT_CATALOG_INDEX = REPO_ROOT / "data" / "sources" / "progression_item_catalog.json"
 
 # build.json 的手工常量（游戏 build 变化时改这里并重跑；variant_catalog 里的 build 另见 generated_from）
 GAME_BUILD = "26568081"
@@ -91,6 +97,9 @@ SRC_ARMOR_ROWS = "variant-net/refs/armor_rows_parsed.json"
 SRC_STORE_COSMETICS = "variant-net/refs/store-cosmetics-20261106.json"
 SRC_UNRELEASED = "variant-net/refs/unreleased_candidates.json"
 SRC_PLANET_INDEX = "repo-datamined/out/planet/planet-index.json"
+# 物品内部名解析用：目录索引（本仓库快照）+ 武器改装选项内部名表（研究仓解析产物）
+SRC_CATALOG_INDEX = "data/sources/progression_item_catalog.json"
+SRC_WEAPON_OPTIONS = "repo-datamined/refs/weapon-customization-options-26251122.json"
 SRC_PLANET_DATA = "repo-datamined/out/planet/planet-data.json"
 # 行号 -> 游戏索引 的权威映射（war 801 抓包 + planet_data 尾部 hashmap 对齐产物）。
 # 为什么必须合并：planet-index.json 的 `index` 是 planet_data **行号**，不是游戏索引；
@@ -741,7 +750,114 @@ class UnionFind:
         return left_root
 
 
-def build_items(variant_net: Path, variant_mod: Path) -> tuple[dict[str, Any], int]:
+# 物品内部名解析：目录类别 -> 名字来源
+#   2 = 附件：`itemId` 是改装选项 id（optionId），内部名在 weapon_customization_settings 表；
+#   3 = 外观：`itemId` 是外观表行 id，名字来自外观表的 names 字段；
+#   其它类别（1 武器 / 11 战备 / …）：目录行只有 id，没有可用的名字来源 -> 留空（界面显示"内部名未解"）。
+ITEM_CATEGORY_NAMES = {
+    0: "未分类",
+    1: "武器",
+    2: "附件",
+    3: "外观",
+    4: "护甲套装",
+    9: "战备升级/通行证",
+    10: "未分类",
+    11: "战备",
+    18: "货币",
+    19: "表情/动作",
+    20: "未分类",
+    21: "未分类",
+    23: "未分类",
+}
+
+
+def _load_item_catalog_index(path: Path) -> dict[int, dict[str, int]]:
+    """读目录索引（mixId -> {item, cat}）；同一 mixId 出现多次时按 mixId+itemId 去重，类别冲突报错。"""
+    require_file(path, "物品目录索引 progression_item_catalog.json")
+    doc = load_json(path, "物品目录索引 progression_item_catalog.json", dict)
+    rows = doc.get("rows")
+    if not isinstance(rows, list) or not rows:
+        raise SourceError("progression_item_catalog.json 的 rows 必须是非空数组")
+    by_mix: dict[int, dict[str, int]] = {}
+    for position, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise SourceError(f"progression_item_catalog.json rows[{position}] 不是对象")
+        mix = to_int(row.get("mix"), f"progression_item_catalog.json rows[{position}].mix")
+        item = to_int(row.get("item"), f"progression_item_catalog.json rows[{position}].item")
+        cat = to_opt_int(row.get("cat"), f"progression_item_catalog.json rows[{position}].cat") or 0
+        existing = by_mix.get(mix)
+        if existing is not None and existing["cat"] != cat:
+            raise SourceError(
+                f"progression_item_catalog.json 里 mixId {mix} 的类别冲突："
+                f"{existing['cat']} vs {cat}"
+            )
+        by_mix.setdefault(mix, {"item": item, "cat": cat})
+    return by_mix
+
+
+def _load_attachment_option_names(path: Path) -> dict[int, str]:
+    """读武器改装选项表：option_id(32 位) -> 内部名（如 "TUBE REDDOT 1,5x"）。"""
+    doc = load_json(path, "武器改装选项表 weapon-customization-options", dict)
+    options = doc.get("items")
+    if not isinstance(options, list) or not options:
+        raise SourceError("weapon-customization-options 的 items 必须是非空数组")
+    out: dict[int, str] = {}
+    for position, option in enumerate(options):
+        if not isinstance(option, dict) or "option_id" not in option:
+            raise SourceError(f"weapon-customization-options items[{position}] 结构异常")
+        raw = to_text(option.get("option_id"))
+        if not raw:
+            continue
+        try:
+            option_id = int(raw, 16)
+        except ValueError as exc:
+            raise SourceError(
+                f"weapon-customization-options items[{position}].option_id 不是 16 进制: {raw!r}"
+            ) from exc
+        name = to_text(option.get("name"))
+        if name and option_id not in out:
+            out[option_id] = name
+    return out
+
+
+def enrich_item_names(
+    items: list[dict[str, Any]],
+    catalog_index: dict[int, dict[str, int]],
+    attachment_options: dict[int, str],
+    armor_names: dict[int, str],
+) -> int:
+    """给 items 补 `catalog_category` 与（名字缺失时的）内部名 / 名字来源。
+
+    只填空缺，不覆盖已有的显示名（外观表/商店表解出的名字更贴近玩家）；
+    解析不到就留空 —— 界面会显示「内部名未解」，不编造。
+    """
+    resolved = 0
+    for item in items:
+        mix = item.get("mix_id")
+        row = catalog_index.get(int(mix)) if mix is not None else None
+        item["catalog_category"] = row["cat"] if row else None
+        if item.get("name") or not row:
+            continue
+        name, source = None, None
+        if row["cat"] == 2:
+            name = attachment_options.get(row["item"])
+            source = "catalog-option"
+        elif row["cat"] == 3:
+            name = armor_names.get(row["item"])
+            source = "armor-table"
+        if name:
+            item["name"] = name
+            item["name_source"] = source
+            resolved += 1
+    return resolved
+
+
+def build_items(
+    variant_net: Path,
+    variant_mod: Path,
+    datamined: Path,
+    catalog_index_path: Path,
+) -> tuple[dict[str, Any], int]:
     records: list[dict[str, Any]] = []
 
     def add_record(
@@ -940,6 +1056,33 @@ def build_items(variant_net: Path, variant_mod: Path) -> tuple[dict[str, Any], i
 
     if not merged_items:
         raise SourceError("items 没有解析出任何物品")
+
+    # --- 内部名补全（2026-11-17 用户报「物品只有 id 没有名字」）
+    armor_names: dict[int, str] = {}
+    for row in armor_rows:
+        if not isinstance(row, dict):
+            continue
+        try:
+            row_id = int(row["id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        texts = [to_text(pair[1]) for pair in (row.get("names") or [])
+                 if isinstance(pair, (list, tuple)) and len(pair) == 2]
+        picked = pick_display_name([t for t in texts if t])
+        if picked:
+            armor_names.setdefault(row_id, picked)
+    resolved = enrich_item_names(
+        merged_items,
+        _load_item_catalog_index(catalog_index_path),
+        _load_attachment_option_names(datamined / "refs" / "weapon-customization-options-26251122.json"),
+        armor_names,
+    )
+    named = sum(1 for item in merged_items if item.get("name"))
+    log(
+        f"note: items 内部名解析 {resolved} 条；有名字 {named}/{len(merged_items)}"
+        f"（来源：附件选项内部名 + 外观表；武器/战备等类别目录行没有名字来源 -> 留空）"
+    )
+
     merged_items.sort(
         key=lambda item: (
             item["mix_id"] is None,
@@ -1013,6 +1156,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"引擎变种目录输出（默认 {DEFAULT_LEGACY_OUT}）",
     )
     parser.add_argument(
+        "--catalog-index",
+        type=Path,
+        default=DEFAULT_CATALOG_INDEX,
+        help=f"物品目录紧凑索引（默认 {DEFAULT_CATALOG_INDEX}），用于补物品内部名",
+    )
+    parser.add_argument(
         "--no-legacy",
         action="store_true",
         help="只写 GUI 目录，不写引擎目录 data/legacy/variant_catalog.json",
@@ -1031,7 +1180,9 @@ def main(argv: list[str] | None = None) -> int:
         stratagems, stratagems_count = build_stratagems(args.variant_mod)
         effects, effects_count = build_effects(args.variant_net)
         planets, planets_count = build_planets(args.datamined)
-        items, items_count = build_items(args.variant_net, args.variant_mod)
+        items, items_count = build_items(
+            args.variant_net, args.variant_mod, args.datamined, args.catalog_index
+        )
         build, build_count = build_build(variants)
 
         # 全部构建成功后再落盘，避免中途失败留下半套目录
