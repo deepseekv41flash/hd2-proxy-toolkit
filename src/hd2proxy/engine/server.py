@@ -19,7 +19,6 @@ import os
 import re
 import socket
 import ssl
-import subprocess
 import sys
 import threading
 import time
@@ -403,31 +402,24 @@ def port_owner_report(port):
 
     1.16 加它是因为现场日志里只有一行 "端口被占了"，看不出是旧代理还是加速器 ——
     而这两种处理方式完全不同（杀旧进程 / 关加速器）。
+
+    走 ``sysprobe.port_listeners``（一条 ``netstat -ano`` + Toolhelp 快照 + 缓存），
+    不再自己 spawn netstat/tasklist：这里以前最多要跑 1+N 个控制台子进程，
+    引擎被 GUI 拉起时这些子进程会各自闪一个控制台窗口。
     """
-    owners, pids = [], set()
+    from . import sysprobe
+
+    owners, seen = [], set()
     try:
-        r = subprocess.run(["netstat", "-ano", "-p", "TCP"], capture_output=True,
-                           text=True, errors="ignore", timeout=8)
-        for line in (r.stdout or "").splitlines():
-            f = line.split()
-            if len(f) >= 5 and f[3].upper() == "LISTENING" and f[1].endswith(":%d" % port):
-                try:
-                    pids.add(int(f[4]))
-                except ValueError:
-                    pass
-    except Exception as e:
-        return ["（查询 netstat 失败：%r）" % (e,)]
-    for pid in sorted(pids):
-        name = "?"
-        try:
-            t = subprocess.run(["tasklist", "/FI", "PID eq %d" % pid, "/NH"],
-                               capture_output=True, text=True, errors="ignore", timeout=6)
-            parts = (t.stdout or "").split()
-            if parts:
-                name = parts[0]
-        except Exception:
-            pass
-        owners.append("%s (PID %d)" % (name, pid))
+        listeners = sysprobe.port_listeners(port)
+    except Exception as e:                            # noqa: BLE001 - 诊断失败不能影响退出码
+        return ["（查询端口占用失败：%r）" % (e,)]
+    for item in listeners:
+        pid = int(item.get("pid") or 0)
+        if pid <= 0 or pid in seen:
+            continue
+        seen.add(pid)
+        owners.append("%s (PID %d)" % (item.get("name") or "?", pid))
     return owners or ["（netstat 没列出监听者 —— 可能是系统保留/WinNAT/端口代理）"]
 
 

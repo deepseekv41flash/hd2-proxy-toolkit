@@ -710,6 +710,19 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
+### 15.2 v0.3.0-alpha.2（2026-11-17，修复切总览卡顿 + 弹 PowerShell 窗口）
+
+- 用户报：切「总览」页卡一会、弹几个 PowerShell 窗口。根因 = windowed GUI spawn 的控制台子进程
+  未隐藏窗口 + 逐端口重复 spawn：`diagnostics.collect()` 冷启动 **755 ms / 7 次 spawn**
+  （3 端口 × netstat TCP/TCPv6 两条 + `tasklist` 573 ms），且总览每次刷新都 `clear_caches()`。
+- 修复：`sysprobe._run` 统一 `CREATE_NO_WINDOW`+`SW_HIDE`；一条 `netstat -ano` 出全量监听表缓存 3 s
+  三端口共用；进程名改 ctypes Toolhelp 快照（`tasklist` 仅兜底）；总览诊断 2.5 s 节流、去掉刷新清缓存，
+  引擎启停由 App 清缓存并绕过节流重算；`server.port_owner_report` 与 `gui/client.run_cli` 同样隐藏窗口。
+- 实测：collect **755 ms / 7 spawn → 55 ms / 1 spawn**（冷）、**1 ms / 0 spawn**（缓存）。
+- 回归测试 427 → **434 passed**；门禁 PASS。
+
+---
+
 ## 附：本轮不做
 
 - 星图可视化大画布、多人同步、服务端写入（幻影战局不落账，交接档 §6.1 已定证）

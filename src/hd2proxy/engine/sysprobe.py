@@ -53,15 +53,44 @@ _VIRTUAL_MARKS = (
 )
 
 _PORT_CACHE: dict[int, tuple[float, list[dict]]] = {}
+# 进程名缓存（PID->名字）与全量监听表缓存：一次 netstat 覆盖 TCP/TCPv6 所有端口。
+# 为什么做全局缓存：总览页一次刷新要查 3 个端口，逐端口 spawn netstat/tasklist 会：
+#   ① 每个子进程弹一个控制台窗口（GUI 无控制台时）；② tasklist 冷启动实测 ~570ms。
+_NAMES_CACHE = None
+_LISTENERS_CACHE = None
 
 
 # --------------------------------------------------------------------------- #
 # 命令执行 / 解码
 # --------------------------------------------------------------------------- #
-def _run(argv: list[str], timeout: float = CMD_TIMEOUT) -> subprocess.CompletedProcess | None:
-    """跑一条只读外部命令；超时 / 找不到程序 / 其它 OSError 一律返回 None。"""
+def _subprocess_kwargs() -> dict:
+    """子进程「隐藏窗口」参数。
+
+    为什么必须有：冻结版 GUI 是 windowed 程序（没有自己的控制台），它 spawn 的每个控制台
+    子进程（netstat / tasklist / hd2proxy.exe CLI）都会**新开一个黑色控制台窗口** ——
+    用户报「切总览页弹出几个 PowerShell 窗口」就是这个（Windows Terminal 是默认宿主，
+    看起来像 PowerShell）。CREATE_NO_WINDOW 让子进程完全无窗口。
+    """
+    if os.name != "nt":
+        return {}
     try:
-        return subprocess.run([str(a) for a in argv], capture_output=True, timeout=timeout)
+        info = subprocess.STARTUPINFO()
+        info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        info.wShowWindow = 0                      # SW_HIDE
+        return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000),
+                "startupinfo": info}
+    except Exception:                             # noqa: BLE001 - 平台差异时退回无参数
+        return {}
+
+
+def _run(argv: list[str], timeout: float = CMD_TIMEOUT) -> subprocess.CompletedProcess | None:
+    """跑一条只读外部命令；超时 / 找不到程序 / 其它 OSError 一律返回 None。
+
+    子进程一律隐藏窗口（见 ``_subprocess_kwargs``）。
+    """
+    try:
+        return subprocess.run([str(a) for a in argv], capture_output=True, timeout=timeout,
+                              **_subprocess_kwargs())
     except (OSError, subprocess.SubprocessError):
         return None
 
@@ -321,8 +350,67 @@ def _parse_netstat(text: str, port: int) -> dict[int, str]:
     return pids
 
 
+def _snapshot_process_names() -> dict[int, str]:
+    """PID -> 进程名：Windows 用 Toolhelp 快照（纯 ctypes，无子进程、无窗口，几毫秒级）。"""
+    if os.name != "nt":
+        return {}
+    names: dict[int, str] = {}
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class PROCESSENTRY32W(ctypes.Structure):
+            _fields_ = [
+                ("dwSize", wintypes.DWORD),
+                ("cntUsage", wintypes.DWORD),
+                ("th32ProcessID", wintypes.DWORD),
+                ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)),
+                ("th32ModuleID", wintypes.DWORD),
+                ("cntThreads", wintypes.DWORD),
+                ("th32ParentProcessID", wintypes.DWORD),
+                ("pcPriClassBase", ctypes.c_long),
+                ("dwFlags", wintypes.DWORD),
+                ("szExeFile", wintypes.WCHAR * 260),
+            ]
+
+        kernel32 = ctypes.windll.kernel32
+        snapshot = kernel32.CreateToolhelp32Snapshot(0x00000002, 0)   # TH32CS_SNAPPROCESS
+        if not snapshot or int(snapshot) == -1:
+            return {}
+        try:
+            entry = PROCESSENTRY32W()
+            entry.dwSize = ctypes.sizeof(PROCESSENTRY32W)
+            ok = kernel32.Process32FirstW(snapshot, ctypes.byref(entry))
+            while ok:
+                names[int(entry.th32ProcessID)] = str(entry.szExeFile)
+                ok = kernel32.Process32NextW(snapshot, ctypes.byref(entry))
+        finally:
+            kernel32.CloseHandle(snapshot)
+    except Exception:                             # noqa: BLE001 - 快照失败走 tasklist 兜底
+        return {}
+    return names
+
+
+def _process_names() -> dict[int, str]:
+    """PID -> 进程名（3 秒缓存）：Toolhelp 快照优先，失败才退回 tasklist（慢且弹窗）。"""
+    global _NAMES_CACHE
+    now = time.monotonic()
+    if _NAMES_CACHE is not None and now - _NAMES_CACHE[0] < PORT_CACHE_TTL:
+        return dict(_NAMES_CACHE[1])
+    names = _snapshot_process_names()
+    if not names:
+        names = _tasklist_csv_names()
+    _NAMES_CACHE = (now, names)
+    return dict(names)
+
+
 def _tasklist_names() -> dict[int, str]:
-    """PID -> 进程名（tasklist CSV 一次拿全，避免按 PID 逐个查进程）。"""
+    """兼容旧名字：等价 ``_process_names``（测试与调用方不必区分实现）。"""
+    return _process_names()
+
+
+def _tasklist_csv_names() -> dict[int, str]:
+    """PID -> 进程名（旧路径：tasklist CSV；只在 Toolhelp 快照失败时用）。"""
     proc = _run(["tasklist", "/NH", "/FO", "CSV"])
     if proc is None:
         return {}
@@ -344,36 +432,71 @@ def _tasklist_names() -> dict[int, str]:
     return names
 
 
-def _query_port_owners(port: int) -> list[dict]:
-    """netstat（IPv4 + IPv6）+ tasklist 查端口占用（不做缓存）。
+def _parse_all_listeners(text: str) -> dict[int, list[dict]]:
+    """一条 ``netstat -ano`` 输出 -> {port: [{pid, addr, host}]}（TCP/TCPv6 都认）。
 
-    为什么要查两遍：``netstat -p TCP`` 只列 IPv4，双栈监听 ``[::]:443`` 的进程会查不到；
-    Windows 上这类绑定同样会挡住我们（独占绑定失败），所以两张表都要看。
-    返回条目带 ``path``（进程完整路径）——现场排查时「哪个目录下的 python.exe」是关键信息
-    （它自己踩过：旧代理没退干净 vs 加速器占用，靠路径区分）。
+    用不带 ``-p`` 的 netstat：一次调用同时列出 IPv4+IPv6 监听，避免「每端口两次 spawn」。
     """
-    listeners: list[dict] = []
-    seen: set[tuple[int, str]] = set()
-    for proto in ("TCP", "TCPv6"):
-        proc = _run(["netstat", "-ano", "-p", proto])
-        if proc is None or proc.returncode != 0:
+    out: dict[int, list[dict]] = {}
+    seen: set[tuple[int, int, str]] = set()
+    for line in (text or "").splitlines():
+        fields = line.split()
+        if len(fields) < 4 or fields[0].upper() not in ("TCP", "TCPV6"):
             continue
-        for found in _parse_netstat_listeners(_decode(proc.stdout), port):
-            key = (found["pid"], found["addr"])
-            if key in seen:
-                continue
-            seen.add(key)
-            listeners.append({"pid": found["pid"], "addr": found["addr"],
-                              "host": found["host"]})
-    if not listeners:
+        try:
+            state_idx = next(i for i, f in enumerate(fields) if f.upper() == "LISTENING")
+        except StopIteration:
+            continue
+        local = fields[1]
+        try:
+            port = int(local.rsplit(":", 1)[1])
+            pid = int(fields[state_idx + 1])
+        except (IndexError, ValueError):
+            continue
+        if port <= 0 or pid <= 0:
+            continue
+        host = local.rsplit(":", 1)[0].strip("[]")
+        key = (port, pid, local)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.setdefault(port, []).append({"pid": pid, "addr": local, "host": host})
+    return out
+
+
+def _listeners_all() -> dict[int, list[dict]]:
+    """全量监听表（3 秒缓存）：一次 netstat 覆盖所有端口/协议。
+
+    为什么全局缓存：总览页一次刷新要查 443/8080/17897 三个端口，逐端口 spawn 会把
+    「一个窗口 + 一次冷启动」放大三倍（用户实测切总览会卡一下并弹几个窗口）。
+    """
+    global _LISTENERS_CACHE
+    now = time.monotonic()
+    if _LISTENERS_CACHE is not None and now - _LISTENERS_CACHE[0] < PORT_CACHE_TTL:
+        return _LISTENERS_CACHE[1]
+    proc = _run(["netstat", "-ano"])
+    listeners = {} if proc is None else _parse_all_listeners(_decode(proc.stdout))
+    _LISTENERS_CACHE = (now, listeners)
+    return listeners
+
+
+def _query_port_owners(port: int) -> list[dict]:
+    """查指定端口的监听者（走全量监听缓存；不额外 spawn netstat/tasklist）。
+
+    返回条目带 ``path``（进程完整路径）——现场排查时「哪个目录下的 python.exe」是关键信息
+    （旧代理没退干净 vs 加速器占用，靠路径区分）。
+    """
+    port = int(port)
+    raw = _listeners_all().get(port) or []
+    if not raw:
         return []
-    names = _tasklist_names()
+    names = _process_names()
     return [
         {"pid": item["pid"], "name": names.get(item["pid"], "?"),
          "addr": item["addr"], "host": item["host"],
          "path": _proc_path(item["pid"]),
          "wildcard": _is_wildcard_addr(item["host"])}
-        for item in sorted(listeners, key=lambda x: (x["addr"], x["pid"]))
+        for item in sorted(raw, key=lambda x: (x["addr"], x["pid"]))
     ]
 
 
@@ -564,15 +687,23 @@ def primary_ip() -> str:
 def game_running() -> bool:
     """《Helldivers 2》是否在运行（进程名含 helldivers2，大小写不敏感）。"""
     try:
-        names = _tasklist_names()
+        names = _process_names()
     except OSError:
         return False
     return any("helldivers2" in name.lower() for name in names.values())
 
 
 def clear_caches() -> None:
-    """清掉探测缓存（测试用；GUI 手动刷新时也可以调）。"""
+    """清掉全部探测缓存（引擎启停后由 App 主动调用；测试也用它强制重查）。
+
+    三张缓存都要清：端口→占用者（``_PORT_CACHE``）、PID→进程名（``_NAMES_CACHE``）、
+    全量监听表（``_LISTENERS_CACHE``）。只清第一张会让后两张继续返回过期数据
+    （引擎刚好停掉时仍显示「被自己占用」）。
+    """
+    global _NAMES_CACHE, _LISTENERS_CACHE
     _PORT_CACHE.clear()
+    _NAMES_CACHE = None
+    _LISTENERS_CACHE = None
 
 
 # --------------------------------------------------------------------------- #

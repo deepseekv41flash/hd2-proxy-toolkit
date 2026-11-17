@@ -17,7 +17,7 @@ import urllib.request
 from collections import deque
 from pathlib import Path
 
-from ..engine import paths
+from ..engine import paths, sysprobe
 
 SRC = Path(__file__).resolve().parents[2]        # src/
 REPO = SRC.parent
@@ -218,9 +218,11 @@ class EngineClient:
         env.setdefault("PYTHONUTF8", "1")
         env.setdefault("PYTHONIOENCODING", "utf-8")
         try:
+            # 隐藏窗口：GUI 是 windowed 程序，不隐藏的话每次「安装/证书」按钮都会闪一个
+            # 控制台窗口（用户看到的是几个 PowerShell 窗口）。
             r = subprocess.run(cli_argv(args),
                                cwd=str(REPO), env=env, capture_output=True,
-                               timeout=timeout)
+                               timeout=timeout, **sysprobe._subprocess_kwargs())
             return r.returncode, decode_output(r.stdout) + decode_output(r.stderr)
         except subprocess.TimeoutExpired:
             return 124, "命令超时（%ss）：%s" % (timeout, " ".join(args))

@@ -108,6 +108,14 @@ class App:
         if page is not None and hasattr(page, "refresh"):
             page.refresh()
 
+    def _refresh_after_engine_change(self):
+        """引擎启停后刷新：先清探测缓存，并绕过总览页的 2.5s 节流（现场已变，必须重算）。"""
+        sysprobe.clear_caches()
+        page = self.pages.get(self.current_page)
+        if page is not None and hasattr(page, "_diag_at"):
+            page._diag_at = 0.0
+        self._after_profile_change()
+
     # ---------------------------------------------------------------- 构图
     def _build(self):
         self.top = tk.Frame(self.root, bg=theme.PANEL, height=46)
@@ -373,14 +381,15 @@ class App:
             messagebox.showerror("启动失败", repr(result))
             return
         proc, ready = result
+        # 引擎启停会改变端口占用者/进程名 —— 清掉探测缓存并强制重算现场检查
         if ready:
             self.toast("引擎已启动 —— 游戏里切一次星球即可生效")
-            self._after_profile_change()
         else:
             tail = "\n".join(list(self.client.log_lines)[-25:])
             messagebox.showerror("引擎启动失败",
                                  "进程退出或 30 秒内未就绪。\n\n最近日志：\n" + tail[-1800:])
             self.toast("引擎启动失败", error=True)
+        self._refresh_after_engine_change()
 
     def stop_engine(self):
         if not self.client.running() and not self.client.engine_alive():
@@ -388,8 +397,12 @@ class App:
             return
         if not self._guard_game_running("停止引擎"):
             return
-        self.run_bg(lambda: self.client.shutdown(), lambda _r: self.toast("引擎已停止"),
-                    busy="停止引擎…")
+
+        def done(_r):
+            self.toast("引擎已停止")
+            self._refresh_after_engine_change()
+
+        self.run_bg(lambda: self.client.shutdown(), done, busy="停止引擎…")
 
     # ---- 端口 / 游戏守卫（P0：来自第三方工具 1.26 的现场经验） ----------
     def _guard_game_running(self, action: str) -> bool:

@@ -126,10 +126,13 @@ def _make_stub(tmp_path, monkeypatch, exit_code="0"):
 
 
 def _fake_run(stdout_map):
-    """按 argv[0] 分派假命令输出；未登记的命令返回失败。"""
+    """按 argv[0] 分派假命令输出；未登记的命令返回失败。
+
+    ``**kwargs`` 必须收：``_run`` 现在会传 ``creationflags`` / ``startupinfo``（隐藏窗口）。
+    """
     calls = []
 
-    def runner(argv, timeout=sysprobe.CMD_TIMEOUT):
+    def runner(argv, timeout=sysprobe.CMD_TIMEOUT, **kwargs):
         calls.append(list(argv))
         for key, text in stdout_map.items():
             if argv[0] == key:
@@ -138,6 +141,24 @@ def _fake_run(stdout_map):
         return subprocess.CompletedProcess(argv, 1, stdout=b"", stderr=b"")
 
     runner.calls = calls
+    return runner
+
+
+# 进程名固定表：离线测试绝不能去读真实进程（否则断言随机失败）
+NAMES_443 = {1234: "python.exe", 4321: "nginx.exe", 5678: "other.exe"}
+
+
+def _patch_probe(monkeypatch, netstat_text, names=None):
+    """把 netstat 输出与进程名表都固定住；返回假命令 runner（可查 calls）。
+
+    进程名走 ``_process_names`` 注入而不是 tasklist 文本：新版实现优先用 Toolhelp
+    快照（无子进程），离线测试只有直接注入这个名字映射才不依赖本机进程。
+    """
+    runner = _fake_run({"netstat": netstat_text})
+    monkeypatch.setattr(sysprobe, "_run", runner)
+    monkeypatch.setattr(sysprobe, "_process_names",
+                        lambda: dict(NAMES_443 if names is None else names))
+    monkeypatch.setattr(sysprobe, "_proc_path", lambda pid: "")
     return runner
 
 
@@ -288,8 +309,7 @@ def test_is_virtual_interface_treats_apipa_as_virtual():
 # 端口占用
 # --------------------------------------------------------------------------- #
 def test_port_owner_netstat_and_tasklist(monkeypatch):
-    runner = _fake_run({"netstat": NETSTAT_443, "tasklist": TASKLIST_CSV})
-    monkeypatch.setattr(sysprobe, "_run", runner)
+    _patch_probe(monkeypatch, NETSTAT_443)
     owners = sysprobe.port_owner(443)
     assert owners == [
         {"pid": 1234, "name": "python.exe", "addr": "0.0.0.0:443"},
@@ -298,15 +318,14 @@ def test_port_owner_netstat_and_tasklist(monkeypatch):
 
 
 def test_port_owner_unknown_process_name(monkeypatch):
-    runner = _fake_run({"netstat": NETSTAT_443, "tasklist": TASKLIST_CSV})
-    monkeypatch.setattr(sysprobe, "_run", runner)
+    # 999 不在固定名字表里 -> 名字列 "?"（不能整条丢掉，PID 仍是关键线索）
+    _patch_probe(monkeypatch, NETSTAT_443)
     owners = sysprobe.port_owner(8443)
     assert owners == [{"pid": 999, "name": "?", "addr": "0.0.0.0:8443"}]
 
 
 def test_port_owner_caches_for_three_seconds(monkeypatch):
-    runner = _fake_run({"netstat": NETSTAT_443, "tasklist": TASKLIST_CSV})
-    monkeypatch.setattr(sysprobe, "_run", runner)
+    runner = _patch_probe(monkeypatch, NETSTAT_443)
     assert sysprobe.port_owner(443)
     calls_after_first = len(runner.calls)
     assert sysprobe.port_owner(443)                 # 命中缓存，不再 spawn 进程
@@ -314,25 +333,102 @@ def test_port_owner_caches_for_three_seconds(monkeypatch):
 
 
 def test_port_owner_returns_empty_when_netstat_fails(monkeypatch):
-    monkeypatch.setattr(sysprobe, "_run", lambda argv, timeout=0: None)
+    monkeypatch.setattr(sysprobe, "_run", lambda argv, timeout=0, **kw: None)
     assert sysprobe.port_owner(443) == []
 
 
 def test_port_in_use(monkeypatch):
-    runner = _fake_run({"netstat": NETSTAT_443, "tasklist": TASKLIST_CSV})
-    monkeypatch.setattr(sysprobe, "_run", runner)
+    _patch_probe(monkeypatch, NETSTAT_443)
     assert sysprobe.port_in_use(443) is True
     assert sysprobe.port_in_use(5555) is False      # 只有 ESTABLISHED，没有 LISTENING
 
 
 def test_clear_caches_forces_requery(monkeypatch):
-    runner = _fake_run({"netstat": NETSTAT_443, "tasklist": TASKLIST_CSV})
-    monkeypatch.setattr(sysprobe, "_run", runner)
+    runner = _patch_probe(monkeypatch, NETSTAT_443)
     sysprobe.port_owner(443)
     calls_after_first = len(runner.calls)
     sysprobe.clear_caches()
     sysprobe.port_owner(443)
     assert len(runner.calls) > calls_after_first
+
+
+def test_listeners_all_spawns_one_netstat_for_many_ports(monkeypatch):
+    """核心回归：3 个端口共用**一条** netstat。
+
+    修复前每端口 spawn 两条 ``netstat -p TCP`` / ``-p TCPv6``（共 6 个控制台子进程，
+    每个都会弹一个窗口、约 100ms），这正是「切总览页卡一下 + 弹几个 PowerShell 窗口」。
+    """
+    runner = _patch_probe(monkeypatch, NETSTAT_MIXED)
+    for port in (443, 8080, 17897):
+        sysprobe.port_listeners(port)
+    netstat_calls = [call for call in runner.calls if call and call[0] == "netstat"]
+    assert netstat_calls == [["netstat", "-ano"]]
+
+
+def test_clear_caches_resets_names_and_listeners(monkeypatch):
+    """三张缓存都要清；只清 _PORT_CACHE 会让引擎停掉后仍显示旧占用者。"""
+    runner = _fake_run({"netstat": NETSTAT_MIXED})
+    monkeypatch.setattr(sysprobe, "_run", runner)
+    monkeypatch.setattr(sysprobe, "_snapshot_process_names", lambda: dict(NAMES_443))
+    monkeypatch.setattr(sysprobe, "_proc_path", lambda pid: "")
+    sysprobe.port_listeners(443)
+    assert sysprobe._NAMES_CACHE is not None
+    assert sysprobe._LISTENERS_CACHE is not None
+    sysprobe.clear_caches()
+    assert sysprobe._PORT_CACHE == {}
+    assert sysprobe._NAMES_CACHE is None
+    assert sysprobe._LISTENERS_CACHE is None
+
+
+def test_process_names_falls_back_to_tasklist(monkeypatch):
+    """Toolhelp 快照失败时才退回 tasklist CSV（唯一还会 spawn 的降级路径）。"""
+    runner = _fake_run({"tasklist": TASKLIST_CSV})
+    monkeypatch.setattr(sysprobe, "_run", runner)
+    monkeypatch.setattr(sysprobe, "_snapshot_process_names", lambda: {})
+    sysprobe.clear_caches()
+    assert sysprobe._process_names()[1234] == "python.exe"
+    assert runner.calls == [["tasklist", "/NH", "/FO", "CSV"]]
+
+
+def test_parse_all_listeners_multi_port_and_ipv6():
+    """一条 netstat -ano 同时解析多端口 / 通配 / IPv6；不把 ESTABLISHED 当监听。"""
+    text = NETSTAT_MIXED + (
+        "  TCP    0.0.0.0:8080           0.0.0.0:0              LISTENING       2001\n"
+        "  TCP    [::]:17897              [::]:0                 LISTENING       2002\n"
+        "  TCP    127.0.0.1:5555         127.0.0.1:5555         ESTABLISHED     7777\n")
+    table = sysprobe._parse_all_listeners(text)
+    assert sorted({item["pid"] for item in table[443]}) == [1234, 4321, 5678]
+    assert table[8080] == [{"pid": 2001, "addr": "0.0.0.0:8080", "host": "0.0.0.0"}]
+    assert table[17897] == [{"pid": 2002, "addr": "[::]:17897", "host": "::"}]
+    assert 5555 not in table                       # ESTABLISHED 不是监听
+
+
+@pytest.mark.skipif(os.name != "nt", reason="只有 Windows 需要隐藏控制台窗口")
+def test_subprocess_kwargs_hides_console_window():
+    """windowed GUI 里 spawn 控制台程序必须带 CREATE_NO_WINDOW，否则每个子进程弹一个窗口。"""
+    kwargs = sysprobe._subprocess_kwargs()
+    assert kwargs["creationflags"] == getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+    info = kwargs["startupinfo"]
+    assert info.dwFlags & subprocess.STARTF_USESHOWWINDOW
+    assert info.wShowWindow == 0                   # SW_HIDE
+
+
+def test_run_forwards_hidden_window_kwargs(monkeypatch):
+    """``_run`` 必须把隐藏窗口参数真的传给 subprocess.run（不能只定义不接线）。"""
+    seen = {}
+    sentinel = subprocess.CompletedProcess(["x"], 0, stdout=b"", stderr=b"")
+
+    def fake_run(argv, **kwargs):
+        seen["argv"] = list(argv)
+        seen.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(sysprobe.subprocess, "run", fake_run)
+    assert sysprobe._run(["netstat", "-ano"]) is sentinel
+    assert seen["capture_output"] is True
+    if os.name == "nt":
+        assert seen["creationflags"] == getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+        assert "startupinfo" in seen
 
 
 # --------------------------------------------------------------------------- #
@@ -346,7 +442,7 @@ def test_clear_caches_forces_requery(monkeypatch):
     ({}, False),
 ])
 def test_game_running(names, expected, monkeypatch):
-    monkeypatch.setattr(sysprobe, "_tasklist_names", lambda: names)
+    monkeypatch.setattr(sysprobe, "_process_names", lambda: dict(names))
     assert sysprobe.game_running() is expected
 
 
@@ -466,8 +562,7 @@ def test_parse_netstat_listeners_keeps_every_binding():
 
 
 def test_port_listeners_marks_wildcard_and_path(monkeypatch):
-    runner = _fake_run({"netstat": NETSTAT_MIXED, "tasklist": TASKLIST_CSV})
-    monkeypatch.setattr(sysprobe, "_run", runner)
+    _patch_probe(monkeypatch, NETSTAT_MIXED)
     monkeypatch.setattr(sysprobe, "_proc_path",
                         lambda pid: "C" + ":" + chr(92) + "x" + chr(92) + "python.exe")
     sysprobe.clear_caches()

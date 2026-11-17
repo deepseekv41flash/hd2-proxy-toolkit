@@ -6,6 +6,31 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.3.0-alpha.2（2026-11-17）— 修复切「总览」页卡顿 + 弹几个 PowerShell 窗口（子进程隐藏窗口 / 一次 netstat / 诊断节流）
+
+- **修复（用户报）**：「工具 GUI 切总览页会卡住一会，并且弹出几个 powershell 窗口」。
+  根因不是渲染，是**控制台子进程**：冻结版 GUI 是 windowed 程序（自己没有控制台），它 spawn 的每个
+  控制台子进程都会新开一个窗口（Windows Terminal 是默认宿主，看起来像 PowerShell）；
+  而总览的现场检查每次刷新要 spawn **7 个**子进程、耗时 **755 ms**（冷启动实测）：
+  443/8080/17897 每端口两条 `netstat -p TCP` / `-p TCPv6`（共 6 条）+ 一条 `tasklist`（573 ms）。
+  更糟的是总览每次刷新都 `sysprobe.clear_caches()`，缓存形同虚设 → 每次切页都重跑一遍。
+- **修复内容（四项）**：
+  1. `engine/sysprobe._run` 给**所有**外部命令加隐藏窗口参数（`CREATE_NO_WINDOW` +
+     `STARTF_USESHOWWINDOW`/`SW_HIDE`）—— 窗口必须从根上消掉，只靠节流仍会闪；
+  2. 端口占用改成**一次 `netstat -ano`**（不带 `-p`，天然覆盖 TCP+TCPv6）产出全量监听表、
+     缓存 3 s，三个端口共用；进程名改用 **ctypes Toolhelp 快照**（0 子进程、<5 ms），
+     `tasklist` 只在快照失败时兜底；
+  3. 总览页现场检查 **2.5 s 节流**，去掉每次刷新的 `clear_caches`；「系统自检」保留强制重算；
+     引擎启动/停止后由 App 主动清缓存并**绕过节流**重算（端口现场已变，不能显示旧值）；
+  4. `engine/server.py::port_owner_report` 改走 `sysprobe`（不再自带 netstat/tasklist），
+     `gui/client.py::run_cli` 补隐藏窗口参数 —— 「安装 / 证书」等按钮也不再弹 CLI 控制台窗。
+- **实测**：`diagnostics.collect()` **755 ms / 7 次 spawn → 55 ms / 1 次 spawn**（冷启动）、
+  **1 ms / 0 次**（缓存命中）；切总览页不再闪窗、不再卡顿。
+- 单测 427 → **434**（新增：三端口共用一条 netstat 的回归断言、`_parse_all_listeners` 多端口/
+  IPv6/排除 ESTABLISHED、隐藏窗口参数与 `_run` 接线、`clear_caches` 三张缓存全清、
+  Toolhelp 失败退回 tasklist、总览诊断节流；受影响 6 个用例改为注入进程名表，不再依赖本机进程）。
+- 规则：只修 bug ⇒ 版本位不变（`0.3.0-alpha.1` → `0.3.0-alpha.2`）。
+
 ## v0.3.0-alpha.1（2026-11-17）— 端口诊断 P0：启动前端口预检 / 换监听地址 / 系统自检 / 游戏运行守卫
 
 - **新增（能力）**：把第三方 `variant_mod 1.26` 面板层的端口诊断交互移植进本工具（引擎侧的

@@ -1,5 +1,6 @@
 """总览页：运行状态 / 证书 / 改写计数 / 抓包 + 主要动作 + 最近改写事件。"""
 
+import time
 import tkinter as tk
 
 from .. import theme
@@ -73,6 +74,7 @@ class OverviewPage(Page):
         self._warn_shown = False
         self._snapshot = None
         self._evaluation = None
+        self._diag_at = 0.0                 # 上次现场检查时间（节流用）
 
         # ---- 事件表 ----------------------------------------------------
         head = tk.Frame(self, bg=theme.BG)
@@ -139,10 +141,18 @@ class OverviewPage(Page):
 
     # ---- 现场检查 / 系统自检 -------------------------------------------
     def _refresh_diag(self):
-        """端口 / hosts / 证书 / 游戏进程检查（只在显示页面/配置变更时跑，不进 0.6s 轮询）。"""
+        """端口 / hosts / 证书 / 游戏进程检查（只在显示页面/配置变更时跑，不进 0.6s 轮询）。
+
+        节流 ≥2.5 秒：切页、切标签页都会走 ``refresh``，而现场检查要扫端口/hosts/证书，
+        每次都重算会让「切到总览」明显卡一下。2.5 秒内的旧结果完全够用；
+        真正要「此刻」状态时点「系统自检」（它强制清缓存重算）。
+        """
+        now = time.monotonic()
+        if now - self._diag_at < 2.5:
+            return
+        self._diag_at = now
         try:
-            from ...engine import diagnostics, sysprobe
-            sysprobe.clear_caches()          # 状态页刷新必须是「此刻」的端口状态
+            from ...engine import diagnostics
             snapshot = diagnostics.collect(self.app.profile, cert_dir=self.app.cert_dir())
             evaluation = diagnostics.evaluate(snapshot)
         except Exception:                       # noqa: BLE001 - 探测失败不影响主界面
@@ -168,11 +178,13 @@ class OverviewPage(Page):
             self._warn_shown = True
 
     def _selfcheck(self):
+        """系统自检：**强制**清缓存重算（用户点它就是要「此刻」的准确状态）。"""
         from ...engine import diagnostics, sysprobe
         sysprobe.clear_caches()
-        snapshot = self._snapshot or diagnostics.collect(
-            self.app.profile, cert_dir=self.app.cert_dir())
-        evaluation = self._evaluation or diagnostics.evaluate(snapshot)
+        self._diag_at = time.monotonic()
+        snapshot = diagnostics.collect(self.app.profile, cert_dir=self.app.cert_dir())
+        evaluation = diagnostics.evaluate(snapshot)
+        self._snapshot, self._evaluation = snapshot, evaluation
         self.app.show_text("系统自检", diagnostics.format_text(snapshot, evaluation))
 
     # ---- 动作 ----------------------------------------------------------

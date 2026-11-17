@@ -703,8 +703,32 @@ def test_overview_shows_diag_warning_and_hides_when_clean(root, app, monkeypatch
 
     clean = {"ok": True, "errors": [], "warnings": []}
     monkeypatch.setattr(diag_mod, "evaluate", lambda snap: clean)
+    page._diag_at = 0.0                    # 模拟已过节流窗口（真实切页间隔 >2.5s）
     page.refresh()
     assert page._warn_shown is False
+
+
+def test_overview_diag_throttles_repeated_refresh(root, app, monkeypatch):
+    """切页/切标签会连着 refresh：2.5 秒内只算一次，否则每次切「总览」都卡一下。"""
+    from hd2proxy.engine import diagnostics as diag_mod
+
+    calls = []
+
+    def fake_collect(*args, **kwargs):
+        calls.append(1)
+        return _diag_snapshot()
+
+    monkeypatch.setattr(diag_mod, "collect", fake_collect)
+    monkeypatch.setattr(diag_mod, "evaluate", lambda snap: {"ok": True, "errors": [],
+                                                            "warnings": []})
+    page = _make(OverviewPage, root, app)
+    page.refresh()
+    page.refresh()
+    page.refresh()
+    assert len(calls) == 1
+    page._diag_at = 0.0                    # 过了节流窗口 -> 重新算
+    page.refresh()
+    assert len(calls) == 2
 
 
 def test_overview_selfcheck_opens_text_dialog(root, app, monkeypatch):
