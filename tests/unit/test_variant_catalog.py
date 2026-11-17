@@ -267,3 +267,39 @@ def test_engine_catalog_is_generated_from_the_same_source(tmp_path):
     text = out.read_text(encoding="utf-8")
     assert not text.endswith("\n")             # 与迁入文件一致：结尾不带换行
     assert json.loads(text)["variants"] == merged["variants"]
+
+
+def test_overlay_renames_group_and_keeps_source_name():
+    """覆盖层 rename：界面用新组名，原组名留档，数量后缀按实际成员重算。"""
+    gen = _gen_catalogs_module()
+    source = _source_catalog()
+    source["groups"][1]["name"] = "卡牌 3"
+    merged = gen.apply_variant_overlay(source, {"groups": [{"match": "卡牌", "rename": "光能者"}]})
+    group = merged["groups"][1]
+    assert group["name"] == "光能者 1"           # 数量按组内实际成员数重算
+    assert group["source_name"] == "卡牌 3"      # 原组名可追溯
+    assert source["groups"][1]["name"] == "卡牌 3"   # 源数据不被就地修改
+    assert "source_name" not in source["groups"][1]
+
+
+def test_overlay_rename_rejects_empty_text():
+    gen = _gen_catalogs_module()
+    with pytest.raises(gen.SourceError) as exc:
+        gen.apply_variant_overlay(_source_catalog(),
+                                  {"groups": [{"match": "机器人", "rename": "  "}]})
+    assert "rename" in str(exc.value)
+
+
+def test_illuminate_group_is_renamed_for_display():
+    """Illuminate 组在源目录叫「卡牌 4」，界面必须显示「光能者 4」（2026-11-17 用户追问）。"""
+    doc = _load(GUI_CATALOG)
+    groups = [g for g in doc["groups"] if g.get("source_name") == "卡牌 4"]
+    assert len(groups) == 1
+    group = groups[0]
+    assert group["name"] == "光能者 4"
+    assert group["variants"] == ["入侵舰队", "无票者大军", "入侵者", "窃票者"]
+    for name in group["variants"]:               # 组名与阵营一致：4 条都是光能者
+        assert doc["items"][name]["faction"] == "illuminate"
+    labels = [label for _key, label in Catalogs(GUI_CATALOG.parent).variant_entries()]
+    assert any(label.startswith("光能者 4 · 入侵舰队") for label in labels)
+    assert not any(label.startswith("卡牌") for label in labels)

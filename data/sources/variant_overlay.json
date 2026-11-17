@@ -58,6 +58,11 @@
     "腐蚀变种",
     "毒瘴变种"
    ]
+  },
+  {
+   "match": "卡牌",
+   "rename": "光能者",
+   "note": "源分组名「卡牌 4」是外部 mod（全变种 Quanbianzhong 10.00）的口径，与阵营不符：这 4 条 meta.faction 全是 illuminate（光能者）。界面按 rename 显示「光能者 4」，原组名保留在 groups[].source_name。"
   }
  ]
 }

@@ -12,7 +12,7 @@
 | 文件 | 条目 | 逻辑来源 | 说明 |
 |---|---:|---|---|
 | `build.json` | 5 字段 | 手工常量 + `variant_mod/variant_catalog.json` 的 build | `game_build=26568081`、`war_id=warseason=801`；`generated_from.variant_mod` 记录旧变种目录的 build（25988413） |
-| `variants.json` | 26 变种 / 5 组 | `variant_mod/variant_catalog.json` + `data/sources/variant_overlay.json` | 分组保留 `exclusive`；`items` 覆盖目录全部变种（含未分组的实验项），保留 `tag`/`mechanic`/`help`；`aliases` 为简称→正式名，供界面搜索。虫族组 7 个（2026-11-17 从覆盖层补 **腐蚀变种** [1430,1431] / **毒瘴变种** [1434,1433]，见 `docs/VARIANT-INVENTORY-2026-11-17.md`） |
+| `variants.json` | 26 变种 / 5 组 | `variant_mod/variant_catalog.json` + `data/sources/variant_overlay.json` | 分组保留 `exclusive`；`items` 覆盖目录全部变种（含未分组的实验项），保留 `tag`/`mechanic`/`help`；`aliases` 为简称→正式名，供界面搜索。虫族组 7 个（2026-11-17 从覆盖层补 **腐蚀变种** [1430,1431] / **毒瘴变种** [1434,1433]，见 `docs/VARIANT-INVENTORY-2026-11-17.md`）；覆盖层还可 `rename` 组名（原组名存 `source_name`）：Illuminate 组在源目录叫「卡牌 4」，按阵营改为「光能者 4」 |
 | `stratagems.json` | 58 | `variant_mod/stratagem_catalog.json` | type32「临时配发战备」；每项保留 `id/name/key/native_hash/effect_hash/group` 全部原字段 |
 | `effects.json` | 312 | `variant-net/out/effects-full.csv` + `variant-net/out/effect-menu.csv` | 两表 `effect_id` 完全对齐；数值/解码字段取 effects-full，`presence`/`race`/`display_name` 等展示字段取 effect-menu |
 | `planets.json` | 438（273 有游戏索引） | `repo-datamined/out/planet/planet-index.json` + `index-names-801.json` | 主键 `index` = **planet_data 行号**；`game_index` = 游戏索引（Status/warinfo/写 profile 用），休眠星为 null；附 `x`/`y` 星图坐标；`settings_hash` 全为 null（见下） |

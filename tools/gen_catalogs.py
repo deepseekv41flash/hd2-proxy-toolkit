@@ -274,8 +274,11 @@ def apply_variant_overlay(data: dict[str, Any], overlay: dict[str, Any]) -> dict
       items   {name: {ids, faction, presence, tag, mechanic, help, ...}}
                                          新增（或覆盖同名）变种；ids 之外都是 meta 字段
       aliases {alias: 正式名}             追加别名（旧名必须能解析回新名，避免老 profile 失效）
-      groups  [{match, append: [name]}]  往名字前缀命中的分组追加成员；组名末尾若带数量
-                                         （"虫族 5"）自动改成实际条数（"虫族 7"）
+      groups  [{match, append: [name], rename: str}]
+                                         按名字前缀命中分组：append 追加成员；rename 把组名
+                                         改成给定文本（原组名存进 source_name 便于追溯），
+                                         数量后缀（"虫族 5"）一律按实际条数重算
+                                         （"虫族 7"）。例：卡牌 4 -> rename "光能者" -> 光能者 4
     """
     if not overlay:
         return data
@@ -329,9 +332,17 @@ def apply_variant_overlay(data: dict[str, Any], overlay: dict[str, Any]) -> dict
                 raise SourceError(f"variant_overlay.json groups 规则 {match!r} 追加了不存在的变种 {name!r}")
             if name not in members:
                 members.append(name)
-        m = re.match(r"^(.*?)\s*(\d+)$", str(group.get("name") or ""))
-        if m:  # 组名带数量后缀 -> 跟着实际条数走
-            group["name"] = f"{m.group(1)} {len(members)}"
+        rename = rule.get("rename")
+        if rename is not None:
+            if not isinstance(rename, str) or not rename.strip():
+                raise SourceError(f"variant_overlay.json groups 规则 {match!r} 的 rename 应为非空字符串")
+            # 原组名留档，界面用新名；组名里的数量后缀按实际成员数重算
+            group.setdefault("source_name", str(group.get("name") or ""))
+            group["name"] = f"{rename.strip()} {len(members)}"
+        else:
+            m = re.match(r"^(.*?)\s*(\d+)$", str(group.get("name") or ""))
+            if m:  # 组名带数量后缀 -> 跟着实际条数走
+                group["name"] = f"{m.group(1)} {len(members)}"
 
     return merged
 

@@ -87,11 +87,13 @@
 | 机器人 | 重甲激增 Heavy Armor Surge | 1355 | `bots_increased_warstriders` | — | 原有 |
 | 机器人 | 巨型者激增 Hulk Surge | 1357 | `bots_increased_hulks` | — | 原有 |
 | 机器人 | 蹂躏者激增 Devastator Surge | 1359 | `bots_increased_devastators` | — | 原有 |
-| 卡牌 | 入侵舰队 Invasion Fleet | 1413, 1414 | `illuminate_invading` | 7 | 原有 |
-| 卡牌 | 无票者大军 Mindless Masses | 1377, 1378 | `illuminate_harvester` | 231 | 原有 |
-| 卡牌 | 入侵者 Appropriators | 1380, 1379 | `illuminate_engineer` | — | 原有 |
-| 卡牌 | 窃票者 Vote Snatchers | 1402, 1403 | `illuminate_bodyhorror` | 7 | 原有 |
+| 光能者 | 入侵舰队 Invasion Fleet | 1413, 1414 | `illuminate_invading` | 7 | 原有 |
+| 光能者 | 无票者大军 Mindless Masses | 1377, 1378 | `illuminate_harvester` | 231 | 原有 |
+| 光能者 | 入侵者 Appropriators | 1380, 1379 | `illuminate_engineer` | — | 原有 |
+| 光能者 | 窃票者 Vote Snatchers | 1402, 1403 | `illuminate_bodyhorror` | 7 | 原有 |
 | 通用 | 重兵部署 Heavy SEAF Presence | 1401, 1400 | `seaf` | 270 | 原有 |
+
+> 阵营列口径：Illuminate 分组在源目录（外部 mod「全变种 Quanbianzhong 10.00」）里叫「卡牌 4」，与它 4 条变种的 `meta.faction=illuminate` 不符 —— 2026-11-17 起按覆盖层 rename 显示为「光能者 4」，原组名保留在 `groups[].source_name`。
 
 ### 3.1 wiki 口径对照（是否有其他漏项）
 

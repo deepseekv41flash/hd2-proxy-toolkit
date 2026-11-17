@@ -6,6 +6,21 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.2.0-alpha.4（2026-11-17）— 光能者分组改名（「卡牌 4」→「光能者 4」）+ 打包 GUI 实测
+
+- **修复（用户报）**：变种选择器里 Illuminate 阵营的分组显示成「卡牌 4」。追查确认**不是翻译错误**：
+  名字来自外部 mod「全变种 Quanbianzhong 10.00」的目录（该目录 note 写明「选项名称沿用
+  Quanbianzhong 10.00」），研究仓快照与本仓库 `variants.json` 都原样透传，GUI 直接显示
+  `groups[].name`。而这 4 条变种的 `meta.faction` 全是 `illuminate`（光能者）——官方中文叫
+  「光能者」，组名与阵营不符。
+- **修复内容**：覆盖层 `groups` 规则新增 `rename`：把「卡牌」组显示名改为「**光能者 4**」，
+  原组名保留在 `groups[].source_name` 可追溯；数量后缀仍按实际成员数重算。
+  `docs/VARIANT-INVENTORY-2026-11-17.md` 与 `data/catalogs/README.md` 的阵营口径同步修正。
+- **验证**：单测 399 → **402**（覆盖层 rename 生效/留档、空 rename 拒绝、Illuminate 组显示名与
+  faction 一致；另加 GUI 选择器标签断言）；打包 GUI 用计算机操作实测：五页切换、变种下拉展开、
+  选中表自适应（见 docs/RELEASE-v0.2.0-alpha.4.md）。
+- 规则：只修显示措辞、不新增能力 ⇒ 版本位不变（`0.2.0-alpha.3` → `0.2.0-alpha.4`）。
+
 ## v0.2.0-alpha.3（2026-11-17）— 「战况改写」页：三处小列表改成下拉 + 选中表按行数自适应
 
 - **改进（用户要求）**：变种词条 / 全局效果 / 星球词条原来用 3 行高的列表，只能看到 3 条、还占版面；
