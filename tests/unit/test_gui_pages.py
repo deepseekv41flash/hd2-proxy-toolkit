@@ -729,3 +729,39 @@ def test_settings_choose_listen_ip_updates_profile(root, app, monkeypatch):
     assert page.var_listen.get() == "192.168.1.5"
     assert app.profile["proxy"]["listen_ip"] == "192.168.1.5"
     assert app.dirty >= 1
+
+
+def test_port_conflict_dialog_builds_and_returns(root, app):
+    """回归：对话框必须真能显示（曾因 tk.Label 用元组 pady 抛 TclError → 只剩空壳窗口）。"""
+    from hd2proxy.gui import listen_ip as listen_ip_ui
+    pre = {"listen_ip": "100.67.169.17", "conflicts": [{
+        "role": "代理", "port": 443, "state": "conflict", "wildcard": False,
+        "owners": [{"pid": 14920, "name": "python.exe", "addr": "100.67.169.17:443",
+                    "path": "x", "wildcard": False}]}]}
+
+    def close():
+        for child in root.winfo_children():
+            if isinstance(child, tk.Toplevel) and child.title() == "端口被占用":
+                child.destroy()
+
+    root.after(300, close)
+    assert listen_ip_ui.port_conflict_dialog(root, app, pre) == "cancel"
+
+
+def test_choose_listen_ip_dialog_builds(root, app, monkeypatch):
+    """回归：换监听地址对话框同样要能显示；取消时返回 None 且不改 profile。"""
+    from hd2proxy.engine import diagnostics as diag_mod
+    from hd2proxy.gui import listen_ip as listen_ip_ui
+    monkeypatch.setattr(diag_mod, "listen_candidates", lambda profile: [
+        {"ip": "100.67.169.17", "interface": "以太网", "is_virtual": False,
+         "is_primary": True, "state": "free", "wildcard": False, "owners": [],
+         "recommended": True}])
+
+    def close():
+        for child in root.winfo_children():
+            if isinstance(child, tk.Toplevel) and child.title() == "换监听地址":
+                child.destroy()
+
+    root.after(300, close)
+    assert listen_ip_ui.choose_listen_ip(root, app) is None
+    assert app.profile["proxy"]["listen_ip"] == "auto"

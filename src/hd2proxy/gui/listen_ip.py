@@ -14,14 +14,49 @@ from . import theme
 
 
 def _center(parent, win):
+    """把对话框居中到父窗口：用**请求尺寸**显式设置宽高。
+
+    踩坑：只调用 ``geometry("+x+y")``（只给位置）时 Tk 会保留默认 200x200，
+    内容多了就被裁成空白；所以这里用 reqwidth/reqheight 明确写 ``WxH+X+Y``。
+    """
     try:
         win.update_idletasks()
         px, py = parent.winfo_rootx(), parent.winfo_rooty()
-        pw, ph = parent.winfo_width(), parent.winfo_height()
-        w, h = win.winfo_width(), win.winfo_height()
-        win.geometry("+%d+%d" % (max(0, px + (pw - w) // 2), max(0, py + (ph - h) // 2)))
+        pw, ph = max(parent.winfo_width(), parent.winfo_reqwidth()), \
+            max(parent.winfo_height(), parent.winfo_reqheight())
+        w = max(360, win.winfo_reqwidth())
+        h = max(140, win.winfo_reqheight())
+        x = max(0, px + (pw - w) // 2)
+        y = max(0, py + (ph - h) // 2)
+        win.geometry("%dx%d+%d+%d" % (w, h, x, y))
     except tk.TclError:
         pass
+
+
+def _show_modal(root, win):
+    """显示模态窗口：先把窗口画出来，再抢输入焦点，然后等它关闭。
+
+    踩坑（2026-11-17 打包 GUI 实测）：对**还没映射**的 Toplevel 直接 `grab_set()` 会抛
+    TclError，结果只剩一个空壳窗口、事件循环卡在 `wait_window` 上。必须先 update 让窗口
+    映射出来（`wait_visibility`）再 grab。
+    """
+    try:
+        win.update_idletasks()
+        _center(root, win)
+        win.deiconify()
+        win.wait_visibility()
+        win.grab_set()
+    except tk.TclError:
+        pass
+    try:
+        root.wait_window(win)
+    except tk.TclError:
+        return                       # 窗口在等待前/等待中已被销毁（测试或用户关窗）
+    finally:
+        try:
+            win.grab_release()
+        except tk.TclError:
+            pass
 
 
 def choose_listen_ip(parent, app) -> str | None:
@@ -121,9 +156,7 @@ def choose_listen_ip(parent, app) -> str | None:
     btns.pack(fill="x", padx=14, pady=10)
     theme.button(btns, "应用", command=apply, primary=True).pack(side="right")
     theme.button(btns, "取消", command=win.destroy).pack(side="right", padx=(0, 8))
-    _center(root, win)
-    win.grab_set()
-    root.wait_window(win)
+    _show_modal(root, win)
     return picked["ip"]
 
 
@@ -137,7 +170,7 @@ def port_conflict_dialog(parent, app, preflight: dict) -> str:
     win.attributes("-topmost", True)
 
     tk.Label(win, text="启动引擎前检查发现端口被占用：", bg=theme.BG, fg=theme.FG,
-             font=theme.F_B, padx=14, pady=(10, 4)).pack(anchor="w")
+             font=theme.F_B, padx=14, pady=10).pack(anchor="w")
     body = tk.Frame(win, bg=theme.BG)
     body.pack(fill="both", expand=True, padx=14)
     for entry in preflight.get("conflicts") or []:
@@ -154,7 +187,7 @@ def port_conflict_dialog(parent, app, preflight: dict) -> str:
                      wraplength=640).pack(anchor="w", pady=(0, 4))
     tk.Label(win, text="建议：关掉占用程序（旧代理/加速器/其它代理软件），或换一张网卡 IP。",
              bg=theme.BG, fg=theme.MUTED, font=theme.F_S, justify="left",
-             padx=14, pady=(6, 10), wraplength=640).pack(anchor="w")
+             padx=14, pady=6, wraplength=640).pack(anchor="w")
 
     picked = {"value": "cancel"}
 
@@ -167,7 +200,5 @@ def port_conflict_dialog(parent, app, preflight: dict) -> str:
     theme.button(btns, "换监听地址…", command=lambda: choose("switch")).pack(side="left")
     theme.button(btns, "仍然启动", command=lambda: choose("start")).pack(side="left", padx=(8, 0))
     theme.button(btns, "取消", command=lambda: choose("cancel")).pack(side="right")
-    _center(root, win)
-    win.grab_set()
-    root.wait_window(win)
+    _show_modal(root, win)
     return picked["value"]
