@@ -174,6 +174,18 @@ def sign_local():
                          % (r.returncode, (r.stderr or "").replace("\ufffd", "?")[-1500:]))
 
 
+def normalize_integrity():
+    """把 dist 树标回 Medium 完整性（本机构建常跑在 Low 上下文，见 tools/win_integrity.py）。
+
+    不这样做的话：打包/解压出的 exe 带 Low 标签 → 本地双击运行也是 Low IL →
+    写不了 %LOCALAPPDATA%，GUI 的保存配置/证书签发/启动引擎都会 PermissionError。
+    zip 上传/解压到别人机器时标签不随包走，所以只影响本机测试。
+    """
+    sys.path.insert(0, str(ROOT / "tools"))
+    from win_integrity import describe
+    print("  " + describe(DIST))
+
+
 def stage_data():
     """把 data/ 复制到 exe 旁边：用户可直接改 catalogs/acceptance（便携目录）。"""
     target = DIST / NAME / "data"
@@ -287,6 +299,7 @@ def main(argv=None):
         build()
     stage_data()
     sign_local()
+    normalize_integrity()
     smoke()
     if not a.no_zip:
         zip_path = make_zip()

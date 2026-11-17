@@ -213,6 +213,16 @@ def sync(area_dir, zip_arg="", keep=DEFAULT_KEEP, source="auto", quiet=False):
         shutil.copy2(notes, art / notes.name)
 
     cur, exes = extract(area, zip_path)
+
+    # 关键：本工具常常跑在 Low 完整性上下文（DSH shell 等），解压出的文件会继承 Low 标签 →
+    # 用户双击 exe 也会只有 Low IL，写不了 %LOCALAPPDATA%（Medium），表现为 GUI 里
+    # 「保存配置 / 证书签发 / 启动引擎」PermissionError(13)。这里把测试区标回 Medium ✓
+    sys.path.insert(0, str(ROOT / "tools"))
+    from win_integrity import describe as _integrity_note
+    area_note = _integrity_note(area)
+    if not quiet:
+        print("  " + area_note)
+
     (area / "VERSION.txt").write_text(
         "\n".join([
             "version   : v%s" % __version__,

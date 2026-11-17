@@ -11,7 +11,7 @@
 > **当前状态：v0.1.0-alpha.4 已发布（2026-11-17，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **338 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.1.0-alpha.4`（见下方「下载」）。
+> **340 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.1.0-alpha.4`（见下方「下载」）。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
 > [物品与战备](research/screenshots/gui-inventory.png) ｜ [抓包与日志](research/screenshots/gui-capture.png) ｜
 > [设置](research/screenshots/gui-settings.png) ｜
@@ -78,7 +78,7 @@ hd2proxy.exe uninstall
 ```bash
 python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
 set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
-python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 338 单测 + 5 个离线自检
+python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 340 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
@@ -138,7 +138,7 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 src/hd2proxy/engine/                    引擎（server / 钩子 / 配置 / 证书 / 安装 / 控制面 / 离线预演 preview.py）
 src/hd2proxy/gui/                       Tk GUI：壳 + 5 页 + widgets + templates.py（能力模板）
 src/hd2proxy/versioning.py               版本规则与 PEP 440 映射（docs/VERSIONING.md 的实现）
-tests/unit/                             单元测试（338 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / CLI）
+tests/unit/                             单元测试（340 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / CLI）
 tests/selftest*.py                      5 个脚本式离线自检（迁自研究线，仅改路径）
 tools/run_selftests.py                  自检总入口（独立证书/数据目录，GATE 判定）
 tools/check_gate.py                     门禁：版本一致性 + 语法 + 绝对路径 + pytest + 5 自检
@@ -149,6 +149,7 @@ tools/gen_catalogs.py                   数据目录生成（GUI 用，来自研
 tools/gui_smoke.py                      GUI 冒烟：起真引擎 + 假上游 → 五页截图
 tools/sign_local.ps1                    本机自签代码签名（装当前用户信任库 + 签 exe，见 docs/SIGNING-LOCAL.md）
 tools/sync_release_area.py              把打包产物同步到「release 产物测试区」（解包最新版 + 归档旧 zip）
+tools/win_integrity.py                  把目录树完整性标签标回 Medium（避免 Low IL 下写不了 AppData，见 docs/WIN-INTEGRITY-TRAP.md）
 data/legacy/                            引擎兼容用的原始目录文件（逐字节复制）
 data/catalogs/                          规范化目录（变种/战备/效果/星球/物品/build 指纹）
 data/samples/                           离线预演的样本响应（真实抓包裁剪、无账号字段）

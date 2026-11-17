@@ -14,7 +14,11 @@
 - 新增 `tools/sync_release_area.py`：把 release 产物同步到专用测试区（`current/` 解包最新版、
   `artifacts/` 放当前版本资产、`archive/` 留历史）；默认取 GitHub Release 资产，保证与用户
   下载物逐字节一致；`build_dist.py` 支持 `--test-area` / `HD2PROXY_TEST_AREA` 构建后自动同步。
-- 单测 311 → **338**（新增版本规则 27 条）。
+- 单测 311 → **340**（新增版本规则 27 条 + 完整性标签工具 2 条）。
+- **修复（环境坑）**：release 测试区里的 GUI 双击后仍以 **Low 完整性**运行（文件被 Low 令牌工具解压→
+  继承 Low 标签），导致「保存配置/证书签发/启动引擎」`PermissionError(13)`。新增 `tools/win_integrity.py`，
+  在 `sync_release_area.py`（解包测试区后）与 `build_dist.py`（构建后）自动把目录树标回 Medium；
+  记录见 [docs/WIN-INTEGRITY-TRAP.md](docs/WIN-INTEGRITY-TRAP.md)。
 
 ## v0.1.0-alpha.4（2026-11-17）— alpha.3 打包版实测发现的 3 个小问题 + 本机自签签名
 
