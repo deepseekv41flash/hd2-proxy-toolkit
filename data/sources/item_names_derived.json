@@ -1,0 +1,727 @@
+{
+ "note": "LoadoutEntry 物品内部名（dlbin 只读路线产物）。只读生成，不要手改：换 build 后重跑 tools/extract_item_names.py。键 = 服务端 /api/Progression/items 目录行的 itemId；值 = 实体内部名。实体名来自 repo-datamined 用 .strings 解析的 entity-locid-names.json（该文件是上一个可用 strings 语料的 build：26088801；新 build 新增实体可能缺失）。",
+ "build": "26568081",
+ "source": {
+  "entities": "plaintext-26568081/generated_entities.dl_bin",
+  "typelib": "plaintext-26251122/dl_library.dl_typelib",
+  "type_names": "repo-datamined/refs/dl-type-names.txt",
+  "entity_names": "repo-datamined/refs/entity-locid-names.json (build 26088801)"
+ },
+ "loadout_entry": {
+  "block_type": "0x4F2CF417",
+  "rows": 199,
+  "named_rows": 191,
+  "unnamed_rows": 8,
+  "named_ids": 177,
+  "items": {
+   "0": {
+    "name": "Chemical Backpack",
+    "type": 6
+   },
+   "14345846": {
+    "name": "Stalwart",
+    "type": 2
+   },
+   "16338515": {
+    "name": "Incendiary Impact",
+    "type": 4
+   },
+   "122941246": {
+    "name": "Halt",
+    "type": 1
+   },
+   "131945085": {
+    "name": "Smokescreen",
+    "type": 4
+   },
+   "153819019": {
+    "name": "De-Escalator",
+    "type": 2
+   },
+   "189227448": {
+    "name": "Giga Grenade",
+    "type": 4
+   },
+   "207998803": {
+    "name": "Warrant",
+    "type": 3
+   },
+   "271509801": {
+    "name": "Spear Backpack",
+    "type": 6
+   },
+   "272480476": {
+    "name": "Directional Shield",
+    "type": 6
+   },
+   "309178703": {
+    "name": "Double-Edge Sickle",
+    "type": 1
+   },
+   "336693041": {
+    "name": "Speargun",
+    "type": 2
+   },
+   "339272294": {
+    "name": "Eruptor",
+    "type": 1
+   },
+   "358989959": {
+    "name": "Missile Pistol",
+    "type": 3
+   },
+   "375014954": {
+    "name": "Stun",
+    "type": 4
+   },
+   "376039023": {
+    "name": "Liberator Concussive",
+    "type": 1
+   },
+   "385461545": {
+    "name": "DYNAMITE",
+    "type": 4
+   },
+   "397581595": {
+    "name": "C4 Pack",
+    "type": 2
+   },
+   "400301984": {
+    "name": "Coyote",
+    "type": 1
+   },
+   "432912135": {
+    "name": "Cremator Backpack",
+    "type": 6
+   },
+   "452826786": {
+    "name": "HOVER PACK",
+    "type": 6
+   },
+   "458198946": {
+    "name": "Machine Gun",
+    "type": 2
+   },
+   "469340936": {
+    "name": "Variable",
+    "type": 1
+   },
+   "512147393": {
+    "name": "Belt-Fed Grenade Launcher",
+    "type": 2
+   },
+   "519340933": {
+    "name": "C4 Pack",
+    "type": 6
+   },
+   "533318241": {
+    "name": "Heavy Machine Gun",
+    "type": 2
+   },
+   "539671360": {
+    "name": "Gallant",
+    "type": 1
+   },
+   "725205791": {
+    "name": "Reprimand",
+    "type": 1
+   },
+   "774795224": {
+    "name": "Meltagun",
+    "type": 2
+   },
+   "780093772": {
+    "name": "Apex Backpack",
+    "type": 6
+   },
+   "790588279": {
+    "name": "W.A.S.P. Launcher Backpack",
+    "type": 6
+   },
+   "819954976": {
+    "name": "One True Flag",
+    "type": 2
+   },
+   "838155692": {
+    "name": "TACTICAL VIDEO CAMERA",
+    "type": 2
+   },
+   "838686177": {
+    "name": "Censor",
+    "type": 1
+   },
+   "861637146": {
+    "name": "Ultimatum",
+    "type": 3
+   },
+   "875551083": {
+    "name": "Autocannon",
+    "type": 2
+   },
+   "890972990": {
+    "name": "W.A.S.P. Launcher",
+    "type": 2
+   },
+   "924530093": {
+    "name": "Diligence Counter Sniper",
+    "type": 1
+   },
+   "925809350": {
+    "name": "Scorcher",
+    "type": 1
+   },
+   "931633769": {
+    "name": "Sweeper",
+    "type": 1
+   },
+   "932374702": {
+    "name": "Anti-Tank Seeker",
+    "type": 4
+   },
+   "942049262": {
+    "name": "Pummeler",
+    "type": 1
+   },
+   "992079466": {
+    "name": "Arc Thrower",
+    "type": 2
+   },
+   "999487482": {
+    "name": "Blitzer",
+    "type": 1
+   },
+   "1028872423": {
+    "name": "Ballistic Shield Backpack",
+    "type": 6
+   },
+   "1030888251": {
+    "name": "Arc",
+    "type": 4
+   },
+   "1084288106": {
+    "name": "Stim Pistol",
+    "type": 3
+   },
+   "1092582811": {
+    "name": "Maxigun Backpack",
+    "type": 6
+   },
+   "1102600214": {
+    "name": "Re-educator",
+    "type": 3
+   },
+   "1160920394": {
+    "name": "Liberator Carbine",
+    "type": 1
+   },
+   "1179533432": {
+    "name": "SMG",
+    "type": 1
+   },
+   "1182300424": {
+    "name": "Breaker",
+    "type": 1
+   },
+   "1246313930": {
+    "name": "SMG",
+    "type": 1
+   },
+   "1255689962": {
+    "name": "Gas",
+    "type": 4
+   },
+   "1298599997": {
+    "name": "Recoilless Rifle",
+    "type": 2
+   },
+   "1312773632": {
+    "name": "Veto",
+    "type": 3
+   },
+   "1313198083": {
+    "name": "Shield Generator Pack",
+    "type": 6
+   },
+   "1321109120": {
+    "name": "Cookout",
+    "type": 1
+   },
+   "1339288659": {
+    "name": "Melta Mine",
+    "type": 4
+   },
+   "1374036584": {
+    "name": "Senator",
+    "type": 3
+   },
+   "1432571981": {
+    "name": "Cremator",
+    "type": 2
+   },
+   "1440244352": {
+    "name": "Rover",
+    "type": 6
+   },
+   "1462250732": {
+    "name": "COMBAT HATCHET",
+    "type": 3
+   },
+   "1474696864": {
+    "name": "Arbitrator",
+    "type": 1
+   },
+   "1612683909": {
+    "name": "Pyrotech",
+    "type": 4
+   },
+   "1625792993": {
+    "name": "Urchin",
+    "type": 4
+   },
+   "1639485025": {
+    "name": "Liberator Legacy",
+    "type": 1
+   },
+   "1639574879": {
+    "name": "Pineapple",
+    "type": 4
+   },
+   "1676113140": {
+    "name": "Liberator Penetrator",
+    "type": 1
+   },
+   "1752129915": {
+    "name": "Lure Mine",
+    "type": 4
+   },
+   "1789694805": {
+    "name": "Seeker",
+    "type": 4
+   },
+   "1794436168": {
+    "name": "Sickle",
+    "type": 1
+   },
+   "1813634375": {
+    "name": "Expendable Napalm",
+    "type": 2
+   },
+   "1858752103": {
+    "name": "Throwing Knife",
+    "type": 4
+   },
+   "1875465746": {
+    "name": "K-9",
+    "type": 6
+   },
+   "1902682578": {
+    "name": "Loyalist",
+    "type": 3
+   },
+   "1920374015": {
+    "name": "Tenderizer",
+    "type": 1
+   },
+   "1920655850": {
+    "name": "TALON",
+    "type": 3
+   },
+   "1925755439": {
+    "name": "Supply Pack",
+    "type": 6
+   },
+   "1934208922": {
+    "name": "Punisher fire of liberty",
+    "type": 1
+   },
+   "1938200223": {
+    "name": "Verdict",
+    "type": 3
+   },
+   "1942567317": {
+    "name": "Exploding Crossbow",
+    "type": 1
+   },
+   "2007887745": {
+    "name": "Airburst Rocket Launcher",
+    "type": 2
+   },
+   "2011243293": {
+    "name": "Stoker",
+    "type": 1
+   },
+   "2018836169": {
+    "name": "Pistol",
+    "type": 3
+   },
+   "2051054112": {
+    "name": "Cremator",
+    "type": 2
+   },
+   "2088854385": {
+    "name": "Punisher",
+    "type": 1
+   },
+   "2104346664": {
+    "name": "Deadeye",
+    "type": 1
+   },
+   "2112173638": {
+    "name": "Shear",
+    "type": 1
+   },
+   "2121387072": {
+    "name": "Dominator",
+    "type": 1
+   },
+   "2140866400": {
+    "name": "Epoch",
+    "type": 2
+   },
+   "2161995568": {
+    "name": "Knight",
+    "type": 1
+   },
+   "2173315377": {
+    "name": "Entrenchment Tool",
+    "type": 3
+   },
+   "2173864768": {
+    "name": "Autocannon Backpack",
+    "type": 6
+   },
+   "2207713849": {
+    "name": "Anti-Materiel Rifle",
+    "type": 2
+   },
+   "2213467394": {
+    "name": "Recoilless Rifle Backpack",
+    "type": 6
+   },
+   "2232169940": {
+    "name": "Hyena",
+    "type": 1
+   },
+   "2232989803": {
+    "name": "Commando",
+    "type": 2
+   },
+   "2246547985": {
+    "name": "Slugger",
+    "type": 1
+   },
+   "2264358800": {
+    "name": "Bushwhacker",
+    "type": 3
+   },
+   "2273006189": {
+    "name": "Airburst Rocket Backpack",
+    "type": 6
+   },
+   "2307301438": {
+    "name": "Diligence",
+    "type": 1
+   },
+   "2340232366": {
+    "name": "Crisper",
+    "type": 3
+   },
+   "2432087455": {
+    "name": "Spear Backpack",
+    "type": 6
+   },
+   "2501707184": {
+    "name": "Dagger",
+    "type": 3
+   },
+   "2518036308": {
+    "name": "Stun Lance",
+    "type": 3
+   },
+   "2564789309": {
+    "name": "Assault Rifle",
+    "type": 1
+   },
+   "2625074523": {
+    "name": "Quasar Cannon",
+    "type": 2
+   },
+   "2640366401": {
+    "name": "Adjudicator",
+    "type": 1
+   },
+   "2643754746": {
+    "name": "Suppressor",
+    "type": 1
+   },
+   "2649062090": {
+    "name": "Jump Pack",
+    "type": 6
+   },
+   "2700946317": {
+    "name": "Guard Dog",
+    "type": 6
+   },
+   "2797735596": {
+    "name": "Grenade Pistol",
+    "type": 3
+   },
+   "2811723672": {
+    "name": "Peacemaker",
+    "type": 3
+   },
+   "2821209932": {
+    "name": "Defender",
+    "type": 1
+   },
+   "2822568285": {
+    "name": "Laser Cannon",
+    "type": 2
+   },
+   "2823164517": {
+    "name": "Impact",
+    "type": 4
+   },
+   "2852344585": {
+    "name": "Liberator",
+    "type": 1
+   },
+   "2870692210": {
+    "name": "LAS-13 Trident",
+    "type": 1
+   },
+   "2877510587": {
+    "name": "Smoke",
+    "type": 4
+   },
+   "2887941494": {
+    "name": "Purifier",
+    "type": 1
+   },
+   "2906140436": {
+    "name": "Resupply",
+    "type": 6
+   },
+   "2918647117": {
+    "name": "Solo Silo Targeting Remote",
+    "type": 2
+   },
+   "2934950455": {
+    "name": "Leveller",
+    "type": 2
+   },
+   "2979303494": {
+    "name": "Evictor",
+    "type": 1
+   },
+   "3066314944": {
+    "name": "Autocannon Backpack",
+    "type": 6
+   },
+   "3068666625": {
+    "name": "Breaker Incendiary",
+    "type": 1
+   },
+   "3078242205": {
+    "name": "Railgun",
+    "type": 2
+   },
+   "3082503125": {
+    "name": "Apex",
+    "type": 2
+   },
+   "3191303848": {
+    "name": "High Explosive",
+    "type": 4
+   },
+   "3197732872": {
+    "name": "STUN BATON",
+    "type": 3
+   },
+   "3219107289": {
+    "name": "Recoilless Rifle Backpack",
+    "type": 6
+   },
+   "3228109421": {
+    "name": "Immolation",
+    "type": 4
+   },
+   "3253029690": {
+    "name": "Warp Pack",
+    "type": 6
+   },
+   "3271863995": {
+    "name": "Bolt Pistol",
+    "type": 3
+   },
+   "3286567865": {
+    "name": "Mist",
+    "type": 3
+   },
+   "3288352984": {
+    "name": "Bullet Storm",
+    "type": 2
+   },
+   "3295898003": {
+    "name": "Frag",
+    "type": 4
+   },
+   "3330450692": {
+    "name": "Breaching Hammer",
+    "type": 2
+   },
+   "3343676429": {
+    "name": "Grenade Launcher",
+    "type": 2
+   },
+   "3344526787": {
+    "name": "Assault Rifle",
+    "type": 1
+   },
+   "3388344762": {
+    "name": "Ombudsman",
+    "type": 3
+   },
+   "3413606544": {
+    "name": "Expendable Anti-Tank",
+    "type": 2
+   },
+   "3414013062": {
+    "name": "Shotgun",
+    "type": 1
+   },
+   "3417185725": {
+    "name": "Double Freedom",
+    "type": 1
+   },
+   "3428996225": {
+    "name": "One-Two",
+    "type": 1
+   },
+   "3455841218": {
+    "name": "Maxigun",
+    "type": 2
+   },
+   "3466282658": {
+    "name": "Shield",
+    "type": 4
+   },
+   "3478892931": {
+    "name": "Accelerator Rifle",
+    "type": 1
+   },
+   "3572024208": {
+    "name": "Defoliation Tool",
+    "type": 2
+   },
+   "3623018063": {
+    "name": "Pacifier",
+    "type": 1
+   },
+   "3744531484": {
+    "name": "Break-Action Shotgun",
+    "type": 2
+   },
+   "3748434442": {
+    "name": "C4 Pack",
+    "type": 2
+   },
+   "3748749890": {
+    "name": "Incendiary",
+    "type": 4
+   },
+   "3757606668": {
+    "name": "Amendment",
+    "type": 1
+   },
+   "3800614722": {
+    "name": "Sightliner",
+    "type": 1
+   },
+   "3806884545": {
+    "name": "Caltrops",
+    "type": 4
+   },
+   "3814689025": {
+    "name": "Breaker Spray&Pray",
+    "type": 1
+   },
+   "3859022603": {
+    "name": "MACHETE",
+    "type": 3
+   },
+   "3866352840": {
+    "name": "Scythe",
+    "type": 1
+   },
+   "3869545997": {
+    "name": "Thermite",
+    "type": 4
+   },
+   "3883022479": {
+    "name": "Hot Dog",
+    "type": 6
+   },
+   "3923676543": {
+    "name": "Spear",
+    "type": 2
+   },
+   "3955657629": {
+    "name": "Punisher Plasma",
+    "type": 1
+   },
+   "3981773112": {
+    "name": "Redeemer",
+    "type": 3
+   },
+   "3997705262": {
+    "name": "Breacher",
+    "type": 3
+   },
+   "4010403312": {
+    "name": "MEDIC BACKPACK",
+    "type": 6
+   },
+   "4050324431": {
+    "name": "Hot-shot Marksman Rifle",
+    "type": 1
+   },
+   "4101644410": {
+    "name": "Sai",
+    "type": 1
+   },
+   "4108040377": {
+    "name": "Torcher",
+    "type": 1
+   },
+   "4109429659": {
+    "name": "SABER",
+    "type": 3
+   },
+   "4133671573": {
+    "name": "Entrenchment Tool",
+    "type": 2
+   },
+   "4146034362": {
+    "name": "Nova",
+    "type": 2
+   },
+   "4152191751": {
+    "name": "Sterilizer",
+    "type": 2
+   },
+   "4161086429": {
+    "name": "Constitution",
+    "type": 1
+   },
+   "4243413869": {
+    "name": "Dog Breath",
+    "type": 6
+   },
+   "4255545685": {
+    "name": "Portable Hellbomb",
+    "type": 6
+   }
+  }
+ }
+}

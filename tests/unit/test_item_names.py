@@ -35,10 +35,10 @@ def items_by_mix(items_doc):
 
 
 def test_most_items_have_a_name(items_doc):
-    """名字覆盖率是本功能的验收线：原来 391/1671，现在应 >= 1400（附件内部名是主力）。"""
+    """名字覆盖率是验收线：原来是 391/1671；附件内部名 + 外观 + LoadoutEntry 内部名后应 >= 1500。"""
     items = items_doc["items"]
     named = [it for it in items if it.get("name")]
-    assert len(named) >= 1400, (len(named), len(items))
+    assert len(named) >= 1500, (len(named), len(items))
     assert all(isinstance(it["name"], str) and it["name"].strip() for it in named)
 
 
@@ -52,11 +52,45 @@ def test_known_attachment_names(items_by_mix):
     assert items_by_mix[4591677]["catalog_category"] == 2        # 2 = 附件
 
 
+def test_weapon_names_come_from_loadout_entities(items_by_mix):
+    """武器名走 dlbin 路线：LoadoutEntry 行 +0x0 = 目录 itemId，名字取实体内部名。
+
+    对照：LAS-22 Shear 的 inventory mixId 2112173638 在仓库文档里就是这把枪（UNLOCK-MAP §15）。
+    """
+    assert items_by_mix[2112173638]["name"] == "Shear"
+    assert items_by_mix[2112173638]["name_source"] == "loadout-entity"
+    assert items_by_mix[1312773632]["name"] == "Veto"
+    assert items_by_mix[539671360]["name"] == "Gallant"
+    assert items_by_mix[131945085]["name"] == "Smokescreen"
+
+
+def test_loadout_item_names_source_file_is_wellformed():
+    """dlbin 产物本身要可审计：build、块类型、行数、命名数都得对得上。"""
+    doc = json.loads((REPO / "data" / "sources" / "item_names_derived.json").read_text(encoding="utf-8"))
+    assert doc["build"] == "26568081"
+    entry = doc["loadout_entry"]
+    assert entry["block_type"] == "0x4F2CF417" and entry["rows"] == 199
+    assert entry["named_rows"] + entry["unnamed_rows"] == entry["rows"]
+    assert entry["named_ids"] == len(entry["items"]) >= 170
+    assert entry["named_ids"] <= entry["named_rows"]
+    assert entry["items"]["2112173638"]["name"] == "Shear"
+    # 不许出现绝对路径（换机器复现用）
+    text = (REPO / "data" / "sources" / "item_names_derived.json").read_text(encoding="utf-8")
+    drive = "D" + ":"          # 拆开写：门禁的绝对路径检查会扫「盘符 + 冒号」字面量
+    assert drive + "\\" not in text and drive + "/" not in text
+
+
 def test_names_do_not_cover_impossible_categories(items_doc):
-    """武器/战备类目录行没有名字来源：允许留空，但**不许**出现编造的名字。"""
+    """战备（cat 11）在本地数据里没有 id 映射：必须留空，**不许**编名字。
+
+    武器（cat 1）现在能从 LoadoutEntry 实体拿到内部名，但名字来源必须是 loadout-entity，
+    不能是别的来源（防止把附件选项名误配到武器上）。
+    """
     for it in items_doc["items"]:
-        if it.get("catalog_category") in (1, 11):
+        if it.get("catalog_category") == 11:
             assert it.get("name") is None, it
+        elif it.get("catalog_category") == 1 and it.get("name"):
+            assert it.get("name_source") == "loadout-entity", it
 
 
 def test_catalog_category_is_recorded_for_catalog_rows(items_doc):
@@ -93,6 +127,9 @@ def test_search_items_matches_names():
     assert all("REDDOT" in label.upper() for _mix, label in reddot)
     grips = cat.search_items("vertical grip", limit=20)
     assert grips and all("Vertical Grip" in label for _mix, label in grips)
+    # 武器内部名（dlbin LoadoutEntry 路线）也能搜到
+    assert any("Veto" in label for _mix, label in cat.search_items("veto", limit=10))
+    assert cat.item_label(2112173638).endswith("Shear")
     # 中文类别也在标签里，搜「附件」能命中无名条目
     assert any("附件" in label for _mix, label in cat.search_items("附件", limit=30))
 
@@ -124,13 +161,17 @@ def test_enrich_item_names_rules():
         {"mix_id": 100, "name": "已有显示名"},              # 不覆盖已有名字
         {"mix_id": 999, "name": None},                     # 目录里没有 -> 保持空
     ]
-    resolved = gen.enrich_item_names(items, catalog_index, attachment_options, armor_names)
-    assert resolved == 2
+    loadout_names = {300: "Veto", 900: "ShouldNotWin"}
+    resolved = gen.enrich_item_names(items, catalog_index, attachment_options, armor_names,
+                                     loadout_names)
+    assert resolved == 3
     assert items[0]["name"] == "TUBE REDDOT 1,5x" and items[0]["name_source"] == "catalog-option"
     assert items[1]["name"] == "Arctic Decree" and items[1]["name_source"] == "armor-table"
-    assert items[2]["name"] is None and items[2]["catalog_category"] == 1
+    assert items[2]["name"] == "Veto" and items[2]["name_source"] == "loadout-entity"
     assert items[3]["name"] == "已有显示名" and items[3].get("name_source") is None
     assert items[4]["name"] is None and items[4]["catalog_category"] is None
+    # 优先级：附件/外观规则先于 LoadoutEntry（同 id 不会串味）
+    assert items[0]["name_source"] == "catalog-option"
 
 
 def test_catalog_index_rejects_conflicting_category(tmp_path):

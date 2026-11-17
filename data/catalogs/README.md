@@ -16,7 +16,7 @@
 | `stratagems.json` | 58 | `variant_mod/stratagem_catalog.json` | type32「临时配发战备」；每项保留 `id/name/key/native_hash/effect_hash/group` 全部原字段 |
 | `effects.json` | 312 | `variant-net/out/effects-full.csv` + `variant-net/out/effect-menu.csv` | 两表 `effect_id` 完全对齐；数值/解码字段取 effects-full，`presence`/`race`/`display_name` 等展示字段取 effect-menu |
 | `planets.json` | 438（273 有游戏索引） | `repo-datamined/out/planet/planet-index.json` + `index-names-801.json` | 主键 `index` = **planet_data 行号**；`game_index` = 游戏索引（Status/warinfo/写 profile 用），休眠星为 null；附 `x`/`y` 星图坐标；`settings_hash` 全为 null（见下） |
-| `items.json` | 1671（**1520 有名字**） | `variant-net/refs/{armor_rows_parsed,store-cosmetics-20261106,unreleased_candidates}.json` + `variant-net/configs/` 与 `variant_mod/runtime/` 的 `inventory_*.json`、`items_inject.json`；名字补全用 `data/sources/progression_item_catalog.json` + `repo-datamined/refs/weapon-customization-options-26251122.json` | 物品解锁搜索用；`mix_id` 为库存键、`item_id` 为目录内容 id；`catalog_category` = 服务端目录类别（2 附件 / 3 外观 / 11 战备…），`name_source` = 名字出处（`catalog-option` / `armor-table`） |
+| `items.json` | 1671（**1544 有名字**） | `variant-net/refs/{armor_rows_parsed,store-cosmetics-20261106,unreleased_candidates}.json` + `variant-net/configs/` 与 `variant_mod/runtime/` 的 `inventory_*.json`、`items_inject.json`；名字补全用 `data/sources/progression_item_catalog.json` + `repo-datamined/refs/weapon-customization-options-26251122.json` | 物品解锁搜索用；`mix_id` 为库存键、`item_id` 为目录内容 id；`catalog_category` = 服务端目录类别（2 附件 / 3 外观 / 11 战备…），`name_source` = 名字出处（`catalog-option` 附件选项内部名 / `armor-table` 外观表 / `loadout-entity` dlbin 实体内部名） |
 
 ## 本仓库内输入（不是研究仓）
 
@@ -24,6 +24,7 @@
 |---|---|
 | `data/sources/variant_overlay.json` | 变种目录覆盖层（源变种目录冻结后新增/改名的变种，如 腐蚀变种 / 毒瘴变种） |
 | `data/sources/progression_item_catalog.json` | 服务端 `/api/Progression/items` 抓包的紧凑索引（3020 行 mixId→itemId/类别，含原始抓包 sha256），用于给 `items.json` 补内部名 |
+| `data/sources/item_names_derived.json` | **LoadoutEntry 物品内部名（dlbin 只读路线产物）**：`generated_entities.dl_bin` 的 `LoadoutEntryComponentData` 行 `+0x00`(=目录 itemId) → 实体内部名（武器/投掷物/背包）。生成器 `tools/extract_item_names.py`，换 build 重跑即可 |
 
 ## 口径与已知坑
 
@@ -62,7 +63,7 @@ python tools/gen_catalogs.py --variant-mod <variant_mod> --variant-net <variant-
 | # | 缺口 | 影响 | 补法（已定方向） |
 |---|---|---|---|
 | 1 | `planets.settings_hash` 全 null | 能力 6「生态借用」需要「源星球的 settingsHash」 | **产品侧以运行时为准**：代理可见 `warinfo.planetInfos[].settingsHash`，GUI 导入一次 live warinfo 即可得到当前 build 的合法 hash；离线 dl_bin 路线只作研究参考 —— `refs/dlbin/plaintext-26251122/generated_planet_data.dl_bin` 可解（438 行 / 438 个非零 hash，行号=index），当前 build `baseline-26568081` 是封包态，需先解封才能直读 |
-| 2 | 物品内部名覆盖 1520/1671（2026-11-17 补） | 剩余 151 条（武器 21 / 战备 30 / 新版附件 49 / 目录外 51）界面显示「内部名未解」 | 附件名来自改装选项内部名、外观名来自外观表；武器/战备的目录 id 与本地表尚无已知映射，需再做一次定位；本地化中文名暂不做 |
+| 2 | 物品内部名覆盖 1544/1671（2026-11-17 两轮补） | 剩余 127 条（战备 30 / 新版附件 49 / 其它目录外条目 48）界面显示「内部名未解」 | 附件名来自改装选项内部名、外观名来自外观表；武器/战备的目录 id 与本地表尚无已知映射，需再做一次定位；本地化中文名暂不做 |
 | 3 | `effects.live_planets` 保留原始文本 | 不能按「当前在线星球」过滤效果 | 解析成 index 列表（effects-full 文本可能被截断，需与 `planet-live.csv` 交叉） |
 | 4 | `variants.json.build = 25988413`，落后当前 build 26568081 | 变种 id 是否随 build 漂移未复核 | 每次 build 变更重跑并对照研究仓的 effect id 表；GUI 显示 build 不一致警告 |
 

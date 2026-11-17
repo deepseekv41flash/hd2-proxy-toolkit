@@ -27,6 +27,9 @@
                                              用来给 items.json 补「内部名」：附件选项名从
                                              repo-datamined 的 weapon-customization-options 表取，
                                              外观名从 variant-net 的外观表取。
+  <repo>/data/sources/item_names_derived.json
+                                             LoadoutEntry 物品内部名（tools/extract_item_names.py
+                                             用 dlbin 只读路线从实体库抽出来；覆盖武器/投掷物/背包等）。
 
 只读约定：
   1. 三个源目录只读；脚本只写本仓库内两个固定产物：
@@ -80,6 +83,7 @@ DEFAULT_OUT = REPO_ROOT / "data" / "catalogs"
 DEFAULT_OVERLAY = REPO_ROOT / "data" / "sources" / "variant_overlay.json"
 DEFAULT_LEGACY_OUT = REPO_ROOT / "data" / "legacy" / "variant_catalog.json"
 DEFAULT_CATALOG_INDEX = REPO_ROOT / "data" / "sources" / "progression_item_catalog.json"
+DEFAULT_ITEM_NAMES = REPO_ROOT / "data" / "sources" / "item_names_derived.json"
 
 # build.json 的手工常量（游戏 build 变化时改这里并重跑；variant_catalog 里的 build 另见 generated_from）
 GAME_BUILD = "26568081"
@@ -100,6 +104,8 @@ SRC_PLANET_INDEX = "repo-datamined/out/planet/planet-index.json"
 # 物品内部名解析用：目录索引（本仓库快照）+ 武器改装选项内部名表（研究仓解析产物）
 SRC_CATALOG_INDEX = "data/sources/progression_item_catalog.json"
 SRC_WEAPON_OPTIONS = "repo-datamined/refs/weapon-customization-options-26251122.json"
+# LoadoutEntry 物品内部名（dlbin 只读路线产物，见 tools/extract_item_names.py）
+SRC_ITEM_NAMES = "data/sources/item_names_derived.json"
 SRC_PLANET_DATA = "repo-datamined/out/planet/planet-data.json"
 # 行号 -> 游戏索引 的权威映射（war 801 抓包 + planet_data 尾部 hashmap 对齐产物）。
 # 为什么必须合并：planet-index.json 的 `index` 是 planet_data **行号**，不是游戏索引；
@@ -820,31 +826,61 @@ def _load_attachment_option_names(path: Path) -> dict[int, str]:
     return out
 
 
+def _load_loadout_item_names(path: Path) -> dict[int, str]:
+    """读 LoadoutEntry 物品内部名（tools/extract_item_names.py 的产物）：itemId -> 内部名。"""
+    if not Path(path).is_file():
+        log(f"note: 没有 {path}（武器内部名会留空；跑 tools/extract_item_names.py 可生成）")
+        return {}
+    doc = load_json(Path(path), "LoadoutEntry 物品内部名 item_names_derived.json", dict)
+    entries = ((doc.get("loadout_entry") or {}).get("items") or {})
+    if not isinstance(entries, dict) or not entries:
+        raise SourceError("item_names_derived.json 的 loadout_entry.items 必须是非空对象")
+    out: dict[int, str] = {}
+    for raw_id, entry in entries.items():
+        if not isinstance(entry, dict):
+            raise SourceError(f"item_names_derived.json loadout_entry.items[{raw_id!r}] 应为对象")
+        name = to_text(entry.get("name"))
+        if name:
+            out[to_int(raw_id, f"item_names_derived.json items[{raw_id!r}]")] = name
+    return out
+
+
 def enrich_item_names(
     items: list[dict[str, Any]],
     catalog_index: dict[int, dict[str, int]],
     attachment_options: dict[int, str],
     armor_names: dict[int, str],
+    loadout_names: dict[int, str] | None = None,
 ) -> int:
     """给 items 补 `catalog_category` 与（名字缺失时的）内部名 / 名字来源。
 
-    只填空缺，不覆盖已有的显示名（外观表/商店表解出的名字更贴近玩家）；
-    解析不到就留空 —— 界面会显示「内部名未解」，不编造。
+    名字来源（按优先级）：
+      1. 已有名字（外观表/商店表解出的显示名）—— 不覆盖；
+      2. 目录类别 2（附件）：`itemId` = 改装选项 id -> 改装选项内部名；
+      3. 目录类别 3（外观）：`itemId` = 外观表行 id -> 外观表名；
+      4. LoadoutEntry 物品内部名（武器/投掷物/背包等，dlbin 只读路线）；
+      5. 都没有 -> 留空，界面显示「内部名未解」（不编造）。
     """
+    loadout_names = loadout_names or {}
     resolved = 0
     for item in items:
         mix = item.get("mix_id")
         row = catalog_index.get(int(mix)) if mix is not None else None
         item["catalog_category"] = row["cat"] if row else None
-        if item.get("name") or not row:
+        if item.get("name"):
             continue
         name, source = None, None
-        if row["cat"] == 2:
+        if row and row["cat"] == 2:
             name = attachment_options.get(row["item"])
             source = "catalog-option"
-        elif row["cat"] == 3:
+        elif row and row["cat"] == 3:
             name = armor_names.get(row["item"])
             source = "armor-table"
+        if not name:                                  # 武器/投掷物/背包等：LoadoutEntry 内部名
+            key = item.get("mix_id") if item.get("mix_id") is not None else item.get("item_id")
+            if key is not None:
+                name = loadout_names.get(int(key))
+                source = "loadout-entity"
         if name:
             item["name"] = name
             item["name_source"] = source
@@ -857,6 +893,7 @@ def build_items(
     variant_mod: Path,
     datamined: Path,
     catalog_index_path: Path,
+    item_names_path: Path,
 ) -> tuple[dict[str, Any], int]:
     records: list[dict[str, Any]] = []
 
@@ -1076,11 +1113,12 @@ def build_items(
         _load_item_catalog_index(catalog_index_path),
         _load_attachment_option_names(datamined / "refs" / "weapon-customization-options-26251122.json"),
         armor_names,
+        _load_loadout_item_names(item_names_path),
     )
     named = sum(1 for item in merged_items if item.get("name"))
     log(
         f"note: items 内部名解析 {resolved} 条；有名字 {named}/{len(merged_items)}"
-        f"（来源：附件选项内部名 + 外观表；武器/战备等类别目录行没有名字来源 -> 留空）"
+        f"（来源：附件选项内部名 + 外观表 + LoadoutEntry 实体内部名；解析不到的留空并标「内部名未解」）"
     )
 
     merged_items.sort(
@@ -1162,6 +1200,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"物品目录紧凑索引（默认 {DEFAULT_CATALOG_INDEX}），用于补物品内部名",
     )
     parser.add_argument(
+        "--item-names",
+        type=Path,
+        default=DEFAULT_ITEM_NAMES,
+        help=f"LoadoutEntry 物品内部名（默认 {DEFAULT_ITEM_NAMES}；由 tools/extract_item_names.py 生成）",
+    )
+    parser.add_argument(
         "--no-legacy",
         action="store_true",
         help="只写 GUI 目录，不写引擎目录 data/legacy/variant_catalog.json",
@@ -1181,7 +1225,7 @@ def main(argv: list[str] | None = None) -> int:
         effects, effects_count = build_effects(args.variant_net)
         planets, planets_count = build_planets(args.datamined)
         items, items_count = build_items(
-            args.variant_net, args.variant_mod, args.datamined, args.catalog_index
+            args.variant_net, args.variant_mod, args.datamined, args.catalog_index, args.item_names
         )
         build, build_count = build_build(variants)
 

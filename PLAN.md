@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.1-alpha.1` 已发布（2026-11-17，物品与战备页显示物品内部名）**
+> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.1-alpha.2` 已发布（2026-11-17，物品内部名补齐到 1544/1671，含 dlbin 路线的武器名）**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -598,6 +598,24 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
   `data/catalogs/items.json` 每条加 `catalog_category`（有名字的再加 `name_source`）。
 - 覆盖：**1520 / 1671** 有名字（原 391），搜索框可按内部名搜（`reddot` / `vertical grip`）。
 - 回归测试 +9 → **373 passed**（`tests/unit/test_item_names.py`）。
+
+---
+
+### 14.7 v0.1.1-alpha.2（2026-11-17，武器内部名走 dlbin 只读路线）
+
+- 用户提示：武器/战备名称可以走**之前的 dlbin 路线**（更新后被 EAC 拦的是**写**，**读**仍然可用；
+  本机有 hd2-datamined 仓库与解包密钥）。
+- 定位（✓ 定证）：`generated_entities.dl_bin` 的 `LoadoutEntryComponentData`（块 `0x4F2CF417`，
+  199 行 × 32 B）行 `+0x00` = 服务端目录行的 `itemId`；该行所属实体在 `EncyclopediaEntryComponentData`
+  里有内部名。用 `refs/entity-locid-names.json`（build 26088801）对实体哈希取名字：
+  **191/199 行有名字、177 个唯一 itemId**（`Veto` / `Gallant` / `Shear` / `Smokescreen` / `Pineapple`…）。
+- 落地：新增 `tools/extract_item_names.py`（只读；几何自证失败即报错）→ `data/sources/item_names_derived.json`；
+  `tools/gen_catalogs.py` 增加第 4 条名字规则 `loadout-entity`（只填空缺、不覆盖）。
+  覆盖 **1520 → 1544 / 1671**。
+- **战备仍无解**：cat 11 的解锁 itemId 在 55 张表 + 实体库里 u32/u64 全扫 0 命中（仅 9 处偶然），
+  客户端靠服务端/商店响应关联；当前抓包没有 store/season 响应 ⇒ 30 条战备保持「内部名未解」。
+  下一步：用本产品的抓包功能抓一次战备/商店页面，再做 itemId→locid→名字的映射。
+- 单测 373 → **375 passed**。
 
 ---
 

@@ -6,6 +6,27 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.1.1-alpha.2（2026-11-17）— 武器内部名补齐：走 dlbin 只读路线（LoadoutEntry → 实体名）
+
+- **修复/补全（alpha.1 的数据缺口）**：alpha.1 只解出「附件 + 外观」的内部名（1520/1671），
+  武器类（含主武器/副武器/投掷物/背包）仍是 `xxx · 武器（内部名未解）`。本版用**dlbin 只读路线**补上：
+  - `generated_entities.dl_bin` 的 `LoadoutEntryComponentData`（块 `0x4F2CF417`，199 行 × 32 B）行 `+0x00`
+    就是服务端目录行的 **itemId**；该行所属实体在 `EncyclopediaEntryComponentData` 里有内部名
+    （`Veto` / `Gallant` / `Shear` / `Smokescreen` / `Pineapple` …）；
+  - 新增 `tools/extract_item_names.py`：只读解包缓存 + typelib + 研究仓实体名，产出
+    `data/sources/item_names_derived.json`（build 26568081，**191/199 行有名字、177 个唯一 itemId**）；
+  - 生成器新增第 4 条名字规则（`loadout-entity`），只填空缺、不覆盖已有名字。
+  - 覆盖：**1520 → 1544 / 1671**；武器 tab 里能直接看到 `Veto` / `Gallant` / `Shear` 等名字，
+    搜索框可搜 `veto` / `gallant`。
+- **为什么写工具而不是一次性脚本**：2026-11-13 起**写** `data/game/*.dl_bin` 会被 EAC 判「未知的文件版本」，
+  但**读**一直可用（解包密钥在 `refs/dlbin/keys/`、明文缓存在 `refs/dlbin/plaintext-<build>/`）。
+  换 build 后重跑 `python tools/extract_item_names.py` 即可刷新武器内部名。
+- **已知限制**：战备（目录 cat 11）的解锁 itemId 在本地 **55 张数据表 + 实体库**里都搜不到映射
+  （全表 u32/u64 扫描 0 命中；只有 9 处偶然命中），说明客户端靠服务端/商店响应关联，
+  当前抓包里没有 store/season 响应 ⇒ 30 条战备仍显示「内部名未解」，不编造。
+- 单测 373 → **375**（`tests/unit/test_item_names.py`：加武器名断言、dlbin 产物结构校验、优先级规则）。
+- 规则：本版是**数据补全/修复** ⇒ 只动 `alpha.N`（`0.1.1-alpha.1` → `0.1.1-alpha.2`）。
+
 ## v0.1.1-alpha.1（2026-11-17）— 「物品与战备」显示物品内部名（不再只有 id）
 
 - **新增（小规模功能更新）**：「物品与战备」页的物品列表/编辑器原来只显示 `mixId · attachment`

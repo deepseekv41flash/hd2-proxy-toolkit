@@ -365,7 +365,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 131945085,
-   "name": null,
+   "name": "Smokescreen",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -1084,7 +1085,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 358989959,
-   "name": null,
+   "name": "Missile Pistol",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -1488,7 +1490,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 539671360,
-   "name": null,
+   "name": "Gallant",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -2907,7 +2910,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 1030888251,
-   "name": null,
+   "name": "Arc",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -3420,7 +3424,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 1246313930,
-   "name": null,
+   "name": "SMG",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -3627,7 +3632,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 1312773632,
-   "name": null,
+   "name": "Veto",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -3674,7 +3680,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 1339288659,
-   "name": null,
+   "name": "Melta Mine",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -4551,7 +4558,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 1639574879,
-   "name": null,
+   "name": "Pineapple",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -5300,7 +5308,8 @@
    "category": "weapon",
    "item_id": 1934208922,
    "mix_id": 1934208922,
-   "name": null,
+   "name": "Punisher fire of liberty",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant-net/configs/items_inject.json",
@@ -5496,7 +5505,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 2018836169,
-   "name": null,
+   "name": "Pistol",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -5831,7 +5841,8 @@
    "category": "weapon",
    "item_id": 2112173638,
    "mix_id": 2112173638,
-   "name": null,
+   "name": "Shear",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant-net/configs/items_inject.json",
@@ -6039,7 +6050,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 2161995568,
-   "name": null,
+   "name": "Knight",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -6257,7 +6269,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 2232169940,
-   "name": null,
+   "name": "Hyena",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -7209,7 +7222,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 2564789309,
-   "name": null,
+   "name": "Assault Rifle",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -7951,7 +7965,8 @@
    "category": "weapon",
    "item_id": 2870692210,
    "mix_id": 2870692210,
-   "name": null,
+   "name": "LAS-13 Trident",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant-net/configs/items_inject.json",
@@ -8995,7 +9010,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 3271863995,
-   "name": null,
+   "name": "Bolt Pistol",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -9015,7 +9031,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 3286567865,
-   "name": null,
+   "name": "Mist",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -9277,7 +9294,8 @@
    "category": "weapon",
    "item_id": 3388344762,
    "mix_id": 3388344762,
-   "name": null,
+   "name": "Ombudsman",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant-net/configs/items_inject.json",
@@ -9366,7 +9384,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 3414013062,
-   "name": null,
+   "name": "Shotgun",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -9511,7 +9530,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 3466282658,
-   "name": null,
+   "name": "Shield",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -10530,7 +10550,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 3800614722,
-   "name": null,
+   "name": "Sightliner",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -10558,7 +10579,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 3806884545,
-   "name": null,
+   "name": "Caltrops",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -10666,7 +10688,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 3859022603,
-   "name": null,
+   "name": "MACHETE",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
@@ -11378,7 +11401,8 @@
    "category": "weapon",
    "item_id": null,
    "mix_id": 4050324431,
-   "name": null,
+   "name": "Hot-shot Marksman Rifle",
+   "name_source": "loadout-entity",
    "source": [
     "variant-net/configs/inventory_inject.json",
     "variant_mod/runtime/inventory_inject.json"
