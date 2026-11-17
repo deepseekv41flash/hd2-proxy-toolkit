@@ -58,8 +58,8 @@ THE GREAT HOST 是历史事件子阵营（当前线上 0 星）。
   源目录冻结后的增量、改名、别名、分组规则都写进仓库，重跑可复现；
 - **引擎目录 `data/legacy/variant_catalog.json` 也纳入生成**（以前是手工拷贝）。
   两份目录漂移正是这次「items 有、groups 没有」的直接土壤；
-- 新增 `tests/unit/test_variant_catalog.py`（23 条）：wiki 全量清单、GUI/引擎目录逐条一致性、
-  覆盖层的 6 种写错即报错情形。
+- 新增 `tests/unit/test_variant_catalog.py`（24 条）：wiki 全量清单、GUI/引擎目录逐条一致性、
+  覆盖层的 6 种写错即报错情形、加载器键类型校验。
 
 ## 本版还包含（alpha.4 之后累积的开发侧改动）
 
@@ -69,7 +69,7 @@ THE GREAT HOST 是历史事件子阵营（当前线上 0 星）。
 - `tools/sync_release_area.py`：构建产物同步到专用测试区（与 GitHub Release 资产逐字节一致）。
 - `tools/win_integrity.py`：修掉「测试区 exe 以 Low 完整性运行 → 写 AppData 报
   `PermissionError(13)`」的坑（构建/同步时自动把目录树标回 Medium）。
-- 单测 **311 → 363**。
+- 单测 **311 → 364**。
 
 ## 下载
 

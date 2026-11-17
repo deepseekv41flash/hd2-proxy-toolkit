@@ -576,7 +576,7 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 - 排查结论：按 wiki Combatant Forces 全量对照，**除这两条外无其他漏项**（机器人 6/6、光能者 4/4、
   超级地球 1/1）；`TANK SURGE` 等线上无对应 effect ⇒ 本通道注入不了，非漏项。
   完整清单见 `docs/VARIANT-INVENTORY-2026-11-17.md`。
-- 回归测试 +23 → **363 passed**。
+- 回归测试 +24 → **364 passed**。
 
 ---
 
