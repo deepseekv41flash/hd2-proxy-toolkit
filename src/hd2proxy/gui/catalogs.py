@@ -212,6 +212,31 @@ class Catalogs:
         it = self._item_by_mix.get(int(mix_id) if str(mix_id).isdigit() else -1) or {}
         return it.get("category")
 
+    def attachment_groups(self):
+        """附件按武器分组：[(parent_id, 武器名, [(mix_id, label), ...]), ...]。
+
+        附件解锁是「武器 × 附件」粒度（每条附件的 mixId 属于某把武器，见
+        docs/UNLOCK-MAP 与 data/catalogs/README.md），所以界面先列武器、再列该武器的配件。
+        返回项按武器名排序；没有 parent_id 的条目不会出现（目前数据里没有）。
+        """
+        groups = {}
+        for it in self.items:
+            if it.get("category") != "attachment" or it.get("parent_id") is None:
+                continue
+            mix = it.get("mix_id")
+            if mix is None:
+                continue
+            parent = int(it["parent_id"])
+            group = groups.setdefault(parent, {"name": None, "items": []})
+            if not group["name"] and it.get("parent_name"):
+                group["name"] = it["parent_name"]
+            group["items"].append((int(mix), item_display_label(mix, it)))
+        out = []
+        for parent, group in groups.items():
+            out.append((parent, group["name"] or "武器 #%08X" % parent, sorted(group["items"])))
+        out.sort(key=lambda entry: (entry[1].lower(), entry[0]))
+        return out
+
     def search_items(self, text, limit=None, category=None):
         """关键词搜索物品；`category` 给定就只返回该类别（各 tab 的筛选器靠它）。
 

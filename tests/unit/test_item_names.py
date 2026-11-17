@@ -156,6 +156,54 @@ def test_search_items_category_filter_keeps_attachment_names_out_of_cosmetics():
     assert cat.item_category(1) is None
 
 
+def test_attachment_rows_carry_parent_weapon(items_doc):
+    """附件行必须带「属于哪把武器」：1455 行 / 57 把武器 / parent_name 大多已解。
+
+    「附件按武器筛选」和「一键解锁该武器全部配件」都靠 parent_id。
+    """
+    attachments = [it for it in items_doc["items"] if it.get("category") == "attachment"]
+    assert len(attachments) == 1455
+    assert all(it.get("parent_id") for it in attachments)
+    assert all(it.get("option_id") for it in attachments)
+    groups = {it["parent_id"] for it in attachments}
+    assert len(groups) == 57
+    named_parents = {it["parent_id"] for it in attachments if it.get("parent_name")}
+    assert len(named_parents) >= 54
+    # 名字覆盖：附件内部名 1400+ 条
+    assert sum(1 for it in attachments if it.get("name")) >= 1400
+
+
+def test_attachment_groups_api():
+    """Catalogs.attachment_groups()：按武器名排序、每组条目数与 items 一致。"""
+    cat = Catalogs()
+    groups = cat.attachment_groups()
+    assert len(groups) == 57
+    assert groups == sorted(groups, key=lambda g: (g[1].lower(), g[0]))
+    total = 0
+    for pid, name, items in groups:
+        assert isinstance(pid, int) and name and items
+        assert all(isinstance(mix, int) and isinstance(label, str) for mix, label in items)
+        total += len(items)
+    assert total == 1455
+    # 同一附件（TUBE REDDOT）出现在多把武器下，但 mixId 各不相同（解锁粒度 = 武器 × 附件）
+    reddot = [(pid, mix) for pid, name, items in groups for mix, label in items
+              if "TUBE REDDOT" in label]
+    assert len({mix for _pid, mix in reddot}) >= 3
+    # 抽查「Liberator」组
+
+
+def test_catalog_index_has_parent_field():
+    """目录索引要带 parent（附件所属武器）；否则生成器无法分组。"""
+    doc = json.loads((REPO / "data" / "sources" / "progression_item_catalog.json")
+                     .read_text(encoding="utf-8"))
+    rows = doc["rows"]
+    assert len(rows) == 3020
+    cat2 = [r for r in rows if r["cat"] == 2]
+    assert len(cat2) == 1455
+    assert all(r.get("parent") for r in cat2)
+    assert len({r["parent"] for r in cat2}) == 57
+
+
 # ---------------------------------------------------------------- 生成器规则
 
 

@@ -777,27 +777,32 @@ ITEM_CATEGORY_NAMES = {
 }
 
 
-def _load_item_catalog_index(path: Path) -> dict[int, dict[str, int]]:
-    """读目录索引（mixId -> {item, cat}）；同一 mixId 出现多次时按 mixId+itemId 去重，类别冲突报错。"""
+def _load_item_catalog_index(path: Path) -> dict[int, dict[str, Any]]:
+    """读目录索引（mixId -> {item, cat, parent}）。
+
+    `parent` 仅附件行（cat=2）有：= 该附件所属武器的 mixId（服务端目录的 `parentId`）。
+    同一 mixId 出现多次时按先出现的为准；类别冲突直接报错（不静默吞）。
+    """
     require_file(path, "物品目录索引 progression_item_catalog.json")
     doc = load_json(path, "物品目录索引 progression_item_catalog.json", dict)
     rows = doc.get("rows")
     if not isinstance(rows, list) or not rows:
         raise SourceError("progression_item_catalog.json 的 rows 必须是非空数组")
-    by_mix: dict[int, dict[str, int]] = {}
+    by_mix: dict[int, dict[str, Any]] = {}
     for position, row in enumerate(rows):
         if not isinstance(row, dict):
             raise SourceError(f"progression_item_catalog.json rows[{position}] 不是对象")
         mix = to_int(row.get("mix"), f"progression_item_catalog.json rows[{position}].mix")
         item = to_int(row.get("item"), f"progression_item_catalog.json rows[{position}].item")
         cat = to_opt_int(row.get("cat"), f"progression_item_catalog.json rows[{position}].cat") or 0
+        parent = to_opt_int(row.get("parent"), f"progression_item_catalog.json rows[{position}].parent")
         existing = by_mix.get(mix)
         if existing is not None and existing["cat"] != cat:
             raise SourceError(
                 f"progression_item_catalog.json 里 mixId {mix} 的类别冲突："
                 f"{existing['cat']} vs {cat}"
             )
-        by_mix.setdefault(mix, {"item": item, "cat": cat})
+        by_mix.setdefault(mix, {"item": item, "cat": cat, "parent": parent})
     return by_mix
 
 
@@ -867,6 +872,15 @@ def enrich_item_names(
         mix = item.get("mix_id")
         row = catalog_index.get(int(mix)) if mix is not None else None
         item["catalog_category"] = row["cat"] if row else None
+        if row and row["cat"] == 2:
+            item["option_id"] = int(row["item"])          # 附件选项 id（元数据；不参与合并）
+        if row and row.get("parent") is not None:
+            # 附件行带上「属于哪把武器」：界面按武器分组 + 一键解锁该枪全部附件靠它
+            parent_id = int(row["parent"])
+            item["parent_id"] = parent_id
+            parent_name = loadout_names.get(parent_id)
+            if parent_name:
+                item["parent_name"] = parent_name
         if item.get("name"):
             continue
         name, source = None, None
@@ -1025,6 +1039,31 @@ def build_items(
                 source=source,
             )
 
+    # --- 目录里的附件行全量补入（2026-11-17「附件按武器筛选 + 一键解锁该枪全部附件」）
+    #     已有条目只覆盖研究注入用到的子集；附件目录有 1455 行 / 57 把武器，补全后界面才能
+    #     「按武器列出全部配件」「一键全部解锁」。补入条目的名字由后面的内部名解析补。
+    catalog_by_mix = _load_item_catalog_index(catalog_index_path)
+    known_mix = {record["mix_id"] for record in records if record["mix_id"] is not None}
+    catalog_attachments = {mix: row for mix, row in catalog_by_mix.items() if row["cat"] == 2}
+    added_from_catalog = 0
+    for mix, row in sorted(catalog_attachments.items()):
+        if mix in known_mix:
+            continue
+        # 注意：附件行之间共享「附件 optionId」，这里**不能**写 item_id —— 合并阶段会把
+        # 同一 optionId 的整把枪行并成一对多 id 报错。optionId 之后作为独立字段 `option_id` 带上。
+        add_record(
+            mix_id=mix,
+            category="attachment",
+            source=SRC_CATALOG_INDEX,
+        )
+        added_from_catalog += 1
+    if added_from_catalog:
+        log(
+            "note: 从目录索引补入附件行 %d 条（附件目录共 %d 条 / %d 把武器）"
+            % (added_from_catalog, len(catalog_attachments),
+               len({row["parent"] for row in catalog_attachments.values() if row["parent"]}))
+        )
+
     # --- 合并：同一 mix_id / 同一 item_id 视为同一物品；itemId 与 mixId 数值相同也视为同一物品
     #     （外观表简单件 itemId == 目录 mixId，见 UNLOCK-MAP §8.2；本次仅零星几例，下面会打印）。
     uf = UnionFind()
@@ -1110,15 +1149,21 @@ def build_items(
             armor_names.setdefault(row_id, picked)
     resolved = enrich_item_names(
         merged_items,
-        _load_item_catalog_index(catalog_index_path),
+        catalog_by_mix,
         _load_attachment_option_names(datamined / "refs" / "weapon-customization-options-26251122.json"),
         armor_names,
         _load_loadout_item_names(item_names_path),
     )
     named = sum(1 for item in merged_items if item.get("name"))
+    attachment_items = [item for item in merged_items if item.get("catalog_category") == 2]
+    attachment_weapons = {item.get("parent_id") for item in attachment_items if item.get("parent_id")}
     log(
         f"note: items 内部名解析 {resolved} 条；有名字 {named}/{len(merged_items)}"
         f"（来源：附件选项内部名 + 外观表 + LoadoutEntry 实体内部名；解析不到的留空并标「内部名未解」）"
+    )
+    log(
+        f"note: 附件条目 {len(attachment_items)} 条，按 parent_id 分成 {len(attachment_weapons)} 把武器"
+        f"（parent_name 已解 {sum(1 for item in attachment_items if item.get('parent_name'))} 条）"
     )
 
     merged_items.sort(

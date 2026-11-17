@@ -349,40 +349,100 @@ def test_inventory_add_remove_and_summary(inv_page, app):
 
 
 def test_inventory_tabs_only_show_their_own_category(inv_page):
-    """四个 tab 是筛选器：外观里不能出现附件（2026-11-17 用户报的问题）。
+    """四个 tab 是筛选器：外观里不能出现附件；附件 tab 是一级武器 / 二级配件。
 
     判定用物品内部名当指纹：`TUBE REDDOT` / `Vertical Grip` 一定属于附件；
     `Shear` / `Veto` 一定属于武器。
     """
     page = inv_page
     labels = {key: list(page._lists[key].listbox.get(0, "end"))
-              for key in ("weapons", "attachments", "cosmetics", "stratagems")}
-    assert labels["attachments"] and any("TUBE REDDOT" in x for x in labels["attachments"])
+              for key in ("weapons", "cosmetics", "stratagems")}
     assert labels["cosmetics"] and not any("TUBE REDDOT" in x or "Vertical Grip" in x
                                            for x in labels["cosmetics"])
     assert any("Shear" in x for x in labels["weapons"])
-    assert not any("Shear" in x for x in labels["cosmetics"] + labels["attachments"])
+    assert not any("Shear" in x for x in labels["cosmetics"])
     assert labels["stratagems"] and all("内部名未解" in x for x in labels["stratagems"])
-    # 列表不截断：每个 tab 的条目数 = 该类别的全部条目（附件 1176 条以前只显示 80 条）
-    for key, category in (("weapons", "weapon"), ("attachments", "attachment"),
-                          ("cosmetics", "cosmetic"), ("stratagems", "stratagem")):
+    # 一级：武器列表 = 目录里所有「有配件」的武器（57 把）；二级初始为空
+    groups = page.app.catalogs.attachment_groups()
+    assert len(groups) == 57
+    assert page._weapon_lists["attachments"].listbox.size() == len(groups)
+    assert page._lists["attachments"].listbox.size() == 0
+    # 选一把武器 -> 二级 = 该武器全部配件（含 TUBE REDDOT / Vertical Grip 这类附件名）
+    pid, name, items = groups[0]
+    page._pick_attachment_weapon("attachments", str(pid))
+    labels2 = list(page._lists["attachments"].listbox.get(0, "end"))
+    assert len(labels2) == len(items) and len(items) > 0
+    assert page._lists["attachments"].listbox.size() == len(items)
+    # 列表不截断：武器 / 外观 / 战备 tab 的条目数 = 该类别的全部条目
+    for key, category in (("weapons", "weapon"), ("cosmetics", "cosmetic"),
+                          ("stratagems", "stratagem")):
         total = len(page.app.catalogs.search_items("", category=category))
         assert len(labels[key]) == total, (key, len(labels[key]), total)
         assert total > 0
+
+
+def test_attachment_tab_bulk_unlock_all_and_dedupe(inv_page, app):
+    """一级选武器 + 点「添加到库存」= 解锁该武器全部配件；重复点只提示、不重复加。"""
+    page = inv_page
+    gallery = page.app.catalogs.attachment_groups()
+    pid, name, items = gallery[0]
+    page._weapon_lists["attachments"].listbox.selection_set(0)
+    page._add_item("attachments")
+    rows = app.profile["inventory"]["attachments"]
+    assert len(rows) == len(items)
+    assert {r["mixId"] for r in rows} == {mix for mix, _label in items}
+    # 再来一次：全部已存在 -> 不新增，提示里含「已在」
+    before = len(app.profile["inventory"]["attachments"])
+    page._add_item("attachments")
+    assert len(app.profile["inventory"]["attachments"]) == before
+    text, error = app.last_toast()
+    assert error and "已在" in text
+
+
+def test_attachment_tab_single_add_from_second_level(inv_page, app):
+    """二级选中具体配件时，只加那一条（不是整把武器）。"""
+    page = inv_page
+    gallery = page.app.catalogs.attachment_groups()
+    pid, name, items = gallery[0]
+    page._pick_attachment_weapon("attachments", str(pid))
+    page._lists["attachments"].listbox.selection_set(0)
+    page._lists["attachments"]._on_select()
+    page._add_item("attachments")
+    rows = app.profile["inventory"]["attachments"]
+    assert len(rows) == 1 and rows[0]["mixId"] == items[0][0]
+
+
+def test_attachment_tab_global_search(inv_page):
+    """附件 tab 的关键词搜索跨武器：搜附件名命中二级列表，清空后回到按武器浏览。"""
+    page = inv_page
+    page._keywords["attachments"].set("TUBE REDDOT")
+    page._search_items("attachments")
+    hits = list(page._lists["attachments"].listbox.get(0, "end"))
+    assert hits and all("TUBE REDDOT" in x for x in hits)
+    assert "/" in hits[0]                       # 标签带武器名
+    page._keywords["attachments"].set("")
+    page._search_items("attachments")
+    assert page._lists["attachments"].listbox.size() == 0
+    assert page._weapon_lists["attachments"].listbox.size() == 57
 
 
 def test_inventory_lists_are_not_truncated(inv_page):
     """回归：列表必须装下整类（原来是 search_items 默认 limit=80，附件 1176 条只显示 80）。"""
     page = inv_page
     catalog = page.app.catalogs
-    attachments = catalog.search_items("", category="attachment")
-    assert len(attachments) > 1000
-    assert page._lists["attachments"].listbox.size() == len(attachments)
+    assert len(catalog.search_items("", category="attachment")) == 1455
+    # 武器 / 外观 / 战备 tab 直接装全量
+    for key, category in (("weapons", "weapon"), ("cosmetics", "cosmetic"),
+                          ("stratagems", "stratagem")):
+        assert page._lists[key].listbox.size() == len(catalog.search_items("", category=category))
+    # 附件 tab：一级装全部武器；选中后二级装该武器全部配件
+    groups = catalog.attachment_groups()
+    assert page._weapon_lists["attachments"].listbox.size() == len(groups)
+    pid, name, items = groups[0]
+    page._pick_attachment_weapon("attachments", str(pid))
+    assert page._lists["attachments"].listbox.size() == len(items)
     # 目录追加 tab 也不截断
     assert page.catalog_list.listbox.size() == len(catalog.search_items("", limit=None))
-    # 提示行写明本类总数
-    hint = page._list_hints["attachments"].cget("text")
-    assert str(len(attachments)) in hint and "共" in hint
 
 
 def test_inventory_search_keeps_category_filter(inv_page):

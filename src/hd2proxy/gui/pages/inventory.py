@@ -34,6 +34,9 @@ class InventoryPage(Page):
         self._editors = {}
         self._counts = {}
         self._list_hints = {}
+        self._weapon_lists = {}        # 附件 tab 的一级列表：按武器筛选
+        self._attachment_groups = {}   # 附件 tab：武器 key -> (parent_id, 武器名, [(mix, label), ...])
+        self._sel_attachment_weapon = None
         self._filled = {}              # tab 的列表是否已填过（切 tab 时补一次）
 
         bar = tk.Frame(self, bg=theme.BG)
@@ -46,7 +49,10 @@ class InventoryPage(Page):
         self.nb = ttk.Notebook(self)
         self.nb.pack(fill="both", expand=True, padx=22, pady=(0, 16))
         for key, label in EDIT_TABS:
-            self._build_edit_tab(key, label)
+            if key == "attachments":
+                self._build_attachment_tab(key, label)
+            else:
+                self._build_edit_tab(key, label)
         self._build_items_tab()
         self.nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
@@ -96,9 +102,127 @@ class InventoryPage(Page):
         editor.pack(fill="both", expand=True)
         self._editors[key] = editor
 
+    def _build_attachment_tab(self, key, label):
+        """附件 tab：一级选武器、二级选该武器的具体配件。
+
+        为什么是两级：附件解锁是「武器 × 附件」粒度（同一附件在不同枪上是不同 mixId，
+        见 docs/UNLOCK-MAP-2026-11-06.md）。直接选中一级武器点「添加到库存」= 解锁该武器全部配件。
+        """
+        tab = tk.Frame(self.nb, bg=theme.BG)
+        self.nb.add(tab, text=label)
+
+        bar = tk.Frame(tab, bg=theme.BG)
+        bar.pack(fill="x", padx=12, pady=(10, 6))
+        tk.Label(bar, text="关键词", bg=theme.BG, fg=theme.MUTED,
+                 font=theme.F_S).pack(side="left")
+        self._keywords[key] = tk.StringVar()
+        kw = theme.entry(bar, self._keywords[key], width=16)
+        kw.pack(side="left", padx=(6, 6))
+        kw.bind("<Return>", lambda _e, k=key: self._search_items(k))
+        theme.button(bar, "搜索", command=lambda k=key: self._search_items(k)).pack(
+            side="left", padx=(0, 12))
+        tk.Label(bar, text="数量", bg=theme.BG, fg=theme.MUTED,
+                 font=theme.F_S).pack(side="left")
+        self._amounts[key] = tk.StringVar(value="1")
+        theme.entry(bar, self._amounts[key], width=6).pack(side="left", padx=(6, 12))
+        theme.button(bar, "添加到库存", primary=True,
+                     command=lambda k=key: self._add_item(k)).pack(side="left")
+        self._counts[key] = tk.Label(bar, text="", bg=theme.BG, fg=theme.DIM, font=theme.F_S)
+        self._counts[key].pack(side="right")
+
+        body = tk.Frame(tab, bg=theme.BG)
+        body.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        body.columnconfigure(0, weight=1, uniform="col")
+        body.columnconfigure(1, weight=1, uniform="col")
+        left = tk.Frame(body, bg=theme.BG)
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        right = tk.Frame(body, bg=theme.BG)
+        right.grid(row=0, column=1, sticky="nsew")
+
+        tk.Label(left, text="一级：选武器（共 %d 把；点「添加到库存」= 解锁该武器全部配件）"
+                           % len(self.app.catalogs.attachment_groups()),
+                 bg=theme.BG, fg=theme.MUTED, font=theme.F_S, anchor="w").pack(fill="x")
+        self._weapon_lists[key] = SearchList(
+            left, items=[], height=6,
+            on_pick=lambda pid, k=key: self._pick_attachment_weapon(k, pid))
+        self._weapon_lists[key].pack(fill="both", expand=True)
+
+        tk.Label(left, text="二级：该武器的配件（选中则只加这一条）",
+                 bg=theme.BG, fg=theme.MUTED, font=theme.F_S, anchor="w").pack(
+            fill="x", pady=(6, 0))
+        self._lists[key] = SearchList(left, items=[], height=6)
+        self._lists[key].pack(fill="both", expand=True)
+        self._list_hints[key] = tk.Label(left, text="", bg=theme.BG, fg=theme.DIM,
+                                         font=theme.F_S, anchor="w", wraplength=520,
+                                         justify="left")
+        self._list_hints[key].pack(fill="x", pady=(4, 0))
+        self._filled[key] = False
+
+        editor = RowEditor(right, [("mixId", 108), ("名称", 210), ("数量", 54)], height=12,
+                           on_change=lambda i, k=key: self._remove_row(k, i))
+        editor.pack(fill="both", expand=True)
+        self._editors[key] = editor
+        self._fill_attachment_weapons()
+
+    def _fill_attachment_weapons(self):
+        """填一级武器列表（全部），并建立 key -> 分组 的映射。"""
+        groups = self.app.catalogs.attachment_groups()
+        self._attachment_groups = {str(pid): (pid, name, items)
+                                   for pid, name, items in groups}
+        items = [(str(pid), "%s · %d 件" % (name, len(sub)))
+                 for pid, name, sub in groups]
+        self._weapon_lists["attachments"].set_items(items)
+        self._filled["attachments"] = True
+        self._sel_attachment_weapon = None
+        self._lists["attachments"].set_items([])
+        self._update_attachment_hint()
+
+    def _pick_attachment_weapon(self, key, parent_key):
+        """选中一级武器 -> 填二级配件列表。"""
+        group = self._attachment_groups.get(str(parent_key))
+        if not group:
+            return
+        pid, name, items = group
+        self._sel_attachment_weapon = (pid, name, items)
+        self._lists["attachments"].set_items(list(items))
+        self._update_attachment_hint()
+
+    def _update_attachment_hint(self):
+        sel = self._sel_attachment_weapon
+        if not sel:
+            text = ("未选武器：先在一级列表选武器，二级会列出该武器的全部配件；"
+                    "选中一级武器直接点「添加到库存」= 一次解锁该武器全部配件")
+        else:
+            pid, name, items = sel
+            text = ("当前武器：%s（0x%08X，%d 个配件）。直接点「添加到库存」= 解锁全部；"
+                    "在二级列表选中某条则只加那一条" % (name, pid, len(items)))
+        self._list_hints["attachments"].configure(text=text)
+
     def _search_items(self, key):
-        """关键词 -> catalogs.search_items（只在本 tab 的类别里查，不截断）。"""
+        """关键词查询。
+
+        * 附件 tab：关键词在「全部配件」里跨武器搜（二级列表显示结果，标签带武器名）；
+          清空关键词再点搜索 = 回到按武器浏览。
+        * 其它 tab：只在本 tab 的类别里查，不截断。
+        """
         kw = self._keywords[key].get().strip()
+        if key == "attachments":
+            if not kw:
+                self._fill_attachment_weapons()
+                self.app.toast("附件：已列出全部 %d 把武器" % len(self._attachment_groups))
+                return
+            needle = kw.lower()
+            hits = []
+            for pid, name, items in self._attachment_groups.values():
+                for mix, label in items:
+                    if needle in label.lower() or needle in name.lower():
+                        hits.append((mix, "%s / %s" % (name, label)))
+            self._lists[key].set_items(hits)
+            self._list_hints[key].configure(
+                text="搜索「%s」：命中 %d 个配件（跨全部武器；清空关键词再点搜索 = 回到按武器浏览）"
+                     % (kw, len(hits)))
+            self.app.toast("附件：命中 %d 个配件" % len(hits))
+            return
         items = self.app.catalogs.search_items(kw, category=TAB_CATEGORY[key], limit=None)
         self._lists[key].set_items(items)
         self._filled[key] = bool(items)
@@ -112,20 +236,34 @@ class InventoryPage(Page):
             label.configure(text="本类共 %d 条；上方搜索框在全部条目里过滤，「关键词 + 搜索」"
                                  "走目录全量查询" % shown)
 
-    def _add_item(self, key):
-        mix = self._lists[key].get_selected()
-        if mix is None:
-            self.app.toast("先在左侧列表里选一件物品", error=True)
-            return
+    def _amount_for(self, key):
+        """读该 tab 的数量输入；非法返回 None（已 toast）。"""
         raw = str(self._amounts[key].get()).strip() or "1"
         try:
             amount = int(raw)
         except ValueError:
             self.app.toast("数量要填整数", error=True)
-            return
+            return None
         if amount < 1:
             self.app.toast("数量必须 >= 1", error=True)
+            return None
+        return amount
+
+    def _add_item(self, key):
+        amount = self._amount_for(key)
+        if amount is None:
             return
+        if key == "attachments":
+            self._add_attachment(key, amount)
+            return
+        mix = self._lists[key].get_selected()
+        if mix is None:
+            self.app.toast("先在左侧列表里选一件物品", error=True)
+            return
+        self._append_inventory_row(key, int(mix), amount)
+
+    def _append_inventory_row(self, key, mix, amount):
+        """把一条库存行加进 profile（类别校验 + 去重 + 渲染 + toast）。"""
         picked_category = self.app.catalogs.item_category(mix)
         if picked_category is not None and picked_category != TAB_CATEGORY[key]:
             self.app.toast("%s 属于「%s」，不能加到%s列表（四个 tab 各自只收同类物品）"
@@ -143,6 +281,35 @@ class InventoryPage(Page):
         self.app.mark_dirty()
         self._render_tab(key)
         self.app.toast("已加入%s：%s" % (TAB_NAMES[key], self.app.catalogs.item_label(mix)))
+
+    def _add_attachment(self, key, amount):
+        """附件：选中二级配件 -> 只加那一条；只选中一级武器 -> 解锁该武器全部配件。"""
+        mix = self._lists[key].get_selected()
+        if mix is not None:
+            self._append_inventory_row(key, int(mix), amount)
+            return
+        weapon_key = self._weapon_lists[key].get_selected()
+        if weapon_key is None:
+            self.app.toast("先选一把武器（= 解锁该武器全部配件），或在二级列表选一个具体配件",
+                           error=True)
+            return
+        group = self._attachment_groups.get(str(weapon_key))
+        if not group:
+            self.app.toast("武器列表已过期，点「搜索」刷新后再试", error=True)
+            return
+        pid, name, items = group
+        rows = self._inventory().setdefault(key, [])
+        existing = {int(r.get("mixId") or 0) for r in rows if isinstance(r, dict)}
+        todo = [int(mix) for mix, _label in items if int(mix) not in existing]
+        if not todo:
+            self.app.toast("%s 的 %d 个配件都已在%s列表里"
+                           % (name, len(items), TAB_NAMES[key]), error=True)
+            return
+        rows.extend({"mixId": mix, "amount": int(amount), "isDiscovered": False} for mix in todo)
+        self.app.mark_dirty()
+        self._render_tab(key)
+        self.app.toast("已解锁 %s（0x%08X）的全部配件：%d 条（新增 %d，已存在 %d）"
+                       % (name, pid, len(items), len(todo), len(items) - len(todo)))
 
     def _remove_row(self, key, index):
         rows = self._inventory(create=False).get(key) or []
