@@ -109,7 +109,7 @@ def collect(profile: dict, cert_dir=None, own_pids=None, state_file=None) -> dic
             entry["role"] = label
             ports.append(entry)
 
-    status = certs.cert_status(cert_dir or _default_cert_dir())
+    status = certs.cert_status(cert_dir or _default_cert_dir(), check_trust=True)
     hosts_text = ""
     try:
         hosts_text = hosts_mod.read_hosts()
@@ -287,6 +287,12 @@ def evaluate(snapshot: dict) -> dict:
     if not cert.get("usable"):
         detail = "；".join(cert.get("warnings") or []) or "（无证书信息）"
         add("warn", "会话证书不可用：%s" % detail)
+    elif cert.get("trusted") is False:
+        # 证书能签、但 CA 不在根存储：客户端在 TLS 握手阶段就被断开，
+        # 游戏侧只报通用的 Error 60 / Status -1，引擎日志只有 TLS REJECTED —— 必须显式报出来
+        add("error", "证书未受信任：当前 CA 不在受信任根存储（指纹 %s）→ 游戏 TLS 握手会被拒绝"
+                     "（引擎日志 TLS REJECTED）。点「安装 / 修复」重新导入信任"
+            % ((cert.get("trust_thumbprint") or "?")[:12],))
     elif (cert.get("remaining_hours") or 0) < 12:
         add("warn", "会话证书只剩 %.1f 小时，到期前游戏会连不上 —— 点「签发 / 续期证书」"
             % (cert.get("remaining_hours") or 0))

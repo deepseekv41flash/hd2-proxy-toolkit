@@ -30,7 +30,7 @@ from hd2proxy.gui.pages.status_page import StatusPage  # noqa: E402
 
 
 class FakeClient:
-    """只实现页面用到的引擎客户端面：running / set_capture。"""
+    """只实现页面用到的引擎客户端面：running / set_capture / run_cli。"""
 
     def __init__(self):
         self.running_flag = False
@@ -42,6 +42,10 @@ class FakeClient:
     def set_capture(self, enabled, directory=None):
         self.calls.append((enabled, directory))
         return {"ok": True, "enabled": enabled}
+
+    def run_cli(self, args, timeout=180):
+        self.calls.append(list(args))
+        return 0, ""
 
 
 class FakeApp:
@@ -729,6 +733,100 @@ def test_overview_diag_throttles_repeated_refresh(root, app, monkeypatch):
     page._diag_at = 0.0                    # 过了节流窗口 -> 重新算
     page.refresh()
     assert len(calls) == 2
+
+
+# ---------------------------------------------------------------- 证书信任修复（alpha.3）
+def _patch_text_dialog(monkeypatch):
+    """断言不弹真窗口：_TextDialog 换成记录器。"""
+    from hd2proxy.gui.pages import overview as overview_mod
+
+    shown = []
+    monkeypatch.setattr(overview_mod, "_TextDialog",
+                        lambda parent, title, content: shown.append((title, content)))
+    return shown
+
+
+def test_overview_install_real_runs_cli(root, app, monkeypatch):
+    from tkinter import messagebox
+
+    from hd2proxy.engine import diagnostics as diag_mod
+    _patch_text_dialog(monkeypatch)
+    asked = []
+    monkeypatch.setattr(messagebox, "askyesno", lambda *a, **k: asked.append(a[0]) or True)
+    calls = []
+    monkeypatch.setattr(app.client, "run_cli",
+                        lambda args: calls.append(list(args)) or (0, "INSTALL-OUT"))
+    monkeypatch.setattr(diag_mod, "collect", lambda *a, **k: _diag_snapshot())
+    monkeypatch.setattr(diag_mod, "evaluate",
+                        lambda snap: {"ok": True, "errors": [], "warnings": []})
+    page = _make(OverviewPage, root, app)
+    page._install_real()
+    assert asked == ["安装 / 修复"]
+    assert calls and calls[0][:2] == ["install", "--profile"]
+    assert "--cert-dir" in calls[0]
+    assert page._diag_at > 0            # 安装后强制重算现场检查
+
+
+def test_overview_install_real_cancel_does_nothing(root, app, monkeypatch):
+    from tkinter import messagebox
+    monkeypatch.setattr(messagebox, "askyesno", lambda *a, **k: False)
+    calls = []
+    monkeypatch.setattr(app.client, "run_cli", lambda args: calls.append(list(args)) or (0, ""))
+    page = _make(OverviewPage, root, app)
+    page._install_real()
+    assert calls == []
+
+
+def test_overview_renew_offers_install_trust_once(root, app, monkeypatch):
+    """续期换了 CA 且未受信 → 只弹一次确认（不要连问两遍），随后调用 install。"""
+    from tkinter import messagebox
+
+    from hd2proxy.engine import certs as certs_mod
+    _patch_text_dialog(monkeypatch)
+    asked = []
+    monkeypatch.setattr(messagebox, "askyesno", lambda *a, **k: asked.append(a[0]) or True)
+    monkeypatch.setattr(certs_mod, "cert_status",
+                        lambda *a, **k: {"exists": True, "trusted": False})
+    calls = []
+    monkeypatch.setattr(app.client, "run_cli",
+                        lambda args: calls.append(list(args)) or (0, "OUT"))
+    page = _make(OverviewPage, root, app)
+    page._offer_install_trust()
+    assert asked == ["新证书还没安装信任"]
+    assert calls and calls[0][:2] == ["install", "--profile"]
+
+
+def test_overview_renew_skips_install_when_trusted(root, app, monkeypatch):
+    from tkinter import messagebox
+
+    from hd2proxy.engine import certs as certs_mod
+    asked = []
+    monkeypatch.setattr(messagebox, "askyesno", lambda *a, **k: asked.append(a[0]) or True)
+    monkeypatch.setattr(certs_mod, "cert_status",
+                        lambda *a, **k: {"exists": True, "trusted": True})
+    calls = []
+    monkeypatch.setattr(app.client, "run_cli", lambda args: calls.append(list(args)) or (0, ""))
+    page = _make(OverviewPage, root, app)
+    page._offer_install_trust()
+    assert asked == [] and calls == []
+
+
+def test_overview_renew_then_installs_trust(root, app, monkeypatch):
+    """完整链路：certs renew 成功 → 发现未受信 → 自动走 install。"""
+    from tkinter import messagebox
+
+    from hd2proxy.engine import certs as certs_mod
+    _patch_text_dialog(monkeypatch)
+    monkeypatch.setattr(messagebox, "askyesno", lambda *a, **k: True)
+    monkeypatch.setattr(certs_mod, "cert_status",
+                        lambda *a, **k: {"exists": True, "trusted": False})
+    calls = []
+    monkeypatch.setattr(app.client, "run_cli",
+                        lambda args: calls.append(list(args)) or (0, "OK"))
+    page = _make(OverviewPage, root, app)
+    page._renew_cert()
+    assert calls[0][:2] == ["certs", "renew"]
+    assert calls[1][:2] == ["install", "--profile"]
 
 
 def test_overview_selfcheck_opens_text_dialog(root, app, monkeypatch):

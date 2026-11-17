@@ -110,6 +110,25 @@ def test_evaluate_cert_expiring_and_game_running_notes():
     assert "只剩 3.5 小时" in joined and "游戏正在运行" in joined
 
 
+def test_evaluate_untrusted_cert_is_blocking_error():
+    """证书能签但 CA 不在根存储：游戏握手必被拒，必须报 error（不是 warn）。"""
+    ev = diagnostics.evaluate(_snapshot(
+        cert={"usable": True, "remaining_hours": 40.0, "thumbprint": "AABB",
+              "trust_thumbprint": "CD4F0C7D1B7074CCD45B6529E87BADBC51FD136D",
+              "trusted": False, "warnings": []}))
+    joined = "".join(_texts(ev))
+    assert "未受信任" in joined and "CD4F0C7D1B70" in joined
+    assert ev["ok"] is False
+    assert any(w["level"] == "error" and "未受信任" in w["text"] for w in ev["errors"])
+
+
+def test_evaluate_trusted_cert_no_trust_error():
+    ev = diagnostics.evaluate(_snapshot(
+        cert={"usable": True, "remaining_hours": 40.0, "thumbprint": "AABB",
+              "trusted": True, "warnings": []}))
+    assert not any("未受信任" in t for t in _texts(ev))
+
+
 def test_format_text_has_sections():
     snap = _snapshot(ports=[{"role": "代理", "ip": "100.67.169.17", "port": 443,
                              "state": "ours", "wildcard": False,

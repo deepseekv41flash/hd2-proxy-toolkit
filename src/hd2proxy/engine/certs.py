@@ -333,8 +333,13 @@ def session_remaining_hours(cert_dir) -> float | None:
         return None
 
 
-def cert_status(cert_dir) -> dict:
-    """给 GUI / control API 用的证书状态快照（只读）。"""
+def cert_status(cert_dir, *, check_trust: bool = False) -> dict:
+    """给 GUI / control API 用的证书状态快照（只读）。
+
+    ``check_trust=True`` 时额外查询「当前 CA 是否在受信任根存储里」——这要 spawn 一次
+    ``certutil``（约 60–120ms），所以**只允许低频路径**（诊断 / 系统自检 / 续期后自检）打开；
+    控制面 ``/status`` 是 GUI 0.6s 轮询的热路径，必须保持默认 False。
+    """
     cert_dir = Path(cert_dir)
     info = {}
     try:
@@ -343,6 +348,15 @@ def cert_status(cert_dir) -> dict:
         pass
     mode = info.get("mode")
     remaining = session_remaining_hours(cert_dir) if info else None
+    thumb = info.get("trust_thumbprint_sha1") or info.get("thumbprint_sha1")
+    trusted, trust_scope = None, None
+    if info and thumb and check_trust:
+        from . import sysprobe
+        trusted = False
+        for scope in ("LocalMachine", "CurrentUser"):
+            if sysprobe.cert_trusted(thumb, scope):
+                trusted, trust_scope = True, scope
+                break
     return {
         "cert_dir": str(cert_dir),
         "exists": bool(info),
@@ -353,18 +367,27 @@ def cert_status(cert_dir) -> dict:
         "remaining_hours": None if remaining is None else round(remaining, 1),
         "thumbprint": info.get("thumbprint_sha1"),
         "trust_subject": info.get("trust_subject"),
+        "trust_thumbprint": thumb,
+        # None = 没查（check_trust=False）；False = 查过且两个根存储里都没有
+        "trusted": trusted,
+        "trust_scope": trust_scope,
         "usable": bool(info) and mode == "ca" and (remaining or 0) > 0,
-        "warnings": _cert_warnings(info, remaining),
+        "warnings": _cert_warnings(info, remaining, trusted),
     }
 
 
-def _cert_warnings(info, remaining):
+def _cert_warnings(info, remaining, trusted=None):
     out = []
     if not info:
         out.append("没有会话证书（先运行 install，或 python -m hd2proxy certs renew）")
         return out
+    if trusted is False:
+        # 这一条最容易踩：证书本身没问题、但 CA 不在根存储 → 游戏在 TLS 握手阶段直接断开，
+        # 客户端只显示通用错误（Error 60 / Status -1），普通用户完全看不出原因。
+        out.append("证书未受信任：当前 CA 不在受信任根存储 → 游戏会在 TLS 握手阶段被拒绝"
+                   "（引擎日志 TLS REJECTED）。请点「安装 / 修复」或运行 hd2proxy.exe install 重新导入")
     if info.get("mode") != "ca":
-        out.append("证书模式是 %r：游戏只认 ca 模式（leaf 没有 CRL，握手前就会断开）" % info.get("mode"))
+        out.append("证书模式是 %r：游戏只认 ca 模式（leaf 没有 CRL，握手前就会断开）" % (info.get("mode")))
     if remaining is not None and remaining <= 0:
         out.append("证书已过期（%s）" % info.get("not_after"))
     elif remaining is not None and remaining < 12:

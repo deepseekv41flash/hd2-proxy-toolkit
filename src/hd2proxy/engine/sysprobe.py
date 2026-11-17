@@ -58,6 +58,9 @@ _PORT_CACHE: dict[int, tuple[float, list[dict]]] = {}
 #   ① 每个子进程弹一个控制台窗口（GUI 无控制台时）；② tasklist 冷启动实测 ~570ms。
 _NAMES_CACHE = None
 _LISTENERS_CACHE = None
+# 证书信任缓存：(指纹, 存储范围) -> (采样时间, 是否受信)。
+# 为什么缓存：查一次要 spawn certutil；总览诊断/自检会反复调（证书续期后最容易踩到）。
+_CERT_TRUST_CACHE: dict[tuple[str, str], tuple[float, bool]] = {}
 
 
 # --------------------------------------------------------------------------- #
@@ -704,6 +707,7 @@ def clear_caches() -> None:
     _PORT_CACHE.clear()
     _NAMES_CACHE = None
     _LISTENERS_CACHE = None
+    _CERT_TRUST_CACHE.clear()
 
 
 # --------------------------------------------------------------------------- #
@@ -766,6 +770,22 @@ def cert_in_store(thumbprint: str, scope: str = "LocalMachine") -> bool:
         return False
     proc = run_certutil(scope_args + ["-store", "Root", normalized])
     return proc is not None and proc.returncode == 0
+
+
+def cert_trusted(thumbprint: str, scope: str = "LocalMachine") -> bool:
+    """``cert_in_store`` 的带缓存版本（GUI 诊断会反复查，cache 3 秒）。
+
+    **为什么必须缓存**：一次证书信任检查要 spawn ``certutil``（约 60–120ms，且是控制台子进程）。
+    总览「现场检查」/「系统自检」会在切页、续期证书后连续调用；不缓存就会重复 spawn。
+    """
+    key = (normalize_thumbprint(thumbprint), str(scope or "LocalMachine"))
+    now = time.monotonic()
+    hit = _CERT_TRUST_CACHE.get(key)
+    if hit is not None and now - hit[0] < PORT_CACHE_TTL:
+        return hit[1]
+    trusted = cert_in_store(key[0], key[1])
+    _CERT_TRUST_CACHE[key] = (now, trusted)
+    return trusted
 
 
 def is_admin() -> bool:

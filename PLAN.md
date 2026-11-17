@@ -723,6 +723,18 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
+### 15.3 v0.3.0-alpha.3（2026-11-17，修复续期证书后游戏报 Error 60：CA 未受信）
+
+- 现场：抓包时游戏弹 `Error: 60 / Status: -1`。引擎 `/status` 显示 `req=0 deny=3 rewrite=0`，
+  日志只有 `TLS REJECTED … SSLZeroReturnError(EOF)`；16:06 在 GUI 续期证书换了新 CA，
+  但**没有重新导入受信任根存储**，而 GUI 当时只有 dry-run、没有真安装入口，界面/自检/日志都不提示。
+- 修复：`cert_status(check_trust=True)` 增 `trusted`/`trust_scope`（`sysprobe.cert_trusted` 带 3s 缓存，
+  `/status` 默认不查，避免热路径 spawn certutil）；诊断把「证书未受信」升为 error；GUI 总览新增
+  「安装 / 修复（UAC）」真入口 + 续期成功后自动检测并引导导入（只问一次）；引擎启动 ⚠ 与 TLS 拒绝日志给可操作提示。
+- 回归测试 434 → **445 passed**；源码三态实测通过；门禁 PASS。
+
+---
+
 ## 附：本轮不做
 
 - 星图可视化大画布、多人同步、服务端写入（幻影战局不落账，交接档 §6.1 已定证）

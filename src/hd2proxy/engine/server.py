@@ -112,7 +112,14 @@ class Proxy:
             tls = self.ctx.wrap_socket(conn, server_side=True)
         except Exception as e:
             self.stats["deny"] += 1
-            log_throttled("tls-reject", "TLS REJECTED %s:%d %r" % (addr[0], addr[1], e))
+            # 客户端在握手阶段断开，绝大多数是「不信任本机 CA」（其余是扫描器/探测）：
+            # 这种失败在客户端只会显示通用网络错误，所以日志必须给出可操作提示。
+            hint = ""
+            if isinstance(e, ssl.SSLError) or "SSL" in type(e).__name__:
+                hint = ("（多为客户端不信任本机 CA：点 GUI「安装 / 修复」或运行 "
+                        "hd2proxy.exe install 重新导入信任）")
+            log_throttled("tls-reject",
+                          "TLS REJECTED %s:%d %r%s" % (addr[0], addr[1], e, hint))
             try:
                 conn.close()
             except Exception:
@@ -615,6 +622,19 @@ def main(argv=None):
                 % (r["action"], round(r.get("remaining_hours") or 0, 1)), audit=True)
         except Exception as e:
             log("证书自动续期失败: %r（继续用现有证书尝试）" % e)
+
+    # ---- 3b. 证书信任自检：CA 不在根存储时，游戏会在 TLS 握手阶段直接断开 --------
+    # 这个坑很隐蔽：证书文件、CRL、CRL 服务全正常，只是「CA 没装进受信任根存储」，
+    # 客户端只会显示「与服务器通讯时出错」，日志里也只有 TLS REJECTED —— 所以启动时就喊出来。
+    try:
+        _cert = certs.cert_status(cert_dir, check_trust=True)
+        if _cert.get("exists") and _cert.get("trusted") is False:
+            log("⚠ 证书未受信任：当前 CA 不在受信任根存储（指纹 %s）"
+                % ((_cert.get("trust_thumbprint") or "?")[:12],), audit=True)
+            log("   → 游戏会报「与服务器通讯时出错」；修复：hd2proxy.exe install "
+                "或 GUI「安装 / 修复」（一次 UAC 即可）")
+    except Exception as e:                       # noqa: BLE001 - 自检失败不影响启动
+        log("证书信任自检失败: %r（继续启动）" % e)
 
     # ---- 4. 目录 + 计划 ------------------------------------------------------
     try:

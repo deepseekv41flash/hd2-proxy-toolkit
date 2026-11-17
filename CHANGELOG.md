@@ -6,6 +6,30 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.3.0-alpha.3（2026-11-17）— 修复「续期证书后游戏报 Error 60 / Status -1」（CA 未受信 + GUI 无真安装入口）
+
+- **修复（现场实测踩到）**：游戏弹 `ERROR / Request: … / Error: 60 / Status: -1`（"communicate with
+  our server"）。取证：引擎 `/status` 显示 `req=0 deny=3 rewrite=0`，日志只有
+  `TLS REJECTED … SSLZeroReturnError(TLS/SSL connection has been closed (EOF))` ——
+  **不是网络问题**：16:06 在 GUI 点「签发 / 续期证书」换了一张新会话 CA，但**没有重新导入受信任根存储**；
+  `install --dry-run` 里 `cert_trusted=false`。而当时 GUI 只有「安装计划（dry-run）」、**没有真安装入口**，
+  界面/自检/日志都不提示「证书未受信」，用户只能看到通用网络错误。
+- **修复内容（四项）**：
+  1. **证书信任状态可见**：`certs.cert_status(check_trust=True)` 新增 `trusted` / `trust_scope`
+     字段，未受信时 warnings 给出可操作文案；`sysprobe.cert_trusted()` 带 3 秒缓存（一次检查要
+     spawn `certutil`，不能反复跑）；控制面 `/status` 保持默认不查（GUI 0.6s 轮询的热路径）。
+  2. **诊断升级为 error**：`diagnostics.evaluate()` 把「证书未受信」列为 **error**（不是 warn），
+     总览红字与「系统自检」都会直读；文案点明「游戏 TLS 握手会被拒（引擎日志 TLS REJECTED）」。
+  3. **GUI 补真安装入口**：总览页新增「**安装 / 修复（UAC）**」按钮（改 hosts + 导入信任，一次 UAC）；
+     「签发 / 续期证书」成功后**自动检测信任**，未受信就弹一次确认并一键导入（只问一次，不重复弹）。
+  4. **引擎侧提示**：启动时检测到 CA 未受信打印 `⚠ 证书未受信任…修复：hd2proxy.exe install 或 GUI
+     「安装 / 修复」`；TLS 拒绝日志追加「多为客户端不信任本机 CA → 点 GUI 安装 / 修复或运行
+     hd2proxy install」提示。
+- **验证**：单测 434 → **445**（证书信任状态三态、`sysprobe.cert_trusted` 缓存与 `clear_caches`、
+  诊断 error 判定、GUI 安装/续期引导 5 条）；源码实测：未受信证书目录 → `trusted=False` +
+  自检 error + 引擎启动 ⚠ + `curl` 触发握手失败日志含提示；真实证书目录 → `trusted=True` 无误报。
+- 规则：只修 bug ⇒ 版本位不变（`0.3.0-alpha.2` → `0.3.0-alpha.3`）。
+
 ## v0.3.0-alpha.2（2026-11-17）— 修复切「总览」页卡顿 + 弹几个 PowerShell 窗口（子进程隐藏窗口 / 一次 netstat / 诊断节流）
 
 - **修复（用户报）**：「工具 GUI 切总览页会卡住一会，并且弹出几个 powershell 窗口」。

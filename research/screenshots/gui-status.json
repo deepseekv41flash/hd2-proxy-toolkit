@@ -1,15 +1,15 @@
 {
- "version": "0.0.1",
- "pid": 31088,
- "uptime_seconds": 1.7,
+ "version": "0.3.0-alpha.2",
+ "pid": 9004,
+ "uptime_seconds": 1.5,
  "host": "api.live.prod.thehelldiversgame.com",
  "listen_ip": "100.67.169.17",
- "port": 56168,
- "crl_port": 56169,
+ "port": 63148,
+ "crl_port": 63149,
  "mode": "rewrite",
  "profile": "演示配置",
- "profile_path": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-_83zc4um\\profile.json",
- "control_port": 56170,
+ "profile_path": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-jbqnf_hf\\profile.json",
+ "control_port": 63150,
  "stats": {
   "tls": 0,
   "req": 0,
@@ -17,24 +17,29 @@
   "rewrite": 0
  },
  "cert": {
-  "cert_dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-_83zc4um\\certs",
+  "cert_dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-jbqnf_hf\\certs",
   "exists": true,
   "mode": "ca",
   "host": "api.live.prod.thehelldiversgame.com",
   "san": [
    "api.live.prod.thehelldiversgame.com"
   ],
-  "not_after": "2026-11-17T13:41:57+00:00",
+  "not_after": "2026-11-18T11:13:35+00:00",
   "remaining_hours": 24.0,
-  "thumbprint": "8A964D7313AD72A36848596D041A87D9A7DF00AA",
+  "thumbprint": "4963EAB6281246FD3DDA5B2E987453CEA0407F72",
   "trust_subject": "CN=HD2 Variant Mod Session CA",
+  "trust_thumbprint": "4963EAB6281246FD3DDA5B2E987453CEA0407F72",
+  "trusted": null,
+  "trust_scope": null,
   "usable": true,
   "warnings": []
  },
- "planets": [],
+ "planets": [
+  76
+ ],
  "capture": {
   "enabled": true,
-  "dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-_83zc4um\\captures",
+  "dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-jbqnf_hf\\captures",
   "paths": [
    "api/"
   ]

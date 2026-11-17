@@ -517,6 +517,26 @@ def test_certutil_argv_exe_override(tmp_path, monkeypatch):
     assert sysprobe.certutil_argv(["-store"]) == [str(fake_exe), "-store"]
 
 
+def test_cert_trusted_caches_per_thumbprint_and_scope(monkeypatch):
+    """信任检查会 spawn certutil（~60–120ms），同一指纹+范围必须走缓存。"""
+    calls = []
+
+    def fake_in_store(thumbprint, scope="LocalMachine"):
+        calls.append((thumbprint, scope))
+        return True
+
+    monkeypatch.setattr(sysprobe, "cert_in_store", fake_in_store)
+    sysprobe.clear_caches()
+    assert sysprobe.cert_trusted("aa:bb", "LocalMachine") is True
+    assert sysprobe.cert_trusted("aabb", "LocalMachine") is True     # 规范化后同一 key
+    assert len(calls) == 1, "同一指纹+范围应命中缓存"
+    assert sysprobe.cert_trusted("aa:bb", "CurrentUser") is True     # 不同范围另查一次
+    assert len(calls) == 2
+    sysprobe.clear_caches()
+    assert sysprobe.cert_trusted("aa:bb", "LocalMachine") is True
+    assert len(calls) == 3, "clear_caches 后应重查"
+
+
 # --------------------------------------------------------------------------- #
 # 输出解码 / 管理员探测
 # --------------------------------------------------------------------------- #

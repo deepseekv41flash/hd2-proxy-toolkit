@@ -63,6 +63,38 @@ def test_cert_status_expired(tmp_path):
     assert certs.session_remaining_hours(cert_dir) == 0.0
 
 
+def test_cert_status_trust_check_untrusted(tmp_path, monkeypatch):
+    """续期换了新 CA 但没重装信任 —— 这是本轮现场踩到的坑，状态里必须显式报出来。"""
+    _make(tmp_path)
+    from hd2proxy.engine import sysprobe
+    monkeypatch.setattr(sysprobe, "cert_trusted", lambda thumb, scope: False)
+    st = certs.cert_status(tmp_path / "certs", check_trust=True)
+    assert st["trusted"] is False
+    assert st["trust_scope"] is None
+    assert any("未受信任" in w and "TLS" in w for w in st["warnings"])
+
+
+def test_cert_status_trust_check_currentuser(tmp_path, monkeypatch):
+    _make(tmp_path)
+    from hd2proxy.engine import sysprobe
+    monkeypatch.setattr(sysprobe, "cert_trusted", lambda thumb, scope: scope == "CurrentUser")
+    st = certs.cert_status(tmp_path / "certs", check_trust=True)
+    assert st["trusted"] is True and st["trust_scope"] == "CurrentUser"
+    assert st["warnings"] == []
+
+
+def test_cert_status_default_skips_trust_check(tmp_path, monkeypatch):
+    """默认路径（控制面 /status 的 0.6s 热路径）绝不能 spawn certutil 查信任。"""
+    _make(tmp_path)
+    from hd2proxy.engine import sysprobe
+
+    def boom(*a, **k):
+        raise AssertionError("默认 cert_status 不该查信任")
+    monkeypatch.setattr(sysprobe, "cert_trusted", boom)
+    st = certs.cert_status(tmp_path / "certs")
+    assert st["trusted"] is None and st["trust_scope"] is None
+
+
 def test_ensure_session_reuses_when_fresh(tmp_path):
     _make(tmp_path)
     cert_dir = tmp_path / "certs"

@@ -44,6 +44,11 @@ class OverviewPage(Page):
         theme.button(row1, "验证三连", command=self.app.verify).pack(side="left", padx=(0, 8))
         theme.button(row2, "签发 / 续期证书", command=self._renew_cert).pack(
             side="left", padx=(0, 8))
+        # 真安装（改 hosts + 信任证书，一次 UAC）。以前 GUI 只有 dry-run，
+        # 于是「续期后换了新 CA 却没法在界面里重新导入信任」→ 游戏 TLS 握手被拒，
+        # 用户只看到「与服务器通讯时出错」。这里补上真实入口。
+        theme.button(row2, "安装 / 修复（UAC）", command=self._install_real).pack(
+            side="left", padx=(0, 8))
         theme.button(row2, "安装计划（dry-run）", command=self.app.install_dry).pack(
             side="left", padx=(0, 8))
         theme.button(row2, "还原计划（dry-run）", command=self.app.uninstall_dry).pack(
@@ -90,7 +95,7 @@ class OverviewPage(Page):
         hint = tk.Frame(self, bg=theme.BG)
         hint.pack(fill="x", padx=22, pady=(0, 16))
         tk.Label(hint, text="提示：直通模式下不改写；验证三连 = TLS 握手 / CRL / Status 回执。"
-                            "安装/还原的真操作需要一次 UAC，计划按钮只展示将改什么。",
+                            "「安装 / 修复（UAC）」会真改 hosts 与证书信任；计划按钮只展示将改什么。",
                  bg=theme.BG, fg=theme.DIM, font=theme.F_S, justify="left",
                  wraplength=1000).pack(anchor="w")
 
@@ -220,8 +225,66 @@ class OverviewPage(Page):
             code, out = result
             self.app.toast("证书签发%s" % ("成功" if code == 0 else "失败"), error=code != 0)
             _TextDialog(self.winfo_toplevel(), "证书签发", out)
+            if code == 0:
+                # 续期会换掉会话 CA：不同步重装信任，游戏握手会被拒（Error 60）
+                self._offer_install_trust()
 
         self.app.run_bg(lambda: self.app.client.run_cli(args), done, busy="签发证书…")
+
+    def _offer_install_trust(self):
+        """续期换了 CA 之后：检测新 CA 是否已进根存储，没进就引导导入（一次 UAC）。"""
+        from tkinter import messagebox
+
+        from ...engine import certs
+        try:
+            status = certs.cert_status(self.app.cert_dir(), check_trust=True)
+        except Exception:                        # noqa: BLE001 - 自检失败不打断流程
+            return
+        if not status.get("exists") or status.get("trusted") is not False:
+            return
+        if not messagebox.askyesno(
+                "新证书还没安装信任",
+                "刚才续期换了一张新的会话 CA，但它还不在受信任根存储里。\n"
+                "这样启动游戏会报「与服务器通讯时出错」（Error 60 / Status -1）。\n\n"
+                "现在导入信任吗？（需要一次 UAC）",
+                parent=self.winfo_toplevel()):
+            self.app.toast("已跳过信任导入：游戏会连不上，稍后可点「安装 / 修复（UAC）」",
+                           error=True)
+            return
+        self._install_real(confirm=False)
+
+    def _install_real(self, confirm: bool = True):
+        """真安装：hosts 指向本机 + 信任当前会话证书（一次 UAC）。
+
+        ``confirm=False``：调用方（续期后的引导）已经问过一次，不要连问两遍。
+        """
+        from tkinter import messagebox
+
+        if confirm and not messagebox.askyesno(
+                "安装 / 修复",
+                "将把游戏域名指向本机，并把当前会话证书导入受信任根存储。\n"
+                "需要一次 UAC 确认。继续吗？",
+                parent=self.winfo_toplevel()):
+            return
+
+        args = ["install", "--profile", str(self.app.profile_path),
+                "--cert-dir", str(self.app.cert_dir())]
+
+        def done(result):
+            if isinstance(result, Exception):
+                self.app.toast("安装失败：%r" % (result,), error=True)
+                return
+            code, out = result
+            self.app.toast("安装 / 修复%s" % ("完成" if code == 0 else "失败"),
+                           error=code != 0)
+            _TextDialog(self.winfo_toplevel(), "安装 / 修复", out)
+            # 信任缓存要清掉，否则刚导入的证书在 3 秒内仍显示「未受信」
+            from ...engine import sysprobe
+            sysprobe.clear_caches()
+            self._diag_at = 0.0
+            self._refresh_diag()
+
+        self.app.run_bg(lambda: self.app.client.run_cli(args), done, busy="安装 / 修复…")
 
     def _open_log(self):
         from ..openutil import open_path
