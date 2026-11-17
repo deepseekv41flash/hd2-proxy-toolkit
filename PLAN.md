@@ -1,6 +1,6 @@
 # HD2 战况代理工坊 —— 开发计划 v0.2
 
-> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.0-alpha.4` 已发布（2026-11-17，修 alpha.3 实测发现的 3 个小问题 + 本机自签签名）**
+> 起草 2026-11-16 ｜ 状态：**M0–M5 全部完成；预览版 `v0.1.0-alpha.5` 已发布（2026-11-17，变种目录补齐 Caustic/Noxious + 版本规则与发版工具）**
 > 依据：`variant-net/docs/HANDOFF-2026-11-15.md` + 现场侦察 + **技术栈实测**（[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)）
 > 目标 build：**26568081**（warId 801，与交接档一致）
 >
@@ -561,7 +561,25 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 5. `gh release create v<ver> --prerelease …`（GA 才去掉 `--prerelease`）→ 核对资产 digest
 6. `python tools/sync_release_area.py --area <测试区>` 更新 release 产物测试区
 
+### 14.5 alpha.5 修复（2026-11-17，「变种」里虫族少了 Caustic / Noxious）
+
+- 用户报：变种界面虫族只有 5 个，缺 **Caustic Strain** / **Noxious Strain**；要求顺手排查其他漏项。
+- 根因两层：① `caustic_strain`（1430/1431）在 `items` 里但**没进 `groups`**，界面只渲染分组 → 等于隐藏；
+  ② Noxious 完全没收录（源变种目录冻结在 2026-11-01，它 10-29 才加入游戏）。
+- 取证：**两个官方端点都接受未鉴权直连** —— `GET /api/WarSeason/GalacticWarEffects`（315 条）与
+  `GET /api/WarSeason/801/Status`（161 条 `planetActiveEffects`，需 `Accept-Language`）。
+  tag↔mechanic 用**线上星球共现**判定：1433/1434 星球集合完全相同（8 颗），1432 只占其中 6 颗 → 排除。
+  presence 名用当前 build 明文表 `murmur32` 反解，locid → strings 得 `NOXIOUS STRAIN` / `CAUSTIC STRAIN`。
+- 修复：虫族组 5 → **7**（腐蚀变种 [1430,1431] / 毒瘴变种 [1434,1433]）；`caustic_strain` 保留为别名
+  （老 profile 不用改）；`tools/gen_catalogs.py` 增加覆盖层 `data/sources/variant_overlay.json`，
+  并**把引擎目录 `data/legacy/variant_catalog.json` 纳入生成**（此前手工拷贝，正是漂移来源）。
+- 排查结论：按 wiki Combatant Forces 全量对照，**除这两条外无其他漏项**（机器人 6/6、光能者 4/4、
+  超级地球 1/1）；`TANK SURGE` 等线上无对应 effect ⇒ 本通道注入不了，非漏项。
+  完整清单见 `docs/VARIANT-INVENTORY-2026-11-17.md`。
+- 回归测试 +23 → **363 passed**。
+
 ---
+
 
 ## 附：本轮不做
 

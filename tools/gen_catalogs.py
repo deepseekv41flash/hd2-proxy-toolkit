@@ -19,8 +19,13 @@
       - out/planet/planet-index.json   星球索引（438 条：index/name/biome/planet_type/setup/region/locid）
       - out/planet/planet-data.json    星球全量设置（本脚本只用来查 settingsHash；当前无此字段）
 
+本仓库输入（可写、随仓库走）：
+  <repo>/data/sources/variant_overlay.json   变种目录覆盖层（源目录冻结之后由线上证据确认的变种；
+                                             例如 2026-11-17 补的 腐蚀变种/毒瘴变种）
+
 只读约定：
-  1. 三个源目录只读；脚本只写 <repo>/data/catalogs/ 下的固定文件名。
+  1. 三个源目录只读；脚本只写本仓库内两个固定产物：
+     <repo>/data/catalogs/*.json（GUI 目录）与 <repo>/data/legacy/variant_catalog.json（引擎目录）。
   2. JSON 数据内不出现绝对路径，source 一律写逻辑名（如 variant-net/refs/...）。
   3. 缺任何一个必需源文件 -> 明确报错并退出（退出码 1），绝不静默产出空表。
 
@@ -29,20 +34,26 @@
 解析结果即本机真实源路径；换机器/换目录时用下面的 --variant-mod/--variant-net/--datamined 覆盖。
 
 确定性：
-  所有输出 UTF-8（无 BOM）、ensure_ascii=False、indent=1、sort_keys=True；
-  所有列表按主键排序；不使用当前时间/随机数/绝对路径进数据 ⇒ 同样的源重跑字节一致。
+  所有输出 UTF-8（无 BOM）、ensure_ascii=False、indent=1；
+  GUI 目录（data/catalogs/*.json）sort_keys=True、结尾带换行，列表按主键排序；
+  引擎目录（data/legacy/variant_catalog.json）保留源文件的键序、结尾**不带**换行（与迁入时逐字节一致）；
+  不使用当前时间/随机数/绝对路径进数据 ⇒ 同样的源重跑字节一致。
 
 用法：
   python tools/gen_catalogs.py
   python tools/gen_catalogs.py --variant-mod <path> --variant-net <path> \\
                                --datamined <path> --out <path>
+  python tools/gen_catalogs.py --overlay data/sources/variant_overlay.json --legacy-out data/legacy/variant_catalog.json
+  python tools/gen_catalogs.py --no-legacy        # 只出 GUI 目录，不动引擎目录
 """
 
 from __future__ import annotations
 
 import argparse
+import copy
 import csv
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Callable
@@ -60,6 +71,9 @@ DEFAULT_VARIANT_MOD = _DISK_ROOT / "Downloads" / "variant_mod"
 DEFAULT_VARIANT_NET = REPO_ROOT.parent / "variant-net"
 DEFAULT_DATAMINED = REPO_ROOT.parent / "repo-datamined"
 DEFAULT_OUT = REPO_ROOT / "data" / "catalogs"
+# 变种覆盖层（本仓库输入；源目录 variant_mod 冻结后新增的变种写这里）与引擎目录输出
+DEFAULT_OVERLAY = REPO_ROOT / "data" / "sources" / "variant_overlay.json"
+DEFAULT_LEGACY_OUT = REPO_ROOT / "data" / "legacy" / "variant_catalog.json"
 
 # build.json 的手工常量（游戏 build 变化时改这里并重跑；variant_catalog 里的 build 另见 generated_from）
 GAME_BUILD = "26568081"
@@ -69,6 +83,7 @@ WAR_SEASON = 801
 
 # source 字段使用的逻辑名（数据里绝不出现绝对路径）
 SRC_VARIANTS = "variant_mod/variant_catalog.json"
+SRC_VARIANTS_OVERLAY = "data/sources/variant_overlay.json"
 SRC_STRATAGEMS = "variant_mod/stratagem_catalog.json"
 SRC_EFFECTS_FULL = "variant-net/out/effects-full.csv"
 SRC_EFFECTS_MENU = "variant-net/out/effect-menu.csv"
@@ -216,8 +231,95 @@ def infer_faction(presence: str | None) -> str:
     return "universal"
 
 
-def build_variants(variant_mod: Path) -> tuple[dict[str, Any], int]:
+def load_variant_overlay(path: Path | None) -> dict[str, Any]:
+    """读覆盖层；文件不存在视为「没有覆盖」（不报错：干净 checkout 也能重跑源目录）。"""
+    if path is None:
+        return {}
+    if not Path(path).is_file():
+        log(f"note: 没有覆盖层 {path}（按纯源目录生成）")
+        return {}
+    doc = load_json(Path(path), "变种覆盖层 variant_overlay.json", dict)
+    for key in ("items", "groups", "aliases", "remove"):
+        if key in doc and not isinstance(doc[key], (dict, list)):
+            raise SourceError(f"variant_overlay.json 的 {key} 类型异常: {type(doc[key]).__name__}")
+    return doc
+
+
+def apply_variant_overlay(data: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    """把覆盖层合并进源变种目录，返回新对象（源数据不动）。
+
+    覆盖层支持的键（都可用、都可缺）：
+      remove  [name, ...]                从 variants/meta 里摘掉（改名/合并时用）
+      items   {name: {ids, faction, presence, tag, mechanic, help, ...}}
+                                         新增（或覆盖同名）变种；ids 之外都是 meta 字段
+      aliases {alias: 正式名}             追加别名（旧名必须能解析回新名，避免老 profile 失效）
+      groups  [{match, append: [name]}]  往名字前缀命中的分组追加成员；组名末尾若带数量
+                                         （"虫族 5"）自动改成实际条数（"虫族 7"）
+    """
+    if not overlay:
+        return data
+    merged = copy.deepcopy(data)
+    groups = merged.get("groups") or []
+    variants = merged.get("variants") or {}
+    meta = merged.get("meta") or {}
+    aliases = merged.setdefault("aliases", {})
+
+    for name in overlay.get("remove") or []:
+        if name not in variants and name not in meta:
+            raise SourceError(f"variant_overlay.json remove 里的 {name!r} 不在源目录中")
+        variants.pop(name, None)
+        meta.pop(name, None)
+
+    for name, spec in (overlay.get("items") or {}).items():
+        if not isinstance(spec, dict):
+            raise SourceError(f"variant_overlay.json items[{name!r}] 应为对象")
+        ids = spec.get("ids")
+        if not isinstance(ids, list) or not ids:
+            raise SourceError(f"variant_overlay.json items[{name!r}].ids 应为非空数组")
+        if name in variants:
+            raise SourceError(f"variant_overlay.json items 里的 {name!r} 与源目录重名（改名请用 remove + items）")
+        variants[name] = [to_int(x, f"variant_overlay.json items[{name!r}].ids") for x in ids]
+        meta[name] = {key: value for key, value in spec.items() if key != "ids"}
+
+    for alias, target in (overlay.get("aliases") or {}).items():
+        if target not in variants:
+            raise SourceError(f"variant_overlay.json aliases[{alias!r}] 指向不存在的变种 {target!r}")
+        existing = aliases.get(alias)
+        if existing not in (None, target):
+            raise SourceError(
+                f"variant_overlay.json aliases[{alias!r}] 与源目录冲突（{existing!r} != {target!r}）"
+            )
+        aliases[alias] = target
+
+    for rule in overlay.get("groups") or []:
+        if not isinstance(rule, dict) or not rule.get("match"):
+            raise SourceError(f"variant_overlay.json groups 规则结构异常: {rule!r}")
+        match = str(rule["match"])
+        append = list(rule.get("append") or [])
+        hits = [group for group in groups if str(group.get("name") or "").startswith(match)]
+        if len(hits) != 1:
+            raise SourceError(
+                f"variant_overlay.json groups 规则 {match!r} 命中 {len(hits)} 个分组（应恰好 1 个）"
+            )
+        group = hits[0]
+        members = group.setdefault("variants", [])
+        for name in append:
+            if name not in variants:
+                raise SourceError(f"variant_overlay.json groups 规则 {match!r} 追加了不存在的变种 {name!r}")
+            if name not in members:
+                members.append(name)
+        m = re.match(r"^(.*?)\s*(\d+)$", str(group.get("name") or ""))
+        if m:  # 组名带数量后缀 -> 跟着实际条数走
+            group["name"] = f"{m.group(1)} {len(members)}"
+
+    return merged
+
+
+def build_variants(
+    variant_mod: Path, overlay_path: Path | None = None
+) -> tuple[dict[str, Any], int, dict[str, Any]]:
     data = load_json(variant_mod / "variant_catalog.json", "变种目录 variant_catalog.json", dict)
+    data = apply_variant_overlay(data, load_variant_overlay(overlay_path))
 
     for key in ("build", "gameVersion", "note", "groups", "variants", "meta"):
         if key not in data:
@@ -279,7 +381,33 @@ def build_variants(variant_mod: Path) -> tuple[dict[str, Any], int]:
         "groups": [dict(group) for group in groups],
         "items": items,
     }
-    return payload, len(items)
+    # 第三个返回值是「合并覆盖层之后的源目录」：引擎目录直接用它的键序与结构，避免两份目录漂移
+    return payload, len(items), data
+
+
+def build_legacy(variants: dict[str, Any]) -> dict[str, Any]:
+    """引擎目录 data/legacy/variant_catalog.json：与 GUI 目录同源，只是键名/顺序沿用引擎老格式。
+
+    键序固定，不排序、不补换行 —— 与 M0 迁入的那份文件逐字节可比，改动一眼能看出来。
+    """
+    order = ("build", "gameVersion", "note", "groups", "variants", "meta", "aliases")
+    missing = [key for key in ("build", "gameVersion", "note", "groups", "variants", "meta")
+               if key not in variants]
+    if missing:
+        raise SourceError(f"引擎目录缺少字段 {missing}")
+    return {key: variants[key] for key in order if key in variants}
+
+
+def write_legacy(path: Path, doc: dict[str, Any]) -> None:
+    """写引擎目录：键序/缩进沿用老文件，**结尾不加换行**（与迁入文件逐字节一致）。"""
+    text = json.dumps(doc, ensure_ascii=False, indent=1, sort_keys=False)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8", newline="\n")
+    try:
+        shown = path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        shown = path.as_posix()
+    print(f"wrote {shown} entries={len(doc.get('variants') or {})}")
 
 
 # ---------------------------------------------------------------- 2. 战备目录
@@ -870,6 +998,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_OUT,
         help=f"输出目录（默认 {DEFAULT_OUT}）",
     )
+    parser.add_argument(
+        "--overlay",
+        type=Path,
+        default=DEFAULT_OVERLAY,
+        help=f"变种目录覆盖层（默认 {DEFAULT_OVERLAY}；不存在则按纯源目录生成）",
+    )
+    parser.add_argument(
+        "--legacy-out",
+        type=Path,
+        default=DEFAULT_LEGACY_OUT,
+        help=f"引擎变种目录输出（默认 {DEFAULT_LEGACY_OUT}）",
+    )
+    parser.add_argument(
+        "--no-legacy",
+        action="store_true",
+        help="只写 GUI 目录，不写引擎目录 data/legacy/variant_catalog.json",
+    )
     return parser.parse_args(argv)
 
 
@@ -880,7 +1025,7 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parse_args(argv)
     try:
-        variants, variants_count = build_variants(args.variant_mod)
+        variants, variants_count, variants_source = build_variants(args.variant_mod, args.overlay)
         stratagems, stratagems_count = build_stratagems(args.variant_mod)
         effects, effects_count = build_effects(args.variant_net)
         planets, planets_count = build_planets(args.datamined)
@@ -895,6 +1040,8 @@ def main(argv: list[str] | None = None) -> int:
         write_json(args.out, "planets.json", planets, planets_count)
         write_json(args.out, "items.json", items, items_count)
         write_json(args.out, "build.json", build, build_count)
+        if not args.no_legacy:
+            write_legacy(args.legacy_out, build_legacy(variants_source))
     except SourceError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

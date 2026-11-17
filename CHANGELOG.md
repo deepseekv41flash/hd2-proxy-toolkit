@@ -6,15 +6,28 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
-## 未发布（开发中）
+## v0.1.0-alpha.5（2026-11-17）— 变种目录补齐（Caustic / Noxious）+ 版本规则与发版工具
 
+- **修复（用户报）**：「变种」里虫族少了 **Caustic Strain** 和 **Noxious Strain**。根因是两层：
+  1. `caustic_strain`（1430/1431）早就在数据里，但**没进 `groups`**——变种界面只渲染分组，等于隐藏；
+  2. Noxious（1434/1433）完全没收录——源变种目录冻结在 2026-11-01，它是之后上线的内容。
+  现在两条都进「虫族」组（5 → **7**）：**腐蚀变种** `[1430, 1431]`（`bugs_acid`）、
+  **毒瘴变种** `[1434, 1433]`（`bugs_defiler`）；旧内部名 `caustic_strain` 保留为别名，
+  老 profile 里的名字仍能解析。证据：直连官方 `GalacticWarEffects`（315 条）+ `801/Status`
+  （161 条）现网快照，tag↔mechanic 由**线上星球共现**判定（1433/1434 的星球集合完全相同）；
+  全量盘点与「为什么别的没漏」见 [docs/VARIANT-INVENTORY-2026-11-17.md](docs/VARIANT-INVENTORY-2026-11-17.md)。
+- **改进（防复发）**：`tools/gen_catalogs.py` 增加**覆盖层**输入 `data/sources/variant_overlay.json`
+  （源目录冻结后的增量/改名/别名/分组规则写进仓库，可复现），并**把引擎目录
+  `data/legacy/variant_catalog.json` 也纳入生成**——以前它是手工拷贝，两份目录漂移正是
+  「items 里有、groups 里没有」的土壤。新增单测 `tests/unit/test_variant_catalog.py`（23 条）：
+  wiki 全量清单、GUI/引擎目录一致性、覆盖层规则（含 6 种写错即报错的情形）。
 - 新增版本规则落地：`docs/VERSIONING.md`、`src/hd2proxy/versioning.py`、
   `tools/bump_version.py`（按规则算下一版并改 `__version__`/pyproject）、
   `tools/check_version.py`（版本一致性；门禁新增第 0 步）。
 - 新增 `tools/sync_release_area.py`：把 release 产物同步到专用测试区（`current/` 解包最新版、
   `artifacts/` 放当前版本资产、`archive/` 留历史）；默认取 GitHub Release 资产，保证与用户
   下载物逐字节一致；`build_dist.py` 支持 `--test-area` / `HD2PROXY_TEST_AREA` 构建后自动同步。
-- 单测 311 → **340**（新增版本规则 27 条 + 完整性标签工具 2 条）。
+- 单测 311 → **363**（新增变种目录 23 条 + 版本规则 27 条 + 完整性标签工具 2 条；其余为既有）。
 - **修复（环境坑）**：release 测试区里的 GUI 双击后仍以 **Low 完整性**运行（文件被 Low 令牌工具解压→
   继承 Low 标签），导致「保存配置/证书签发/启动引擎」`PermissionError(13)`。新增 `tools/win_integrity.py`，
   在 `sync_release_area.py`（解包测试区后）与 `build_dist.py`（构建后）自动把目录树标回 Medium；

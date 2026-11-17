@@ -1,15 +1,18 @@
 # data/catalogs — 数据目录
 
-由 `tools/gen_catalogs.py` 从三个**只读**研究仓一次性生成并固化进本仓库；运行时不再依赖旧仓。
-全部文件 UTF-8（无 BOM）、`ensure_ascii=False`、`indent=1`、主键排序，同源重跑字节一致。
-条目数为 2026-11-16 生成快照（`build.json.game_build = 26568081`）。
+由 `tools/gen_catalogs.py` 从三个**只读**研究仓 + 本仓库的变种覆盖层一次性生成并固化进本仓库；
+运行时不再依赖旧仓。全部文件 UTF-8（无 BOM）、`ensure_ascii=False`、`indent=1`、主键排序，
+同源重跑字节一致。条目数为 2026-11-17 生成快照（`build.json.game_build = 26568081`）。
+
+同一次生成还会产出引擎读的 `data/legacy/variant_catalog.json`（与 `variants.json` 同源，
+只是键名/顺序沿用引擎老格式）——两份目录不再手工同步，避免漂移。
 
 ## 文件与来源
 
 | 文件 | 条目 | 逻辑来源 | 说明 |
 |---|---:|---|---|
 | `build.json` | 5 字段 | 手工常量 + `variant_mod/variant_catalog.json` 的 build | `game_build=26568081`、`war_id=warseason=801`；`generated_from.variant_mod` 记录旧变种目录的 build（25988413） |
-| `variants.json` | 25 变种 / 5 组 | `variant_mod/variant_catalog.json` | 分组保留 `exclusive`；`items` 覆盖目录全部变种（含未分组的实验项），保留 `tag`/`mechanic`/`help`；`aliases` 为简称→正式名，供界面搜索 |
+| `variants.json` | 26 变种 / 5 组 | `variant_mod/variant_catalog.json` + `data/sources/variant_overlay.json` | 分组保留 `exclusive`；`items` 覆盖目录全部变种（含未分组的实验项），保留 `tag`/`mechanic`/`help`；`aliases` 为简称→正式名，供界面搜索。虫族组 7 个（2026-11-17 从覆盖层补 **腐蚀变种** [1430,1431] / **毒瘴变种** [1434,1433]，见 `docs/VARIANT-INVENTORY-2026-11-17.md`） |
 | `stratagems.json` | 58 | `variant_mod/stratagem_catalog.json` | type32「临时配发战备」；每项保留 `id/name/key/native_hash/effect_hash/group` 全部原字段 |
 | `effects.json` | 312 | `variant-net/out/effects-full.csv` + `variant-net/out/effect-menu.csv` | 两表 `effect_id` 完全对齐；数值/解码字段取 effects-full，`presence`/`race`/`display_name` 等展示字段取 effect-menu |
 | `planets.json` | 438（273 有游戏索引） | `repo-datamined/out/planet/planet-index.json` + `index-names-801.json` | 主键 `index` = **planet_data 行号**；`game_index` = 游戏索引（Status/warinfo/写 profile 用），休眠星为 null；附 `x`/`y` 星图坐标；`settings_hash` 全为 null（见下） |
@@ -33,7 +36,8 @@
 ## 生成命令
 
 ```bash
-python tools/gen_catalogs.py
+python tools/gen_catalogs.py            # 同时写 data/catalogs/*.json 与 data/legacy/variant_catalog.json
+python tools/gen_catalogs.py --no-legacy  # 只写 GUI 目录
 # 换机器复现（源路径可覆盖；默认值由脚本按仓库位置推导，见脚本顶部注释）：
 python tools/gen_catalogs.py --variant-mod <variant_mod> --variant-net <variant-net> --datamined <repo-datamined> --out <out-dir>
 ```

@@ -1,0 +1,63 @@
+{
+ "note": "变种目录覆盖层。源目录 variant_mod/variant_catalog.json 冻结在 2026-11-01；之后由官方线上接口证实的变种写在这里，tools/gen_catalogs.py 合并后同时产出 data/catalogs/variants.json（GUI）与 data/legacy/variant_catalog.json（引擎）。证据与推导见 docs/VARIANT-INVENTORY-2026-11-17.md。",
+ "evidence": {
+  "captured_at": "2026-11-17T02:15:54Z",
+  "game_build": "26568081",
+  "gwe_entries": 315,
+  "status_planet_active_effect_rows": 161,
+  "api": [
+   "GET /api/WarSeason/GalacticWarEffects",
+   "GET /api/WarSeason/801/Status"
+  ],
+  "wiki": [
+   "https://helldivers.wiki.gg/wiki/Caustic_Strain",
+   "https://helldivers.wiki.gg/wiki/Noxious_Strain",
+   "https://helldivers.wiki.gg/zh/wiki/腐蚀变种",
+   "https://helldivers.wiki.gg/zh/wiki/毒瘴变种"
+  ],
+  "pairing_method": "线上 Status 的 planetActiveEffects 共现：tag 与 mechanic 只在同一批星球上成对出现，且无单边出现的星球即判为一对。"
+ },
+ "items": {
+  "腐蚀变种": {
+   "ids": [
+    1430,
+    1431
+   ],
+   "faction": "terminid",
+   "presence": "bugs_acid",
+   "tag": 1430,
+   "mechanic": 1431,
+   "help": "CAUSTIC STRAIN（腐蚀变种）：tag 1430 + mechanic 1431(bugs_acid)。线上 2026-11-17 与 1431 在星球 269/215 成对出现。"
+  },
+  "毒瘴变种": {
+   "ids": [
+    1434,
+    1433
+   ],
+   "faction": "terminid",
+   "presence": "bugs_defiler",
+   "tag": 1434,
+   "mechanic": 1433,
+   "help": "NOXIOUS STRAIN（毒瘴变种）：tag 1434 + mechanic 1433(bugs_defiler)。线上 2026-11-17 与 1433 在星球 78/128/130/168/170/175/213/270 成对出现（1433 与 1434 集合完全相同），是 tag↔mechanic 配对的直接证据。"
+  }
+ },
+ "remove": [
+  "caustic_strain"
+ ],
+ "aliases": {
+  "Caustic Strain": "腐蚀变种",
+  "Noxious Strain": "毒瘴变种",
+  "caustic_strain": "腐蚀变种",
+  "腐蚀": "腐蚀变种",
+  "毒瘴": "毒瘴变种"
+ },
+ "groups": [
+  {
+   "match": "虫族",
+   "append": [
+    "腐蚀变种",
+    "毒瘴变种"
+   ]
+  }
+ ]
+}

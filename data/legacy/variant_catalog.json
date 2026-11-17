@@ -4,13 +4,15 @@
  "note": "选项名称沿用 Quanbianzhong 10.00（玩家熟悉的那一套）。词条(tag) + 玩法(mechanic) 成对注入才会出局内变种；重甲类三项同时只能生效一个。",
  "groups": [
   {
-   "name": "虫族 5",
+   "name": "虫族 7",
    "variants": [
     "掠食变种",
     "孢裂变种",
     "爆裂变种",
     "蟑龙",
-    "霸王虫"
+    "霸王虫",
+    "腐蚀变种",
+    "毒瘴变种"
    ]
   },
   {
@@ -161,9 +163,13 @@
   "type94_incendiary_gatling": [
    1346
   ],
-  "caustic_strain": [
+  "腐蚀变种": [
    1430,
    1431
+  ],
+  "毒瘴变种": [
+   1434,
+   1433
   ]
  },
  "meta": {
@@ -318,12 +324,19 @@
    "faction": "universal",
    "help": "type94 试验：effect 1346 = INCENDIARY GATLING BARRAGE（modifier #2）"
   },
-  "caustic_strain": {
+  "腐蚀变种": {
    "faction": "terminid",
    "presence": "bugs_acid",
    "tag": 1430,
    "mechanic": 1431,
-   "help": "CAUSTIC STRAIN（已发布未出现）：tag 1430 + mechanic 1431(bugs_acid)"
+   "help": "CAUSTIC STRAIN（腐蚀变种）：tag 1430 + mechanic 1431(bugs_acid)。线上 2026-11-17 与 1431 在星球 269/215 成对出现。"
+  },
+  "毒瘴变种": {
+   "faction": "terminid",
+   "presence": "bugs_defiler",
+   "tag": 1434,
+   "mechanic": 1433,
+   "help": "NOXIOUS STRAIN（毒瘴变种）：tag 1434 + mechanic 1433(bugs_defiler)。线上 2026-11-17 与 1433 在星球 78/128/130/168/170/175/213/270 成对出现（1433 与 1434 集合完全相同），是 tag↔mechanic 配对的直接证据。"
   }
  },
  "aliases": {
@@ -338,6 +351,11 @@
   "SEAF": "重兵部署",
   "增兵-战车": "重甲激增",
   "增兵-巨兽": "巨型者激增",
-  "增兵-毁灭者": "蹂躏者激增"
+  "增兵-毁灭者": "蹂躏者激增",
+  "Caustic Strain": "腐蚀变种",
+  "Noxious Strain": "毒瘴变种",
+  "caustic_strain": "腐蚀变种",
+  "腐蚀": "腐蚀变种",
+  "毒瘴": "毒瘴变种"
  }
 }

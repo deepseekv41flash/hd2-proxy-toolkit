@@ -1,6 +1,9 @@
 {
  "aliases": {
+  "Caustic Strain": "腐蚀变种",
+  "Noxious Strain": "毒瘴变种",
   "SEAF": "重兵部署",
+  "caustic_strain": "腐蚀变种",
   "喷气旅": "喷气部队",
   "增兵-巨兽": "巨型者激增",
   "增兵-战车": "重甲激增",
@@ -10,6 +13,8 @@
   "掘地": "爆裂变种",
   "掠食": "掠食变种",
   "收割者": "无票者大军",
+  "毒瘴": "毒瘴变种",
+  "腐蚀": "腐蚀变种",
   "象牙军团": "灼热部队",
   "阴霾": "孢裂变种"
  },
@@ -17,13 +22,15 @@
  "game_version": "1.007.200",
  "groups": [
   {
-   "name": "虫族 5",
+   "name": "虫族 7",
    "variants": [
     "掠食变种",
     "孢裂变种",
     "爆裂变种",
     "蟑龙",
-    "霸王虫"
+    "霸王虫",
+    "腐蚀变种",
+    "毒瘴变种"
    ]
   },
   {
@@ -68,17 +75,6 @@
    ],
    "mechanic": 1355,
    "presence": "bots_increased_warstriders"
-  },
-  "caustic_strain": {
-   "faction": "terminid",
-   "help": "CAUSTIC STRAIN（已发布未出现）：tag 1430 + mechanic 1431(bugs_acid)",
-   "ids": [
-    1430,
-    1431
-   ],
-   "mechanic": 1431,
-   "presence": "bugs_acid",
-   "tag": 1430
   },
   "gloom_cross": {
    "faction": "illuminate",
@@ -244,6 +240,17 @@
    "presence": "illuminate_harvester",
    "tag": 1377
   },
+  "毒瘴变种": {
+   "faction": "terminid",
+   "help": "NOXIOUS STRAIN（毒瘴变种）：tag 1434 + mechanic 1433(bugs_defiler)。线上 2026-11-17 与 1433 在星球 78/128/130/168/170/175/213/270 成对出现（1433 与 1434 集合完全相同），是 tag↔mechanic 配对的直接证据。",
+   "ids": [
+    1434,
+    1433
+   ],
+   "mechanic": 1433,
+   "presence": "bugs_defiler",
+   "tag": 1434
+  },
   "灼热部队": {
    "faction": "automaton",
    "help": "添加：灼热部队",
@@ -287,6 +294,17 @@
    "mechanic": 1403,
    "presence": "illuminate_bodyhorror",
    "tag": 1402
+  },
+  "腐蚀变种": {
+   "faction": "terminid",
+   "help": "CAUSTIC STRAIN（腐蚀变种）：tag 1430 + mechanic 1431(bugs_acid)。线上 2026-11-17 与 1431 在星球 269/215 成对出现。",
+   "ids": [
+    1430,
+    1431
+   ],
+   "mechanic": 1431,
+   "presence": "bugs_acid",
+   "tag": 1430
   },
   "蟑龙": {
    "faction": "terminid",
