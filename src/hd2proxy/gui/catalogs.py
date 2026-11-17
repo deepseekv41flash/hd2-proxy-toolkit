@@ -212,8 +212,13 @@ class Catalogs:
         it = self._item_by_mix.get(int(mix_id) if str(mix_id).isdigit() else -1) or {}
         return it.get("category")
 
-    def search_items(self, text, limit=80, category=None):
-        """关键词搜索物品；`category` 给定就只返回该类别（各 tab 的筛选器靠它）。"""
+    def search_items(self, text, limit=None, category=None):
+        """关键词搜索物品；`category` 给定就只返回该类别（各 tab 的筛选器靠它）。
+
+        `limit=None`（默认）= **不截断**：列表要把本类全部条目交给界面，否则会出现
+        「目录里 1176 条、界面只显示 80 条」的错觉（2026-11-17 用户报）。物品总量 ~1.7k，
+        Tk Listbox 直接装得下；需要截断时显式传 limit。
+        """
         q = (text or "").strip().lower()
         out = []
         for it in self.items:
@@ -225,7 +230,7 @@ class Catalogs:
             label = item_display_label(mix, it)
             if not q or q in label.lower():
                 out.append((int(mix), label))
-                if len(out) >= limit:
+                if limit is not None and len(out) >= limit:
                     break
         return out
 

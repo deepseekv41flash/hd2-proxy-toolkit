@@ -8,10 +8,10 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.1.1-alpha.3 已发布（2026-11-17，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.1.1-alpha.4 已发布（2026-11-17，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **379 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.1.1-alpha.3`（见下方「下载」）。
+> **380 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.1.1-alpha.4`（见下方「下载」）。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
 > [物品与战备](research/screenshots/gui-inventory.png) ｜ [抓包与日志](research/screenshots/gui-capture.png) ｜
 > [设置](research/screenshots/gui-settings.png) ｜
@@ -41,14 +41,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.1.1-alpha.3）
+## 下载（v0.1.1-alpha.4）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.1.1-alpha.3.md)。
+> [Release Notes](docs/RELEASE-v0.1.1-alpha.4.md)。
 
-- 下载：[GitHub Releases · v0.1.1-alpha.3](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.1.1-alpha.3)
-  （`hd2proxy-toolkit-v0.1.1-alpha.3-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.1.1-alpha.4](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.1.1-alpha.4)
+  （`hd2proxy-toolkit-v0.1.1-alpha.4-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，
@@ -78,7 +78,7 @@ hd2proxy.exe uninstall
 ```bash
 python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
 set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
-python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 379 单测 + 5 个离线自检
+python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 380 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
@@ -138,7 +138,7 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 src/hd2proxy/engine/                    引擎（server / 钩子 / 配置 / 证书 / 安装 / 控制面 / 离线预演 preview.py）
 src/hd2proxy/gui/                       Tk GUI：壳 + 5 页 + widgets + templates.py（能力模板）
 src/hd2proxy/versioning.py               版本规则与 PEP 440 映射（docs/VERSIONING.md 的实现）
-tests/unit/                             单元测试（379 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / CLI）
+tests/unit/                             单元测试（380 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / CLI）
 tests/selftest*.py                      5 个脚本式离线自检（迁自研究线，仅改路径）
 tools/run_selftests.py                  自检总入口（独立证书/数据目录，GATE 判定）
 tools/check_gate.py                     门禁：版本一致性 + 语法 + 绝对路径 + pytest + 5 自检

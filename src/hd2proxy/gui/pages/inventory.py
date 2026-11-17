@@ -33,6 +33,7 @@ class InventoryPage(Page):
         self._keywords = {}
         self._editors = {}
         self._counts = {}
+        self._list_hints = {}
         self._filled = {}              # tab 的列表是否已填过（切 tab 时补一次）
 
         bar = tk.Frame(self, bg=theme.BG)
@@ -81,26 +82,35 @@ class InventoryPage(Page):
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         right = tk.Frame(body, bg=theme.BG)
         right.grid(row=0, column=1, sticky="nsew")
-        items = self.app.catalogs.search_items("", category=TAB_CATEGORY[key])
+        items = self.app.catalogs.search_items("", category=TAB_CATEGORY[key], limit=None)
         lst = SearchList(left, items=items, height=12)
         lst.pack(fill="both", expand=True)
         self._lists[key] = lst
         self._filled[key] = bool(items)
-        tk.Label(left, text="列表内搜索框只在当前结果里过滤；换关键词点「搜索」",
-                 bg=theme.BG, fg=theme.DIM, font=theme.F_S, anchor="w").pack(
-            fill="x", pady=(4, 0))
+        self._list_hints[key] = tk.Label(
+            left, text="", bg=theme.BG, fg=theme.DIM, font=theme.F_S, anchor="w")
+        self._list_hints[key].pack(fill="x", pady=(4, 0))
+        self._update_list_hint(key, len(items))
         editor = RowEditor(right, [("mixId", 108), ("名称", 210), ("数量", 54)], height=12,
                            on_change=lambda i, k=key: self._remove_row(k, i))
         editor.pack(fill="both", expand=True)
         self._editors[key] = editor
 
     def _search_items(self, key):
-        """关键词 -> catalogs.search_items（只在本 tab 的类别里查，limit 200）。"""
+        """关键词 -> catalogs.search_items（只在本 tab 的类别里查，不截断）。"""
         kw = self._keywords[key].get().strip()
-        items = self.app.catalogs.search_items(kw, limit=200, category=TAB_CATEGORY[key])
+        items = self.app.catalogs.search_items(kw, category=TAB_CATEGORY[key], limit=None)
         self._lists[key].set_items(items)
         self._filled[key] = bool(items)
+        self._update_list_hint(key, len(items))
         self.app.toast("%s：命中 %d 条" % (TAB_NAMES.get(key, key), len(items)))
+
+    def _update_list_hint(self, key, shown):
+        """列表下方提示带上「本类共 N 条」——避免再出现「只显示 80 条」的错觉。"""
+        label = self._list_hints.get(key)
+        if label is not None:
+            label.configure(text="本类共 %d 条；上方搜索框在全部条目里过滤，「关键词 + 搜索」"
+                                 "走目录全量查询" % shown)
 
     def _add_item(self, key):
         mix = self._lists[key].get_selected()
@@ -187,7 +197,7 @@ class InventoryPage(Page):
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         right = tk.Frame(body, bg=theme.BG)
         right.grid(row=0, column=1, sticky="nsew")
-        items = self.app.catalogs.search_items("")
+        items = self.app.catalogs.search_items("", limit=None)
         self.catalog_list = SearchList(left, items=items, height=12)
         self.catalog_list.pack(fill="both", expand=True)
         self._filled_items = bool(items)
@@ -216,7 +226,7 @@ class InventoryPage(Page):
 
     def _search_catalog_items(self):
         kw = self.var_items_kw.get().strip()
-        items = self.app.catalogs.search_items(kw, limit=200)
+        items = self.app.catalogs.search_items(kw, limit=None)
         self.catalog_list.set_items(items)
         self._filled_items = bool(items)
         self.app.toast("目录搜索结果：%d 条" % len(items))

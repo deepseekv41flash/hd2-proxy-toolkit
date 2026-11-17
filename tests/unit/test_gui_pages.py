@@ -363,11 +363,26 @@ def test_inventory_tabs_only_show_their_own_category(inv_page):
     assert any("Shear" in x for x in labels["weapons"])
     assert not any("Shear" in x for x in labels["cosmetics"] + labels["attachments"])
     assert labels["stratagems"] and all("内部名未解" in x for x in labels["stratagems"])
-    # 每个 tab 的条目数 = min(列表填充上限 80, 该类别总数)
+    # 列表不截断：每个 tab 的条目数 = 该类别的全部条目（附件 1176 条以前只显示 80 条）
     for key, category in (("weapons", "weapon"), ("attachments", "attachment"),
                           ("cosmetics", "cosmetic"), ("stratagems", "stratagem")):
-        total = len(page.app.catalogs.search_items("", limit=100000, category=category))
-        assert len(labels[key]) == min(80, total), (key, len(labels[key]), total)
+        total = len(page.app.catalogs.search_items("", category=category))
+        assert len(labels[key]) == total, (key, len(labels[key]), total)
+        assert total > 0
+
+
+def test_inventory_lists_are_not_truncated(inv_page):
+    """回归：列表必须装下整类（原来是 search_items 默认 limit=80，附件 1176 条只显示 80）。"""
+    page = inv_page
+    catalog = page.app.catalogs
+    attachments = catalog.search_items("", category="attachment")
+    assert len(attachments) > 1000
+    assert page._lists["attachments"].listbox.size() == len(attachments)
+    # 目录追加 tab 也不截断
+    assert page.catalog_list.listbox.size() == len(catalog.search_items("", limit=None))
+    # 提示行写明本类总数
+    hint = page._list_hints["attachments"].cget("text")
+    assert str(len(attachments)) in hint and "共" in hint
 
 
 def test_inventory_search_keeps_category_filter(inv_page):
