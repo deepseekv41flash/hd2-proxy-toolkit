@@ -53,7 +53,9 @@ class SettingsPage(Page):
         self.var_passthrough = tk.BooleanVar()
         self.var_verbose = tk.BooleanVar()
         self._row(f, 0, "目标域名", ttk.Entry(f, textvariable=self.var_host, width=34))
-        self._row(f, 1, "监听 IP", ttk.Entry(f, textvariable=self.var_listen, width=34))
+        self._row(f, 1, "监听 IP", ttk.Entry(f, textvariable=self.var_listen, width=26))
+        theme.button(f, "换监听地址…", command=self._choose_listen).grid(
+            row=1, column=2, sticky="w", padx=(8, 0))
         tk.Label(f, text="auto = 自动选主网卡；也可填本机非回环 IP", bg=theme.BG,
                  fg=theme.DIM, font=theme.F_S).grid(row=2, column=1, columnspan=2,
                                                     sticky="w", padx=(8, 0), pady=(0, 4))
@@ -106,6 +108,16 @@ class SettingsPage(Page):
         if not open_path(path, self.app.toast, label=label, hint=hint):
             return
         return True
+
+    def _choose_listen(self):
+        """「换监听地址」对话框：候选只列真实网卡 IP，并标出每个 IP 上 443 的占用状态。"""
+        from .. import listen_ip as listen_ip_ui
+        ip = listen_ip_ui.choose_listen_ip(self, self.app)
+        if ip:
+            self.var_listen.set(ip)
+            proxy = self.app.profile.setdefault("proxy", {})
+            proxy["listen_ip"] = ip          # 与对话框保持一致；保存时以表单为准
+            self.app.mark_dirty()
 
     def _save_as(self):
         name = self.var_name.get().strip() or "新配置"

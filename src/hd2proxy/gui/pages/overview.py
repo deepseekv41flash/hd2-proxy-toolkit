@@ -47,7 +47,8 @@ class OverviewPage(Page):
             side="left", padx=(0, 8))
         theme.button(row2, "还原计划（dry-run）", command=self.app.uninstall_dry).pack(
             side="left", padx=(0, 8))
-        theme.button(row2, "打开日志", command=self._open_log).pack(side="left")
+        theme.button(row2, "打开日志", command=self._open_log).pack(side="left", padx=(0, 8))
+        theme.button(row2, "系统自检", command=self._selfcheck).pack(side="left")
 
         # ---- 状态卡 ----------------------------------------------------
         cards = tk.Frame(self, bg=theme.BG)
@@ -64,6 +65,14 @@ class OverviewPage(Page):
         self.card_capture = theme.card(cards, "抓包", "关", "白名单路径 · 只读落盘",
                                        accent=theme.MUTED)
         self.card_capture[0].grid(row=0, column=3, sticky="nsew", padx=(10, 0))
+
+        # ---- 现场检查（端口 / hosts / 证书 / 游戏；有问题才显示） ----------
+        self.warn_lbl = tk.Label(self, text="", bg="#2a1f1f", fg=theme.RED,
+                                 font=theme.F_S, justify="left", anchor="w",
+                                 wraplength=1080, padx=12, pady=6)
+        self._warn_shown = False
+        self._snapshot = None
+        self._evaluation = None
 
         # ---- 事件表 ----------------------------------------------------
         head = tk.Frame(self, bg=theme.BG)
@@ -126,6 +135,43 @@ class OverviewPage(Page):
 
     def refresh(self):
         self.on_status(self.app.last_status)
+        self._refresh_diag()
+
+    # ---- 现场检查 / 系统自检 -------------------------------------------
+    def _refresh_diag(self):
+        """端口 / hosts / 证书 / 游戏进程检查（只在显示页面/配置变更时跑，不进 0.6s 轮询）。"""
+        try:
+            from ...engine import diagnostics
+            snapshot = diagnostics.collect(self.app.profile, cert_dir=self.app.cert_dir())
+            evaluation = diagnostics.evaluate(snapshot)
+        except Exception:                       # noqa: BLE001 - 探测失败不影响主界面
+            self._snapshot, self._evaluation = None, None
+            return
+        self._snapshot, self._evaluation = snapshot, evaluation
+        items = [w for w in evaluation.get("warnings") or []
+                 if w["level"] in ("error", "warn")]
+        if not items:
+            if self._warn_shown:
+                self.warn_lbl.pack_forget()
+                self._warn_shown = False
+            return
+        has_error = any(w["level"] == "error" for w in items)
+        text = "现场检查：" + " ｜ ".join(w["text"] for w in items[:3])
+        if len(items) > 3:
+            text += " ｜ …共 %d 项（点「系统自检」看全部）" % len(items)
+        self.warn_lbl.configure(text=text,
+                                fg=theme.RED if has_error else theme.GOLD,
+                                bg="#2a1f1f" if has_error else "#2a2718")
+        if not self._warn_shown:
+            self.warn_lbl.pack(fill="x", padx=22, pady=(10, 0), before=self.events.master)
+            self._warn_shown = True
+
+    def _selfcheck(self):
+        from ...engine import diagnostics
+        snapshot = self._snapshot or diagnostics.collect(
+            self.app.profile, cert_dir=self.app.cert_dir())
+        evaluation = self._evaluation or diagnostics.evaluate(snapshot)
+        self.app.show_text("系统自检", diagnostics.format_text(snapshot, evaluation))
 
     # ---- 动作 ----------------------------------------------------------
     def _toggle_passthrough(self):

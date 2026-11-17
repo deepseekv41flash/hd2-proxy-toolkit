@@ -345,22 +345,81 @@ def _tasklist_names() -> dict[int, str]:
 
 
 def _query_port_owners(port: int) -> list[dict]:
-    """netstat + tasklist 查端口占用（不做缓存）。"""
-    proc = _run(["netstat", "-ano", "-p", "TCP"])
-    if proc is None:
-        return []
-    pids = _parse_netstat(_decode(proc.stdout), port)
-    if not pids:
+    """netstat（IPv4 + IPv6）+ tasklist 查端口占用（不做缓存）。
+
+    为什么要查两遍：``netstat -p TCP`` 只列 IPv4，双栈监听 ``[::]:443`` 的进程会查不到；
+    Windows 上这类绑定同样会挡住我们（独占绑定失败），所以两张表都要看。
+    返回条目带 ``path``（进程完整路径）——现场排查时「哪个目录下的 python.exe」是关键信息
+    （它自己踩过：旧代理没退干净 vs 加速器占用，靠路径区分）。
+    """
+    listeners: list[dict] = []
+    seen: set[tuple[int, str]] = set()
+    for proto in ("TCP", "TCPv6"):
+        proc = _run(["netstat", "-ano", "-p", proto])
+        if proc is None or proc.returncode != 0:
+            continue
+        for found in _parse_netstat_listeners(_decode(proc.stdout), port):
+            key = (found["pid"], found["addr"])
+            if key in seen:
+                continue
+            seen.add(key)
+            listeners.append({"pid": found["pid"], "addr": found["addr"],
+                              "host": found["host"]})
+    if not listeners:
         return []
     names = _tasklist_names()
     return [
-        {"pid": pid, "name": names.get(pid, "?"), "addr": addr}
-        for pid, addr in sorted(pids.items())
+        {"pid": item["pid"], "name": names.get(item["pid"], "?"),
+         "addr": item["addr"], "host": item["host"],
+         "path": _proc_path(item["pid"]),
+         "wildcard": _is_wildcard_addr(item["host"])}
+        for item in sorted(listeners, key=lambda x: (x["addr"], x["pid"]))
     ]
 
 
-def port_owner(port: int) -> list[dict]:
-    """谁在监听这个端口：[{"pid","name","addr"}]，3 秒缓存（GUI 会高频轮询）。"""
+def _parse_netstat_listeners(text: str, port: int) -> list[dict]:
+    """从 netstat 文本里找出监听指定端口的**全部** (pid, 本地地址) 对（IPv4/IPv6 都认）。
+
+    与 ``_parse_netstat`` 的区别：那个按 PID 去重只留一个地址（GUI 列占用者用），
+    这个一行一条、保留 ``0.0.0.0`` / ``[::]`` 通配绑定 —— 判断「换监听 IP 有没有用」靠它。
+    """
+    out: list[dict] = []
+    suffix = ":%d" % int(port)
+    seen: set[tuple[int, str]] = set()
+    for line in (text or "").splitlines():
+        fields = line.split()
+        if len(fields) < 4 or fields[0].upper() not in ("TCP", "TCPV6"):
+            continue
+        try:
+            state_idx = next(i for i, f in enumerate(fields) if f.upper() == "LISTENING")
+        except StopIteration:
+            continue
+        local = fields[1]
+        if not local.endswith(suffix):
+            continue
+        try:
+            pid = int(fields[state_idx + 1])
+        except (IndexError, ValueError):
+            continue
+        host = local.rsplit(":", 1)[0].strip("[]") or local.rsplit(":", 1)[0]
+        key = (pid, local)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"pid": pid, "addr": local, "host": host})
+    return out
+
+
+_WILDCARD_ADDRS = ("0.0.0.0", "::", "[::]", "*")
+
+
+def _is_wildcard_addr(host: str) -> bool:
+    """是不是通配绑定（0.0.0.0 / ::）—— 这种占用换任何监听 IP 都躲不开。"""
+    return str(host or "").strip().strip("[]") in ("0.0.0.0", "::", "*")
+
+
+def port_listeners(port: int) -> list[dict]:
+    """谁在监听这个端口（带 name/path/wildcard），3 秒缓存（GUI 会高频轮询）。"""
     port = int(port)
     now = time.monotonic()
     hit = _PORT_CACHE.get(port)
@@ -371,9 +430,135 @@ def port_owner(port: int) -> list[dict]:
     return [dict(item) for item in owners]
 
 
+def port_owner(port: int) -> list[dict]:
+    """谁在监听这个端口：[{"pid","name","addr"}]，按 PID 去重（一个进程多地址只列一次）。
+
+    3 秒缓存（GUI 会高频轮询）；要看通配绑定/完整路径用 ``port_listeners``。
+    """
+    seen: set[int] = set()
+    out: list[dict] = []
+    for item in port_listeners(port):
+        pid = int(item["pid"])
+        if pid in seen:
+            continue
+        seen.add(pid)
+        out.append({"pid": pid, "name": item["name"], "addr": item["addr"]})
+    out.sort(key=lambda item: item["pid"])
+    return out
+
+
 def port_in_use(port: int) -> bool:
     """端口是否有监听者（含 0.0.0.0 通配绑定 —— 这正是与游戏/加速器抢 443 的典型现场）。"""
-    return bool(port_owner(port))
+    return bool(port_listeners(port))
+
+
+def bindable(ip: str, port: int) -> bool:
+    """能否在 ``ip:port`` 上**独占**绑定（Windows 必须用 SO_EXCLUSIVEADDRUSE 才测得准）。
+
+    用 SO_REUSEADDR 时「别人正在监听、我们也能绑定成功」，检测会误报空闲 ——
+    这正是第三方工具踩过、我们沿用下来的结论。
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        sock.bind((str(ip), int(port)))
+        return True
+    except OSError:
+        return False
+    finally:
+        try:
+            sock.close()
+        except OSError:
+            pass
+
+
+def port_state(ip: str, port: int, own_pids=()) -> dict:
+    """端口三态：``free`` / ``ours``（本工具引擎占用，正常）/ ``conflict``（别人占用）。
+
+    判定顺序：先独占试绑（free 的唯一权威），失败再按占用者 PID 区分 ours / conflict。
+    通配绑定（0.0.0.0 / ::）单独标记 —— 这时换监听 IP 没用，必须关掉占用者。
+    """
+    owners = port_listeners(int(port))
+    free = bindable(ip, int(port))
+    own = {int(pid) for pid in (own_pids or ()) if int(pid) > 0}
+    mine = [item for item in owners if item["pid"] in own]
+    others = [item for item in owners if item["pid"] not in own]
+    if free:
+        state = "free"
+    elif mine and not others:
+        state = "ours"
+    else:
+        state = "conflict"
+    return {
+        "ip": str(ip),
+        "port": int(port),
+        "state": state,
+        "wildcard": any(bool(item.get("wildcard")) for item in owners),
+        "owners": owners,
+    }
+
+
+def ports_state(ip: str, ports, own_pids=()) -> list[dict]:
+    """一次查多个端口（441/8080/控制面这类组合）；顺序与传入一致。"""
+    return [port_state(ip, int(port), own_pids) for port in ports]
+
+
+def _proc_path(pid: int) -> str:
+    """PID -> 进程完整路径（只为现场排查用；拿不到返回空串）。"""
+    try:
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        process_query_limited_information = 0x1000
+        handle = kernel32.OpenProcess(process_query_limited_information, False, int(pid))
+        if not handle:
+            return ""
+        try:
+            buf = ctypes.create_unicode_buffer(1024)
+            size = ctypes.c_ulong(1024)
+            if kernel32.QueryFullProcessImageNameW(handle, 0, buf, ctypes.byref(size)):
+                return buf.value
+        finally:
+            kernel32.CloseHandle(handle)
+    except Exception:                                   # noqa: BLE001 - 探测失败当没有路径
+        return ""
+    return ""
+
+
+def pid_alive(pid: int) -> bool:
+    """PID 是否还活着（不启子进程：Windows 走 kernel32，其它平台 os.kill(pid, 0)）。"""
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            kernel32 = ctypes.windll.kernel32
+            synchronize = 0x00100000
+            handle = kernel32.OpenProcess(synchronize, False, pid)
+            if not handle:
+                return False
+            try:
+                return kernel32.WaitForSingleObject(handle, 0) != 0
+            finally:
+                kernel32.CloseHandle(handle)
+        except Exception:                               # noqa: BLE001
+            return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def primary_ip() -> str:
+    """当前默认路由出口 IP（空串 = 探测失败）。公开包装，GUI 用来对 hosts 里的 IP。"""
+    return _default_route_ip() or ""
 
 
 def game_running() -> bool:

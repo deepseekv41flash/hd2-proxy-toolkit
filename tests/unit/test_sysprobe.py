@@ -441,3 +441,80 @@ def test_decode_output_falls_back_to_gbk(monkeypatch):
 
 def test_is_admin_returns_bool():
     assert isinstance(sysprobe.is_admin(), bool)
+
+
+# --------------------------------------------------------------------------- #
+# 端口三态 / 独占试绑 / 进程探针（2026-11-17 P0：端口诊断）
+# --------------------------------------------------------------------------- #
+NETSTAT_MIXED = """活动连接
+
+  协议  本地地址          外部地址        状态           PID
+  TCP    0.0.0.0:443            0.0.0.0:0              LISTENING       1234
+  TCP    127.0.0.1:443          0.0.0.0:0              LISTENING       4321
+  TCP    [::]:443               [::]:0                 LISTENING       5678
+  TCP    100.67.169.17:443      0.0.0.0:0              LISTENING       1234
+"""
+
+
+def test_parse_netstat_listeners_keeps_every_binding():
+    """IPv4/IPv6 两条表都认；同一 PID 的多个地址都保留（判断通配绑定靠它）。"""
+    rows = sysprobe._parse_netstat_listeners(NETSTAT_MIXED, 443)
+    assert {"pid": 1234, "addr": "0.0.0.0:443", "host": "0.0.0.0"} in rows
+    assert {"pid": 1234, "addr": "100.67.169.17:443", "host": "100.67.169.17"} in rows
+    assert {"pid": 4321, "addr": "127.0.0.1:443", "host": "127.0.0.1"} in rows
+    assert {"pid": 5678, "addr": "[::]:443", "host": "::"} in rows
+
+
+def test_port_listeners_marks_wildcard_and_path(monkeypatch):
+    runner = _fake_run({"netstat": NETSTAT_MIXED, "tasklist": TASKLIST_CSV})
+    monkeypatch.setattr(sysprobe, "_run", runner)
+    monkeypatch.setattr(sysprobe, "_proc_path",
+                        lambda pid: "C" + ":" + chr(92) + "x" + chr(92) + "python.exe")
+    sysprobe.clear_caches()
+    listeners = sysprobe.port_listeners(443)
+    assert any(item["wildcard"] for item in listeners)          # 0.0.0.0 / ::
+    assert all(item["path"].endswith("python.exe") for item in listeners)
+    # port_owner 仍按 PID 去重（GUI 列占用者用），只列一次 1234
+    owners = sysprobe.port_owner(443)
+    assert [o["pid"] for o in owners] == [1234, 4321, 5678]
+
+
+def test_bindable_exclusive_probe():
+    import socket as _socket
+
+    probe = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+    try:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+        assert sysprobe.bindable("127.0.0.1", port) is False   # 已被占（同进程也算）
+    finally:
+        probe.close()
+    assert sysprobe.bindable("127.0.0.1", port) is True        # 释放后可用
+
+
+def test_port_state_free_ours_conflict(monkeypatch):
+    listeners = [{"pid": 1234, "name": "hd2proxy.exe", "addr": "0.0.0.0:443",
+                  "host": "0.0.0.0", "path": "x", "wildcard": True},
+                 {"pid": 4321, "name": "nginx.exe", "addr": "0.0.0.0:443",
+                  "host": "0.0.0.0", "path": "y", "wildcard": True}]
+    monkeypatch.setattr(sysprobe, "port_listeners", lambda port: listeners)
+    monkeypatch.setattr(sysprobe, "bindable", lambda ip, port: True)
+    state = sysprobe.port_state("100.67.169.17", 443, own_pids=[1234])
+    assert state["state"] == "free"
+    monkeypatch.setattr(sysprobe, "bindable", lambda ip, port: False)
+    assert sysprobe.port_state("100.67.169.17", 443, own_pids=[1234])["state"] == "conflict"
+    monkeypatch.setattr(sysprobe, "port_listeners", lambda port: listeners[:1])
+    state = sysprobe.port_state("100.67.169.17", 443, own_pids=[1234])
+    assert state["state"] == "ours" and state["wildcard"] is True
+
+
+def test_pid_alive_self_and_bogus():
+    assert sysprobe.pid_alive(os.getpid()) is True
+    assert sysprobe.pid_alive(99999999) is False
+    assert sysprobe.pid_alive(0) is False
+
+
+def test_primary_ip_returns_string_or_empty():
+    value = sysprobe.primary_ip()
+    assert isinstance(value, str)
+    assert value == "" or sysprobe.validate_listen_ip(value) is None

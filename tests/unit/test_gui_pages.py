@@ -20,6 +20,8 @@ from hd2proxy.gui import templates                     # noqa: E402
 from hd2proxy.gui import theme                         # noqa: E402
 from hd2proxy.gui.catalogs import Catalogs             # noqa: E402
 from hd2proxy.gui.pages.capture import CapturePage     # noqa: E402
+from hd2proxy.gui.pages.overview import OverviewPage   # noqa: E402
+from hd2proxy.gui.pages.settings import SettingsPage   # noqa: E402
 from hd2proxy.gui.pages.inventory import InventoryPage  # noqa: E402
 from hd2proxy.gui.pages.status_page import StatusPage  # noqa: E402
 
@@ -76,6 +78,25 @@ class FakeApp:
 
     def last_toast(self):
         return self.toasts[-1] if self.toasts else (None, False)
+
+    # 总览页按钮/Navigation 只要求这些动作存在（页面测试不真正启动引擎）
+    def start_engine(self):
+        self.calls_started = getattr(self, "calls_started", 0) + 1
+
+    def stop_engine(self):
+        self.calls_stopped = getattr(self, "calls_stopped", 0) + 1
+
+    def verify(self):
+        pass
+
+    def install_dry(self):
+        pass
+
+    def uninstall_dry(self):
+        pass
+
+    def save_profile(self, apply=False):
+        return True
 
 
 MINIMAL_STATUS = {
@@ -654,3 +675,57 @@ def test_status_editors_shrink_back_to_two_rows(root, app):
     app.profile["status"]["variants"] = []
     page._render_variants()
     assert int(page.variant_editor.tv.cget("height")) == 2
+
+
+# ---------------------------------------------------------------- P0：端口诊断 / 系统自检
+def _diag_snapshot(**over):
+    snap = {"listen_setting": "auto", "listen_ip": "100.67.169.17", "listen_error": None,
+            "primary_ip": "100.67.169.17", "ports": [], "engine_running": True,
+            "engine_pids": [1], "hosts": {"state": "ok", "line": "x", "ip": "100.67.169.17",
+                                          "commented": False, "expected_ip": "100.67.169.17"},
+            "cert": {"usable": True, "remaining_hours": 40.0, "thumbprint": "AB", "warnings": []},
+            "game_running": False, "admin": False}
+    snap.update(over)
+    return snap
+
+
+def test_overview_shows_diag_warning_and_hides_when_clean(root, app, monkeypatch):
+    from hd2proxy.engine import diagnostics as diag_mod
+
+    errors = {"ok": False, "errors": [{"level": "error", "text": "hosts 那一行被注释掉了"}],
+              "warnings": [{"level": "error", "text": "hosts 那一行被注释掉了"}]}
+    monkeypatch.setattr(diag_mod, "collect", lambda *a, **k: _diag_snapshot())
+    monkeypatch.setattr(diag_mod, "evaluate", lambda snap: errors)
+    page = _make(OverviewPage, root, app)
+    page.refresh()
+    assert page._warn_shown is True
+    assert "hosts 那一行被注释掉了" in page.warn_lbl.cget("text")
+
+    clean = {"ok": True, "errors": [], "warnings": []}
+    monkeypatch.setattr(diag_mod, "evaluate", lambda snap: clean)
+    page.refresh()
+    assert page._warn_shown is False
+
+
+def test_overview_selfcheck_opens_text_dialog(root, app, monkeypatch):
+    from hd2proxy.engine import diagnostics as diag_mod
+    monkeypatch.setattr(diag_mod, "collect", lambda *a, **k: _diag_snapshot())
+    monkeypatch.setattr(diag_mod, "evaluate", lambda snap: {"ok": True, "errors": [],
+                                                            "warnings": []})
+    monkeypatch.setattr(diag_mod, "format_text", lambda snap, ev=None: "SELFCHECK-TEXT")
+    page = _make(OverviewPage, root, app)
+    page._selfcheck()
+    assert app.texts and app.texts[-1][0] == "系统自检"
+    assert "SELFCHECK-TEXT" in app.texts[-1][1]
+
+
+def test_settings_choose_listen_ip_updates_profile(root, app, monkeypatch):
+    from hd2proxy.gui import listen_ip as listen_ip_ui
+    monkeypatch.setattr(listen_ip_ui, "choose_listen_ip",
+                        lambda parent, a: "192.168.1.5")
+    page = _make(SettingsPage, root, app)
+    page.refresh()
+    page._choose_listen()
+    assert page.var_listen.get() == "192.168.1.5"
+    assert app.profile["proxy"]["listen_ip"] == "192.168.1.5"
+    assert app.dirty >= 1

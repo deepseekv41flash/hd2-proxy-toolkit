@@ -22,7 +22,8 @@ src/hd2proxy/
    ├─ control.py        本地控制面（127.0.0.1 + token）
    ├─ verify.py         三连验收（TLS 握手 / CRL / Status 回执）
    ├─ hosts.py          hosts 读写（marker 行、原子写、备份、编码/行尾保持）
-   ├─ sysprobe.py       系统探针（网卡 IP/端口占用/游戏进程/证书存储/管理员）
+   ├─ sysprobe.py       系统探针（网卡 IP/端口占用三态/游戏进程/证书存储/管理员）
+   ├─ diagnostics.py    系统诊断（端口预检·hosts 四态·证书·游戏；纯函数 evaluate 可离线测）
    ├─ elevation.py      UAC 自提升（ShellExecuteEx "runas"）
    ├─ installer.py      安装/还原编排（先证书后 hosts；失败回读系统状态）
    ├─ preview.py        离线预演（M3）：profile 套样本响应 → 结构化 diff / 人读文本

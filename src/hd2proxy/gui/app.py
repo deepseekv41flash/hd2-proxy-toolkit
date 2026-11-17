@@ -14,7 +14,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from ..engine import config as cfgmod
-from ..engine import paths
+from ..engine import diagnostics, paths, sysprobe
 from . import catalogs as catalogs_mod
 from . import theme
 from .client import EngineClient, EngineError, REPO
@@ -330,6 +330,10 @@ class App:
         if self.client.running():
             self.toast("引擎已在运行")
             return
+        if not self._guard_game_running("启动引擎"):
+            return
+        if not self._preflight_ports():
+            return
         prof = {k: v for k, v in self.profile.items() if not k.startswith("_")}
         normalized, errors, _ = cfgmod.validate(prof)
         if errors:
@@ -382,8 +386,51 @@ class App:
         if not self.client.running() and not self.client.engine_alive():
             self.toast("引擎未运行")
             return
+        if not self._guard_game_running("停止引擎"):
+            return
         self.run_bg(lambda: self.client.shutdown(), lambda _r: self.toast("引擎已停止"),
                     busy="停止引擎…")
+
+    # ---- 端口 / 游戏守卫（P0：来自第三方工具 1.26 的现场经验） ----------
+    def _guard_game_running(self, action: str) -> bool:
+        """游戏在跑时启停代理会掐断会话（卡登录/通讯出错）—— 默认拦下，用户确认才继续。"""
+        if not sysprobe.game_running():
+            return True
+        message = ("检测到《Helldivers 2》正在运行。" + chr(10) + chr(10)
+                   + "%s可能掐断当前会话（表现为卡登录 / 与服务器通讯时出错）。" % action
+                   + chr(10) + "建议先退出游戏再操作。" + chr(10) + chr(10) + "仍然继续吗？")
+        ok = messagebox.askyesno("游戏正在运行", message, icon="warning")
+        if not ok:
+            self.toast("已取消：游戏运行中，先退出游戏再%s" % action)
+        return ok
+
+    def _preflight_ports(self) -> bool:
+        """启动前端口预检（443 / CRL / 控制面）：冲突时让用户换监听 IP、仍然启动或取消。"""
+        from . import listen_ip as listen_ip_ui
+
+        for _attempt in range(3):
+            pre = diagnostics.port_preflight(self.profile)
+            if pre.get("listen_error"):
+                messagebox.showerror("监听地址不可用", pre["listen_error"])
+                return False
+            if not pre.get("conflicts"):
+                return True
+            choice = listen_ip_ui.port_conflict_dialog(self.root, self, pre)
+            if choice == "switch":
+                if not listen_ip_ui.choose_listen_ip(self.root, self):
+                    return False
+                continue                    # 换完再查一次（最多 3 轮）
+            if choice == "start":
+                self.toast("端口被占用，仍尝试启动 —— 失败请看日志里的 BIND FAIL 占用者")
+                return True
+            return False
+        return True
+
+    def selfcheck(self):
+        """系统自检：端口占用 / hosts 状态 / 证书 / 游戏进程（只读，不需要管理员）。"""
+        snapshot = diagnostics.collect(self.profile, cert_dir=self.cert_dir())
+        self.show_text("系统自检", diagnostics.format_text(snapshot))
+        return snapshot
 
     def verify(self):
         if not self.client.running():
