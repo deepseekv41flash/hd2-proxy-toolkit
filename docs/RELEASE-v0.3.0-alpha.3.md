@@ -76,6 +76,19 @@ Something unexpected went wrong while trying to communicate with our server. Try
   - 真实证书目录 → `trusted=True`（`LocalMachine`），自检无误报。
 - 门禁：`python tools/check_gate.py` → **GATE=PASS**；GUI 冒烟 5 页截图正常（总览多出「安装 / 修复（UAC）」按钮）。
 
+## 打包版实机验证（计算机操作，非源码版）
+
+用打包后的 `dist\hd2proxy\hd2proxy-gui.exe` 实测。为复现「未受信」态，把 `%LOCALAPPDATA%\HD2ProxyStudio\certs`
+临时替换为一张**未导入根存储**的临时 CA（测试后已还原）：
+
+| 场景 | 结果 |
+|---|---|
+| 未受信证书 + 启动 GUI | 总览红字出现：「证书未受信任：当前 CA 不在受信任根存储（指纹 24B65223E38F）→ 游戏 TLS 握手会被拒绝（引擎日志 TLS REJECTED）」✓ |
+| 点「系统自检」 | 证书分节显示 `· 证书未受信任…`；结论区同时列出 `✗ 证书未受信任…`（error 级）✓ |
+| 点新按钮「安装 / 修复（UAC）」 | 弹出确认框「将把游戏域名指向本机，并把当前会话证书导入受信任根存储。需要一次 UAC 确认。继续吗？」；点「否」无任何系统改动 ✓ |
+| 还原真实（已受信）证书后重启 GUI | 红字只剩 hosts/引擎那条，**没有证书未受信**；新按钮在位 ✓ |
+| 切页「设置 ↔ 总览」两次（间隔 3.2s，触发真实诊断） | 20ms 采样 **2142 次**，控制台窗口 **0 个**（alpha.2 的隐藏窗口修复未回归；新增的 certutil 检查同样无窗口）✓ |
+
 ## 下载
 
 | 文件 | 说明 |
