@@ -84,6 +84,8 @@ DEFAULT_OVERLAY = REPO_ROOT / "data" / "sources" / "variant_overlay.json"
 DEFAULT_LEGACY_OUT = REPO_ROOT / "data" / "legacy" / "variant_catalog.json"
 DEFAULT_CATALOG_INDEX = REPO_ROOT / "data" / "sources" / "progression_item_catalog.json"
 DEFAULT_ITEM_NAMES = REPO_ROOT / "data" / "sources" / "item_names_derived.json"
+# 未发布/目录缺失物品 -> 克隆模板 itemId 的配对（本仓库输入，值来自研究线 M4 实机验证）
+DEFAULT_UNRELEASED_ITEMS = REPO_ROOT / "data" / "sources" / "unreleased_items.json"
 
 # build.json 的手工常量（游戏 build 变化时改这里并重跑；variant_catalog 里的 build 另见 generated_from）
 GAME_BUILD = "26568081"
@@ -106,6 +108,8 @@ SRC_CATALOG_INDEX = "data/sources/progression_item_catalog.json"
 SRC_WEAPON_OPTIONS = "repo-datamined/refs/weapon-customization-options-26251122.json"
 # LoadoutEntry 物品内部名（dlbin 只读路线产物，见 tools/extract_item_names.py）
 SRC_ITEM_NAMES = "data/sources/item_names_derived.json"
+# 未发布物品的目录行模板配对（本仓库手工维护的研究线已验证值，见文件内 note）
+SRC_UNRELEASED_ITEMS = "data/sources/unreleased_items.json"
 SRC_PLANET_DATA = "repo-datamined/out/planet/planet-data.json"
 # 行号 -> 游戏索引 的权威映射（war 801 抓包 + planet_data 尾部 hashmap 对齐产物）。
 # 为什么必须合并：planet-index.json 的 `index` 是 planet_data **行号**，不是游戏索引；
@@ -908,6 +912,7 @@ def build_items(
     datamined: Path,
     catalog_index_path: Path,
     item_names_path: Path,
+    unreleased_items_path: Path | None = None,
 ) -> tuple[dict[str, Any], int]:
     records: list[dict[str, Any]] = []
 
@@ -1166,6 +1171,49 @@ def build_items(
         f"（parent_name 已解 {sum(1 for item in attachment_items if item.get('parent_name'))} 条）"
     )
 
+    # --- 未发布/目录缺失物品的「目录行模板」：库存行必须配一条目录行，否则客户端不显示
+    #     （M4 实机）。配对值来自 data/sources/unreleased_items.json；生成器只负责校验+落到
+    #     items.json 的 unlock_template 字段，界面据此在「添加到库存」时自动补目录行。
+    applied_unlock = 0
+    if unreleased_items_path is not None:
+        doc = load_json(unreleased_items_path, "未发布物品模板配对 unreleased_items.json", dict)
+        pairs: dict[int, int] = {}
+        for position, row in enumerate(doc.get("rows") or []):
+            if not isinstance(row, dict):
+                raise SourceError(f"unreleased_items.json rows[{position}] 不是对象: {row!r}")
+            mix = to_int(row.get("mix"), f"unreleased_items.json rows[{position}].mix")
+            template = to_int(row.get("template"), f"unreleased_items.json rows[{position}].template")
+            if mix in pairs:
+                raise SourceError(f"unreleased_items.json 出现重复 mix {mix}")
+            pairs[mix] = template
+        catalog_items = {row["item"] for row in catalog_by_mix.values()}
+        for mix, template in sorted(pairs.items()):
+            if template not in catalog_items:
+                raise SourceError(
+                    f"unreleased_items.json 里 mix {mix} 的模板 itemId {template} "
+                    f"不在 {SRC_CATALOG_INDEX} 的目录里（换 build 后模板可能失效，需重新核对）"
+                )
+        by_mix = {item["mix_id"]: item for item in merged_items if item["mix_id"] is not None}
+        missing = sorted(set(pairs) - set(by_mix))
+        if missing:
+            raise SourceError(
+                f"unreleased_items.json 里的 mix {missing} 不在 items 里（源快照里没有该物品，需核对）"
+            )
+        for mix, template in sorted(pairs.items()):
+            item = by_mix[mix]
+            if item.get("catalog_category") is not None:
+                raise SourceError(
+                    f"unreleased_items.json 里的 mix {mix} 已在服务端目录中"
+                    f"（catalog_category={item.get('catalog_category')}）—— 既是目录已有就不用模板，"
+                    "请从该文件移除这一行"
+                )
+            item["unlock_template"] = template
+            applied_unlock += 1
+        log(
+            f"note: 目录缺失物品 {applied_unlock} 条带上 unlock_template（{SRC_UNRELEASED_ITEMS}；"
+            "引擎按模板克隆目录行，界面添加库存时自动配对）"
+        )
+
     merged_items.sort(
         key=lambda item: (
             item["mix_id"] is None,
@@ -1251,6 +1299,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"LoadoutEntry 物品内部名（默认 {DEFAULT_ITEM_NAMES}；由 tools/extract_item_names.py 生成）",
     )
     parser.add_argument(
+        "--unreleased-items",
+        type=Path,
+        default=DEFAULT_UNRELEASED_ITEMS,
+        help=f"目录缺失物品的模板配对（默认 {DEFAULT_UNRELEASED_ITEMS}），写入 items.json 的 unlock_template",
+    )
+    parser.add_argument(
         "--no-legacy",
         action="store_true",
         help="只写 GUI 目录，不写引擎目录 data/legacy/variant_catalog.json",
@@ -1270,7 +1324,8 @@ def main(argv: list[str] | None = None) -> int:
         effects, effects_count = build_effects(args.variant_net)
         planets, planets_count = build_planets(args.datamined)
         items, items_count = build_items(
-            args.variant_net, args.variant_mod, args.datamined, args.catalog_index, args.item_names
+            args.variant_net, args.variant_mod, args.datamined, args.catalog_index,
+            args.item_names, args.unreleased_items
         )
         build, build_count = build_build(variants)
 

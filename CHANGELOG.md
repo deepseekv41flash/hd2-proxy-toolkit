@@ -6,6 +6,27 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.2.0-alpha.2（2026-11-17）— 修复「目录里没有的武器解锁不生效」（Shear 等三把未发布武器）
+
+- **修复（用户报）**：Shear（`2112173638`）加进库存后游戏里不出现，而对照组 Bolt Pistol /
+  Melta Mine 正常。根因：**库存行必须与目录行成对注入**。
+  - Bolt Pistol / Melta Mine 在服务端 `/api/Progression/items` 目录里本来就有 → 只注库存行即可；
+  - Shear / P-41 Ombudsman / SG-8F Punisher Fire of Liberty **目录里没有** → 只注库存行客户端不显示，
+    还要克隆同族模板 itemId 补一条目录行（`items.add [{id, template}]`）；
+  - 而「物品与战备」四个 tab 的「添加到库存」**只写了库存行**，`目录追加` tab 才写目录行 ——
+    用户按普通物品方式添加时，目录行就漏了（日志里一条 `ITEMS REWRITE` 都没有）。
+- **修复内容**：
+  - 添加库存行时，若该物品在 `items.json` 里带 `unlock_template`（= 服务端目录缺失），
+    自动在 `profile["items"]["add"]` 里配对一条 `{"id": mixId, "template": 模板 itemId}`；
+  - 移除库存行时对称撤掉配对的目录行；
+  - 「目录追加」tab 选中这类物品时也自动带上模板（不必手填全局模板 itemId）；
+  - 打开「物品与战备」页时**自愈老 profile**：库存里已有这类物品但缺目录行的自动补齐（不必删了重加）；
+  - `data/sources/unreleased_items.json`：三把武器的模板配对（研究线 M4 实机验证值），
+    `tools/gen_catalogs.py` 校验模板行在目录快照里后写进 `items.json` 的 `unlock_template` 字段。
+- 单测 386 → **394**（模板数据一致性 / 模板行在目录里 / 与 GUI 模板不漂移 / 加库存自动配对 /
+  已发布武器不写多余目录行 / 移除对称撤掉 / 目录追加 tab 带模板 / 老 profile 自愈幂等）。
+- 规则：只修 bug ⇒ 只动 `alpha.N`（`0.2.0-alpha.1` → `0.2.0-alpha.2`），版本位不变。
+
 ## v0.2.0-alpha.1（2026-11-17）— 「附件」改成两级：按武器筛选 + 一键解锁该武器全部配件
 
 - **新增（功能更新）**：「物品与战备 · 附件」改成**两级菜单**：

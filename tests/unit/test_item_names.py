@@ -254,3 +254,51 @@ def test_catalog_index_rejects_conflicting_category(tmp_path):
     with pytest.raises(gen.SourceError) as exc:
         gen._load_item_catalog_index(bad)
     assert "类别冲突" in str(exc.value)
+
+
+# ---------------------------------------------------------------- 目录缺失物品的模板配对
+def test_unreleased_items_have_catalog_template(items_by_mix):
+    """目录里缺失的物品必须带 unlock_template（库存行不配目录行，客户端不显示）。
+
+    背景（2026-11-17 用户报）：Shear 加进库存后游戏里不出现，而 Bolt Pistol / Melta Mine 正常
+    —— 后者在服务端目录里本来就有，只注库存行即可；Shear 目录里没有，必须「库存行 + 目录行」
+    成对注入，目录行靠克隆同族模板 itemId 上架（items_rewrite 只改 itemId/mixId）。
+    """
+    for mix in (2112173638, 3388344762, 1934208922):
+        item = items_by_mix[mix]
+        assert item["category"] == "weapon"
+        assert item.get("catalog_category") is None      # 服务端目录里确实没有
+        assert item.get("unlock_template"), "缺 unlock_template -> 加库存时不会补目录行"
+
+
+def test_unlock_templates_match_curated_source_and_catalog(items_doc):
+    """unlock_template 必须与 data/sources/unreleased_items.json 一致，且模板行在当前目录里。
+
+    模板行不在服务端目录响应里时引擎会静默跳过（items_rewrite 的 base=None），所以这条是
+    换 build 后的护栏：模板失效要在这里炸出来，而不是等用户发现武器「加了但不出现」。
+    """
+    src = json.loads((REPO / "data" / "sources" / "unreleased_items.json")
+                     .read_text(encoding="utf-8"))
+    pairs = {int(row["mix"]): int(row["template"]) for row in src["rows"]}
+    assert pairs, "配对表不能为空"
+    by_mix = {it["mix_id"]: it for it in items_doc["items"] if it.get("mix_id") is not None}
+    assert {mix for mix, it in by_mix.items() if it.get("unlock_template")} == set(pairs)
+    for mix, template in pairs.items():
+        assert by_mix[mix]["unlock_template"] == template
+    catalog = json.loads((REPO / "data" / "sources" / "progression_item_catalog.json")
+                         .read_text(encoding="utf-8"))
+    catalog_items = {row["item"] for row in catalog["rows"]}
+    for mix, template in pairs.items():          # noqa: B007 - mix 只用于报错定位
+        assert template in catalog_items, (
+            "mix %d 的模板 itemId %d 不在目录快照里（换 build 后需重选模板）" % (mix, template))
+
+
+def test_unlock_templates_match_gui_template_flow():
+    """GUI「一键物品解锁」模板里的配对值必须与数据源一致（防止两处硬编码漂移）。"""
+    from hd2proxy.gui import templates as gui_templates
+    known = dict(gui_templates.UNRELEASED_ITEMS)
+    src = json.loads((REPO / "data" / "sources" / "unreleased_items.json")
+                     .read_text(encoding="utf-8"))
+    for row in src["rows"]:
+        assert known.get(int(row["mix"])) == int(row["template"]), (
+            "test_item_unlock / UNRELEASED_ITEMS 与 unreleased_items.json 不一致: %r" % row)

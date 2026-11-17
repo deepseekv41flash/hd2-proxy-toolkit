@@ -21,6 +21,15 @@ TAB_CATEGORY = {"weapons": "weapon", "attachments": "attachment",
                 "cosmetics": "cosmetic", "stratagems": "stratagem"}
 
 
+def _catalog_add_id(entry):
+    """目录追加列表条目 -> itemId（dict 取 id/mixId，纯整数原样）；解析不了返回 None。"""
+    raw = entry.get("id", entry.get("mixId")) if isinstance(entry, dict) else entry
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 class InventoryPage(Page):
     title = "物品与战备"
 
@@ -280,7 +289,49 @@ class InventoryPage(Page):
         rows.append({"mixId": int(mix), "amount": int(amount), "isDiscovered": False})
         self.app.mark_dirty()
         self._render_tab(key)
-        self.app.toast("已加入%s：%s" % (TAB_NAMES[key], self.app.catalogs.item_label(mix)))
+        template = self._ensure_catalog_row(int(mix))
+        label = self.app.catalogs.item_label(mix)
+        if template is None:
+            self.app.toast("已加入%s：%s" % (TAB_NAMES[key], label))
+        else:
+            self.app.toast("已加入%s：%s（服务端目录里没有这条 → 已自动配对目录行，模板 %d；"
+                           "重载引擎后游戏可见）" % (TAB_NAMES[key], label, template))
+
+    def _ensure_catalog_row(self, mix):
+        """目录里没有的物品：库存行必须配一条目录行，否则客户端不显示（M4 实机）。
+
+        只对 items.json 带 `unlock_template` 的物品生效（= 服务端目录确实缺失、且有研究线
+        验证过的同族模板）。已配对过就不重复加。返回模板 itemId；不需要时返回 None。
+        """
+        template = self.app.catalogs.unlock_template(mix)
+        if template is None:
+            return None
+        add = self._items().setdefault("add", [])
+        if not isinstance(add, list):
+            add = self._items()["add"] = []
+        if int(mix) not in {_catalog_add_id(entry) for entry in add}:
+            add.append({"id": int(mix), "template": int(template)})
+            self.app.mark_dirty()
+            if getattr(self, "items_editor", None) is not None:
+                self._render_items()
+        return int(template)
+
+    def _drop_catalog_row(self, mix):
+        """移除库存行时撤掉配对的目录行（与 `_ensure_catalog_row` 对称）。返回模板或 None。"""
+        template = self.app.catalogs.unlock_template(mix)
+        if template is None:
+            return None
+        add = self._items(create=False).get("add") or []
+        if not isinstance(add, list):
+            return None
+        kept = [entry for entry in add if _catalog_add_id(entry) != int(mix)]
+        if len(kept) == len(add):
+            return None
+        self._items()["add"] = kept
+        self.app.mark_dirty()
+        if getattr(self, "items_editor", None) is not None:
+            self._render_items()
+        return int(template)
 
     def _add_attachment(self, key, amount):
         """附件：选中二级配件 -> 只加那一条；只选中一级武器 -> 解锁该武器全部配件。"""
@@ -316,9 +367,14 @@ class InventoryPage(Page):
         if 0 <= index < len(rows):
             row = rows.pop(index)
             mix = row.get("mixId") if isinstance(row, dict) else row
+            template = self._drop_catalog_row(mix)
             self.app.mark_dirty()
             self._render_tab(key)
-            self.app.toast("已从%s移除 mixId %s" % (TAB_NAMES[key], mix))
+            if template is None:
+                self.app.toast("已从%s移除 mixId %s" % (TAB_NAMES[key], mix))
+            else:
+                self.app.toast("已从%s移除 mixId %s，并撤掉配对的目录行（模板 %d）"
+                               % (TAB_NAMES[key], mix, template))
 
     def _render_tab(self, key):
         rows = []
@@ -411,13 +467,16 @@ class InventoryPage(Page):
             self.app.toast("先在左侧列表里选一个物品", error=True)
             return
         add = self._items().setdefault("add", [])
-        if int(mix) in add:
+        if int(mix) in {_catalog_add_id(entry) for entry in add}:
             self.app.toast("itemId %d 已在追加列表里" % mix, error=True)
             return
-        add.append(int(mix))
+        template = self.app.catalogs.unlock_template(mix)
+        add.append({"id": int(mix), "template": int(template)} if template else int(mix))
         self.app.mark_dirty()
         self._render_items()
-        self.app.toast("已追加到目录：%s" % self.app.catalogs.item_label(mix))
+        self.app.toast("已追加到目录：%s%s"
+                       % (self.app.catalogs.item_label(mix),
+                          "（模板 %d）" % template if template else ""))
 
     def _del_catalog_item(self, index):
         add = self._items(create=False).get("add") or []
@@ -430,7 +489,8 @@ class InventoryPage(Page):
     def _render_items(self):
         rows = []
         for item in self._items(create=False).get("add") or []:
-            rows.append((item, self.app.catalogs.item_label(item)))
+            mix = _catalog_add_id(item)
+            rows.append((mix, self.app.catalogs.item_label(mix)))
         self.items_editor.set_rows(rows, "%d 条" % len(rows))
         self.items_count.configure(text="目录追加 %d 条" % len(rows))
         self._render_summary()
@@ -483,9 +543,26 @@ class InventoryPage(Page):
         for key, _label in EDIT_TABS:
             self._render_tab(key)
         self._render_items()
+        self._heal_catalog_rows()
         tmpl = self._items(create=False).get("template")
         self.var_template.set("" if tmpl is None else str(tmpl))
         self._render_summary()
+
+    def _heal_catalog_rows(self):
+        """老 profile 自愈：库存里已有「目录缺失物品」但没配目录行时补上（用户不必删了重加）。
+
+        2026-11-17 之前手动加库存只写库存行 —— 升级后打开本页即把缺的目录行补齐；
+        只对 items.json 带 unlock_template 的物品生效，重复调用无副作用。
+        """
+        for key, _label in EDIT_TABS:
+            for row in self._inventory(create=False).get(key) or []:
+                if not isinstance(row, dict):
+                    continue
+                mix = int(row.get("mixId") or 0)
+                if mix:
+                    self._ensure_catalog_row(mix)
+        if getattr(self, "items_editor", None) is not None:
+            self._render_items()
 
     def on_status(self, status):
         # 本页数据全在 profile 里，引擎状态不影响编辑；只在顶部提示里留个记号

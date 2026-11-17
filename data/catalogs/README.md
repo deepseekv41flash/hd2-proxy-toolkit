@@ -16,7 +16,7 @@
 | `stratagems.json` | 58 | `variant_mod/stratagem_catalog.json` | type32「临时配发战备」；每项保留 `id/name/key/native_hash/effect_hash/group` 全部原字段 |
 | `effects.json` | 312 | `variant-net/out/effects-full.csv` + `variant-net/out/effect-menu.csv` | 两表 `effect_id` 完全对齐；数值/解码字段取 effects-full，`presence`/`race`/`display_name` 等展示字段取 effect-menu |
 | `planets.json` | 438（273 有游戏索引） | `repo-datamined/out/planet/planet-index.json` + `index-names-801.json` | 主键 `index` = **planet_data 行号**；`game_index` = 游戏索引（Status/warinfo/写 profile 用），休眠星为 null；附 `x`/`y` 星图坐标；`settings_hash` 全为 null（见下） |
-| `items.json` | 1950（**1821 有名字**） | `variant-net/refs/{armor_rows_parsed,store-cosmetics-20261106,unreleased_candidates}.json` + `variant-net/configs/` 与 `variant_mod/runtime/` 的 `inventory_*.json`、`items_inject.json`；名字补全用 `data/sources/progression_item_catalog.json` + `data/sources/item_names_derived.json`；附件行按 `progression_item_catalog.json` 的 cat2 全量补齐（旧注入子集只有 1176 行） | 物品解锁搜索用；`mix_id` 为库存键、`item_id` 为目录内容 id；`catalog_category` = 服务端目录类别（2 附件 / 3 外观 / 11 战备…），`name_source` = 名字出处（`catalog-option` 附件选项内部名 / `armor-table` 外观表 / `loadout-entity` dlbin 实体内部名）。**附件行额外带 `parent_id` / `parent_name` / `option_id`**：`parent_id` = 该附件所属武器的目录 mixId、`parent_name` = 武器内部名、`option_id` = 附件选项 id（多把枪共享，**故不写进 `item_id`**，否则合并阶段会「一对多 id」报错）；界面据此做「一级武器 → 二级配件」两级筛选 |
+| `items.json` | 1950（**1821 有名字**） | `variant-net/refs/{armor_rows_parsed,store-cosmetics-20261106,unreleased_candidates}.json` + `variant-net/configs/` 与 `variant_mod/runtime/` 的 `inventory_*.json`、`items_inject.json`；名字补全用 `data/sources/progression_item_catalog.json` + `data/sources/item_names_derived.json`；附件行按 `progression_item_catalog.json` 的 cat2 全量补齐（旧注入子集只有 1176 行） | 物品解锁搜索用；`mix_id` 为库存键、`item_id` 为目录内容 id；`catalog_category` = 服务端目录类别（2 附件 / 3 外观 / 11 战备…），`name_source` = 名字出处（`catalog-option` 附件选项内部名 / `armor-table` 外观表 / `loadout-entity` dlbin 实体内部名）。**附件行额外带 `parent_id` / `parent_name` / `option_id`**：`parent_id` = 该附件所属武器的目录 mixId、`parent_name` = 武器内部名、`option_id` = 附件选项 id（多把枪共享，**故不写进 `item_id`**，否则合并阶段会「一对多 id」报错）；界面据此做「一级武器 → 二级配件」两级筛选。**`unlock_template`**（仅 3 把「服务端目录里没有」的未发布武器）：克隆哪条同族目录记录来上架（= 模板 itemId）——库存行不配目录行客户端不显示，界面加库存时自动配对；配对值来自 `data/sources/unreleased_items.json`，生成器会校验模板行确实在目录快照里 |
 
 ## 本仓库内输入（不是研究仓）
 
@@ -24,6 +24,7 @@
 |---|---|
 | `data/sources/variant_overlay.json` | 变种目录覆盖层（源变种目录冻结后新增/改名的变种，如 腐蚀变种 / 毒瘴变种） |
 | `data/sources/progression_item_catalog.json` | 服务端 `/api/Progression/items` 抓包的紧凑索引（3020 行 `mix`→`item`/`cat`/`parent`，含原始抓包 sha256）。`parent` 是 cat2 附件行的**所属武器 mixId**（1455 行全有），附件按枪解锁的产品数据就靠它；生成器 `tools/extract_catalog_index.py` |
+| `data/sources/unreleased_items.json` | 「服务端目录里没有、靠克隆模板上架」的物品配对（`mix` → `template` itemId，值来自研究线 M4 实机验证：LAS-22 / P-41 / SG-8F）。由 `tools/gen_catalogs.py` 校验模板行在目录快照里后写进 `items.json` 的 `unlock_template` |
 | `data/sources/item_names_derived.json` | **LoadoutEntry 物品内部名（dlbin 只读路线产物）**：`generated_entities.dl_bin` 的 `LoadoutEntryComponentData` 行 `+0x00`(=目录 itemId) → 实体内部名（武器/投掷物/背包）。生成器 `tools/extract_item_names.py`，换 build 重跑即可 |
 
 ## 口径与已知坑
@@ -50,6 +51,7 @@
 # 0) 先重生成 data/sources/ 的两个快照（换 build / 新抓包时）
 python tools/extract_catalog_index.py --gwe-dir <抓包目录>   # → data/sources/progression_item_catalog.json（mix/item/cat/parent）
 python tools/extract_item_names.py --build 26568081          # → data/sources/item_names_derived.json（LoadoutEntry 内部名）
+#    手工维护的 data/sources/unreleased_items.json（目录缺失物品的模板配对）随目录一起被 gen_catalogs 读取
 
 # 1) 目录本体
 python tools/gen_catalogs.py            # 同时写 data/catalogs/*.json 与 data/legacy/variant_catalog.json

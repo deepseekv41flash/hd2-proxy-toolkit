@@ -212,6 +212,17 @@ class Catalogs:
         it = self._item_by_mix.get(int(mix_id) if str(mix_id).isdigit() else -1) or {}
         return it.get("category")
 
+    def unlock_template(self, mix_id):
+        """目录里缺失的物品：克隆哪一行目录记录来上架（`unlock_template`），没有则 None。
+
+        为什么需要：服务端 `/api/Progression/items` 里没有这条物品时，只给库存行客户端不显示；
+        引擎要克隆一个同族已存在的 itemId（模板）改出这条目录行。配对值来自研究线 M4 实机验证，
+        由 `tools/gen_catalogs.py` 从 `data/sources/unreleased_items.json` 写进 items.json。
+        """
+        it = self._item_by_mix.get(int(mix_id) if str(mix_id).isdigit() else -1) or {}
+        tmpl = it.get("unlock_template")
+        return int(tmpl) if tmpl else None
+
     def attachment_groups(self):
         """附件按武器分组：[(parent_id, 武器名, [(mix_id, label), ...]), ...]。
 

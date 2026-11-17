@@ -535,3 +535,64 @@ def test_capture_status_rewrites_table(cap_page):
     page.on_status(None)
     assert page.events.get_children() == ()
     assert "未运行" in page.engine_lbl.cget("text")
+
+
+# ---- 目录缺失物品：库存行必须与目录行成对（2026-11-17 用户报「Shear 解锁不生效」）--------
+SHEAR_MIX = 2112173638          # LAS-22 Shear：服务端目录里没有
+SHEAR_TEMPLATE = 3866352840     # 研究线 M4 实机验证过的同族模板 itemId
+BOLT_PISTOL_MIX = 3271863995    # 目录里本来就有：只注库存行即可
+
+
+def _select_only(page, key, mix):
+    page._lists[key].set_items([(mix, page.app.catalogs.item_label(mix))])
+    page._lists[key].listbox.selection_set(0)
+
+
+def test_inventory_add_catalog_missing_weapon_pairs_catalog_row(inv_page, app):
+    page = inv_page
+    _select_only(page, "weapons", SHEAR_MIX)
+    page._add_item("weapons")
+    assert app.profile["inventory"]["weapons"] == [
+        {"mixId": SHEAR_MIX, "amount": 1, "isDiscovered": False}]
+    # 关键断言：目录行自动配对（之前只写库存行 → 游戏里不显示）
+    assert app.profile["items"]["add"] == [{"id": SHEAR_MIX, "template": SHEAR_TEMPLATE}]
+    text, error = app.last_toast()
+    assert not error and "模板" in text
+
+
+def test_inventory_add_released_weapon_does_not_add_catalog_row(inv_page, app):
+    page = inv_page
+    _select_only(page, "weapons", BOLT_PISTOL_MIX)
+    page._add_item("weapons")
+    assert app.profile["inventory"]["weapons"][0]["mixId"] == BOLT_PISTOL_MIX
+    assert app.profile["items"]["add"] == []       # 目录已有 → 不写多余目录行
+
+
+def test_inventory_remove_catalog_missing_weapon_drops_paired_row(inv_page, app):
+    page = inv_page
+    _select_only(page, "weapons", SHEAR_MIX)
+    page._add_item("weapons")
+    assert app.profile["items"]["add"] == [{"id": SHEAR_MIX, "template": SHEAR_TEMPLATE}]
+    page._remove_row("weapons", 0)
+    assert app.profile["inventory"]["weapons"] == []
+    assert app.profile["items"]["add"] == []       # 与添加对称：移除库存行时撤掉配对的目录行
+
+
+def test_catalog_add_tab_uses_unlock_template(inv_page, app):
+    page = inv_page
+    page.catalog_list.set_items([(SHEAR_MIX, page.app.catalogs.item_label(SHEAR_MIX))])
+    page.catalog_list.listbox.selection_set(0)
+    page._add_catalog_item()                       # 不设全局模板，也应带上配对模板
+    assert app.profile["items"]["add"] == [{"id": SHEAR_MIX, "template": SHEAR_TEMPLATE}]
+
+
+def test_inventory_refresh_heals_old_profile_without_catalog_row(inv_page, app):
+    """升级前的老 profile：库存里有 Shear 但 items.add 为空 —— 打开本页应自动补齐目录行。"""
+    page = inv_page
+    app.profile.setdefault("inventory", {})["weapons"] = [
+        {"mixId": SHEAR_MIX, "amount": 1, "isDiscovered": False}]
+    app.profile.pop("items", None)
+    page.refresh()
+    assert app.profile["items"]["add"] == [{"id": SHEAR_MIX, "template": SHEAR_TEMPLATE}]
+    page.refresh()                                  # 幂等：不会重复补
+    assert app.profile["items"]["add"] == [{"id": SHEAR_MIX, "template": SHEAR_TEMPLATE}]

@@ -659,6 +659,24 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
+### 14.11 v0.2.0-alpha.2（2026-11-17，Shear 等目录缺失武器解锁不生效）
+
+- 用户报：Shear（`2112173638`）加进库存后游戏里不出现，对照 Bolt Pistol / Melta Mine 正常。
+- 根因：**库存行必须与目录行成对注入**。前两者在服务端 `/api/Progression/items` 目录里本来就有；
+  Shear / P-41 Ombudsman / SG-8F Punisher Fire of Liberty 目录里没有，只注库存行客户端不显示，
+  还需要 `items.add [{id, template}]` 克隆同族模板补一条目录行。而四个 tab 的「添加到库存」
+  只写库存行（`目录追加` tab 才写目录行）→ 按普通物品方式添加时目录行漏掉；日志里一条
+  `ITEMS REWRITE` 都没有可证。
+- 修复：加库存时按 `items.json` 的 `unlock_template` 自动配对目录行；移除时对称撤回；
+  `目录追加` tab 选中这类物品自动带模板；打开页面时自愈老 profile（幂等）。
+- 数据：新增 `data/sources/unreleased_items.json`（3 把武器的模板配对，M4 实机验证值），
+  `tools/gen_catalogs.py` 校验「模板行在目录快照里」后写入 `unlock_template`。
+- 引擎级离线预演验证（真实抓包 3020 行）：写 `{"id":2112173638,"template":3866352840}` →
+  「物品目录补 itemId 2112173638（克隆模板 3866352840），1 处新增」。
+- 回归测试 386 → **394 passed**。
+
+---
+
 ## 附：本轮不做
 
 - 星图可视化大画布、多人同步、服务端写入（幻影战局不落账，交接档 §6.1 已定证）

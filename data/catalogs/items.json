@@ -8345,7 +8345,8 @@
     "variant-net/configs/items_inject.json",
     "variant_mod/runtime/inventory_inject.json",
     "variant_mod/runtime/items_inject.json"
-   ]
+   ],
+   "unlock_template": 2852344585
   },
   {
    "catalog_category": 2,
@@ -9258,7 +9259,8 @@
     "variant-net/configs/items_inject.json",
     "variant_mod/runtime/inventory_inject.json",
     "variant_mod/runtime/items_inject.json"
-   ]
+   ],
+   "unlock_template": 3866352840
   },
   {
    "catalog_category": 2,
@@ -14701,7 +14703,8 @@
     "variant-net/configs/items_inject.json",
     "variant_mod/runtime/inventory_inject.json",
     "variant_mod/runtime/items_inject.json"
-   ]
+   ],
+   "unlock_template": 2811723672
   },
   {
    "catalog_category": 2,

@@ -1,0 +1,20 @@
+{
+ "note": "「服务端目录里还没有、靠克隆模板上架」的物品配对：items.json 的 unlock_template 字段来源。template = 同族已存在的目录 itemId（引擎克隆它、只改 itemId/mixId），配对值来自研究线 M4 实机验证（LAS-22 / P-41 OMBUDSMAN / SG-8F PUNISHER FIRE OF LIBERTY 在实机军械库出现）。只收录目录确实缺失的行；目录里已存在的物品不要放进来（生成器会报错）。由 tools/gen_catalogs.py 读取，不要手改结构。",
+ "rows": [
+  {
+   "mix": 2112173638,
+   "template": 3866352840,
+   "name": "Shear（LAS-22）"
+  },
+  {
+   "mix": 3388344762,
+   "template": 2811723672,
+   "name": "P-41 Ombudsman"
+  },
+  {
+   "mix": 1934208922,
+   "template": 2852344585,
+   "name": "SG-8F Punisher Fire of Liberty"
+  }
+ ]
+}
