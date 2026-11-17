@@ -141,7 +141,8 @@ class OverviewPage(Page):
     def _refresh_diag(self):
         """端口 / hosts / 证书 / 游戏进程检查（只在显示页面/配置变更时跑，不进 0.6s 轮询）。"""
         try:
-            from ...engine import diagnostics
+            from ...engine import diagnostics, sysprobe
+            sysprobe.clear_caches()          # 状态页刷新必须是「此刻」的端口状态
             snapshot = diagnostics.collect(self.app.profile, cert_dir=self.app.cert_dir())
             evaluation = diagnostics.evaluate(snapshot)
         except Exception:                       # noqa: BLE001 - 探测失败不影响主界面
@@ -167,7 +168,8 @@ class OverviewPage(Page):
             self._warn_shown = True
 
     def _selfcheck(self):
-        from ...engine import diagnostics
+        from ...engine import diagnostics, sysprobe
+        sysprobe.clear_caches()
         snapshot = self._snapshot or diagnostics.collect(
             self.app.profile, cert_dir=self.app.cert_dir())
         evaluation = self._evaluation or diagnostics.evaluate(snapshot)

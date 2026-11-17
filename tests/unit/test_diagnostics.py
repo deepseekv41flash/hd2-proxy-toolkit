@@ -163,3 +163,37 @@ def test_port_preflight_reports_conflicts(monkeypatch):
     assert [entry["port"] for entry in pre["conflicts"]] == [443]
     assert pre["wildcard"] is True
     assert [entry["role"] for entry in pre["ports"]] == ["代理", "CRL", "控制面"]
+
+
+def test_listen_candidates_never_recommend_virtual_nic(monkeypatch):
+    """主网卡被占用时宁可不推荐，也不能推荐虚拟网卡（Hyper-V/VMware）—— 游戏连它不可靠。"""
+    monkeypatch.setattr(diagnostics.sysprobe, "primary_ip", lambda: "192.168.1.7")
+    monkeypatch.setattr(diagnostics.sysprobe, "local_ipv4_addresses", lambda: [
+        {"ip": "192.168.1.7", "interface": "以太网", "is_virtual": False},
+        {"ip": "172.26.64.1", "interface": "vEthernet (Default Switch)", "is_virtual": True},
+    ])
+
+    def fake_state(ip, port, own):
+        if ip == "192.168.1.7":
+            return {"state": "conflict", "wildcard": True, "owners": []}
+        return {"state": "free", "wildcard": False, "owners": []}
+
+    monkeypatch.setattr(diagnostics.sysprobe, "port_state", fake_state)
+    rows = diagnostics.listen_candidates({"proxy": {"port": 443}}, own_pids=())
+    assert rows[0]["ip"] == "192.168.1.7" and rows[0]["state"] == "conflict"
+    assert all(not row["recommended"] for row in rows)
+
+
+def test_port_preflight_checks_crl_control_on_loopback(monkeypatch):
+    """CRL(8080)/控制面(17897) 绑的是 127.0.0.1 —— 用监听 IP 查会永远显示空闲（误报）。"""
+    monkeypatch.setattr(diagnostics.sysprobe, "resolve_listen_ip", lambda value: "10.0.0.2")
+    seen = []
+
+    def fake_state(ip, port, own):
+        seen.append((ip, port))
+        return {"ip": ip, "port": port, "state": "free", "wildcard": False, "owners": []}
+
+    monkeypatch.setattr(diagnostics.sysprobe, "port_state", fake_state)
+    diagnostics.port_preflight({"proxy": {}}, own_pids=())
+    assert ("10.0.0.2", 443) in seen
+    assert ("127.0.0.1", 8080) in seen and ("127.0.0.1", 17897) in seen

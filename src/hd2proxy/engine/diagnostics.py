@@ -20,9 +20,15 @@ from pathlib import Path
 
 from . import certs, hosts as hosts_mod, paths, sysprobe
 
-# 端口角色：(profile 里的键, 默认端口, 中文名)。为什么三个都查：引擎要同时占这三个，
-# 任何一个被占都会启动失败；第三方工具只查 443/8080，我们多一个控制面。
-PORT_DEFAULTS = (("port", 443, "代理"), ("crl_port", 8080, "CRL"), ("control_port", 17897, "控制面"))
+# 端口角色：(profile 里的键, 默认端口, 中文名, 绑定地址)。
+# 为什么三个都查：引擎要同时占这三个，任何一个被占都会启动失败；第三方工具只查 443/8080。
+# 注意绑定地址：代理绑**监听网卡 IP**（游戏连过来），CRL 与控制面绑 **127.0.0.1**（只本机用）——
+# 用监听 IP 去查 8080/17897 会永远显示「空闲」，从而误报「引擎在跑但端口空闲」。
+PORT_DEFAULTS = (
+    ("port", 443, "代理", "listen"),
+    ("crl_port", 8080, "CRL", "127.0.0.1"),
+    ("control_port", 17897, "控制面", "127.0.0.1"),
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -91,13 +97,14 @@ def collect(profile: dict, cert_dir=None, own_pids=None, state_file=None) -> dic
 
     ports: list[dict] = []
     if listen_ip:
-        for key, default, label in PORT_DEFAULTS:
+        for key, default, label, where in PORT_DEFAULTS:
             try:
                 port = int(proxy.get(key) or default)
             except (TypeError, ValueError):
                 port = default
-            entry = sysprobe.port_state(listen_ip, port, own)
-            entry.setdefault("ip", listen_ip)
+            bind_ip = listen_ip if where == "listen" else where
+            entry = sysprobe.port_state(bind_ip, port, own)
+            entry.setdefault("ip", bind_ip)
             entry.setdefault("port", port)
             entry["role"] = label
             ports.append(entry)
@@ -149,13 +156,14 @@ def port_preflight(profile: dict, own_pids=None, state_file=None) -> dict:
                 "ports": [], "conflicts": [], "wildcard": False}
     own = set(own_pids) if own_pids is not None else own_engine_pids(state_file)
     ports = []
-    for key, default, label in PORT_DEFAULTS:
+    for key, default, label, where in PORT_DEFAULTS:
         try:
             port = int(proxy.get(key) or default)
         except (TypeError, ValueError):
             port = default
-        entry = sysprobe.port_state(listen_ip, port, own)
-        entry.setdefault("ip", listen_ip)
+        bind_ip = listen_ip if where == "listen" else where
+        entry = sysprobe.port_state(bind_ip, port, own)
+        entry.setdefault("ip", bind_ip)
         entry.setdefault("port", port)
         entry["role"] = label
         ports.append(entry)
@@ -210,10 +218,13 @@ def listen_candidates(profile: dict, own_pids=None, state_file=None) -> list[dic
                 1 if row["is_virtual"] else 0,
                 ip_key)
     rows.sort(key=sort_key)
-    recommended = next((row["ip"] for row in rows
-                        if not row["is_virtual"] and row["state"] in ("free", "ours")), None)
-    if recommended is None:
-        recommended = next((row["ip"] for row in rows if row["state"] in ("free", "ours")), None)
+    primary_row = next((row for row in rows if row["is_primary"]), None)
+    if primary_row and primary_row["state"] in ("free", "ours"):
+        recommended = primary_row["ip"]
+    else:
+        # 只推荐物理网卡；虚拟网卡（Hyper-V/VMware/TUN）即使空闲也不推荐 —— 游戏连它不可靠
+        recommended = next((row["ip"] for row in rows
+                            if not row["is_virtual"] and row["state"] in ("free", "ours")), None)
     for row in rows:
         row["recommended"] = bool(recommended and row["ip"] == recommended)
     return rows
