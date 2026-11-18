@@ -81,6 +81,18 @@ cat11 mix_id --parent--> cat10 子行 item（uint32 原生哈希）
   —— 这三条本地本来就有行有名字，不属于缺口）。
 - 证据与逐条明细：`docs/CATALOG-NAMES-V5-2026-11-19.md`。
 
+## 实机/打包版验证
+
+- 打包：`HD2PROXY_SIGN=1 python tools/build_dist.py` → 双 exe 本机自签 Valid，zip 17.7 MB，
+  sha256 `22ac43b815288c4defd3172f0cc0028fe22f9b7cc7278aa978411aa56189ffc2`；
+  干净路径解压后 `hd2proxy.exe preview` 正常、两个 exe 窗口存活（build 脚本内自检）。
+- 打包数据核对：`dist/hd2proxy/data/catalogs/items.json` 有名字 **2405**、战备 **95/108**。
+- GUI 截图（源码同数据渲染，`tools/gui_smoke.py`）：目录总览显示「已命名 2405 · 未解 657 ·
+  战备 108」，战备 tab 已能看到新补的 `A/LAS-98 Laser Sentry` / `A/M-12 Mortar Sentry` /
+  `MS-11 Solo Silo` / `TD-220 Bastion MK XVI` 等英文名：
+  - [目录总览（2405 命名）](../research/screenshots/alpha43-catalog-named-2405.png)
+  - [战备 tab（新补英文名）](../research/screenshots/alpha43-stratagem-names.png)
+
 ## 安装
 
 同前：下载 `hd2proxy-release.zip` + `SHA256SUMS`，解压后运行 `hd2proxy_gui.exe`；
