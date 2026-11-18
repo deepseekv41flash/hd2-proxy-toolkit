@@ -33,15 +33,37 @@
     目录追加全部清空、`template` 保留、汇总行归零、toast 报数（端到端断言）；
   - 空列表时点按钮：明确提示、不弹框、不标脏。
 - `python tools/check_gate.py` → **GATE=PASS**。
-- 打包版实机（临时 state 隔离用户 profile）：附件 tab 一级选武器 → 批量添加 → 顶部「清空全部已添加」→
-  确认框列出条数 → 点「是」→ 汇总「已加入：附件 0」、列表清空；点「否」路径再次验证无改动。
+- 打包版实机（临时 state 隔离用户 profile）：附件 tab 一级选武器 → 批量添加 28 条 → 顶部
+  「清空全部已添加」→ 确认框列出条数 → 点「否」保留 28 条 / 点「是」后汇总与列表归零（详见下节实测表）。
+
+## 打包版实机验证（计算机操作，非源码版）
+
+用 `HD2PROXY_SIGN=1 python tools/build_dist.py` 构建的 `dist\hd2proxy\` 实测（本机自签，签名
+status=Valid）。为不污染用户 profile，GUI 以 `HD2PROXY_STATE` 指向临时目录启动（全新 profile）：
+
+| 场景 | 结果 |
+|---|---|
+| 启动打包版 + 切「物品与战备」 | 页面正常，顶部汇总行右侧 **「清空全部已添加」** 按钮在位；「已加入」全 0 ✓ |
+| 附件 tab 批量添加 | 一级选 `Adjudicator · 28 件` → 「添加到库存」→ 已加入 **附件 28**、右侧表格 28 行；状态栏「已解锁 Adjudicator（0x9D60CB41）的全部配件：28 条（新增 28，已存在 0）」✓ |
+| 点「清空全部已添加」 | 弹出原生确认框：标题「清空全部已添加」，正文「确定移除本页所有已添加项？ / 武器 0 · 附件 28 · 外观 0 · 战备 0 / 只改本机 profile；点「应用配置」后才影响引擎。」✓ |
+| 点「否」 | 对话框关闭，**28 条原样保留**（已加入 附件 28、表格 28 行）✓ |
+| 再点 → 点「是」 | 已加入全 0、右侧表格 0 件；状态栏「已清空全部已添加项：库存 28 条 · 目录追加 0 条」；页头仍显示「未保存」（需「应用配置」才下发引擎，符合设计）✓ |
+
+截图：`research/screenshots/alpha41-bulk-added.png`（批量添加 28 条）、
+`alpha41-confirm-dialog.png`（确认框条数）、`alpha41-cleared.png`（清空后归零）。
 
 ## 下载
 
 | 文件 | 说明 |
 |---|---|
-| `hd2proxy-toolkit-v0.4.1-alpha.1-windows-x64.zip` | onedir 分发包（解压即用） |
+| `hd2proxy-toolkit-v0.4.1-alpha.1-windows-x64.zip` | onedir 分发包（解压即用，17.6 MB） |
 | `SHA256SUMS.txt` | 校验和（zip + 两个 exe，签名之后计算） |
+
+```text
+1713a9fa073eff22b541d287cdfe036eca399a9bf55240241ce4ffd58f176bd9  hd2proxy-toolkit-v0.4.1-alpha.1-windows-x64.zip
+35321a6fa0aaee53e1f700e8a9d3dd082e924ab25e4cfc51f968c2d6ee9d6de6  hd2proxy/hd2proxy.exe
+62b10e0d723f3982fbeab354dd4cca2f96c2ff64b268e874c82627f1bf678b8b  hd2proxy/hd2proxy-gui.exe
+```
 
 ```powershell
 Get-FileHash .\hd2proxy-toolkit-v0.4.1-alpha.1-windows-x64.zip -Algorithm SHA256
