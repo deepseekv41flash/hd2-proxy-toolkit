@@ -100,7 +100,7 @@ python tools/gen_catalogs.py --variant-mod <variant_mod> --variant-net <variant-
 | # | 缺口 | 影响 | 补法（已定方向） |
 |---|---|---|---|
 | 1 | `planets.settings_hash` 全 null | 能力 6「生态借用」需要「源星球的 settingsHash」 | **产品侧以运行时为准**：代理可见 `warinfo.planetInfos[].settingsHash`，GUI 导入一次 live warinfo 即可得到当前 build 的合法 hash；离线 dl_bin 路线只作研究参考 —— `refs/dlbin/plaintext-26251122/generated_planet_data.dl_bin` 可解（438 行 / 438 个非零 hash，行号=index），当前 build `baseline-26568081` 是封包态，需先解封才能直读 |
-| 2 | 物品名字/类别覆盖：名字 **2383/3062**（目录行 2356/3020），未解 **679 行**；类别语义未解 **512 行** | 未解行显示 mixId +「未分类 catN（内部名未解）」；无证据类别不做臆测归类 | 剩余名字缺口：cat0 144 / cat9 38（28 疑似未发布）/ cat3 60（外观表本身无名）/ cat4 76 / cat2 51（未发布改装选项）/ cat23 23（旧 strings 语料缺 locid）/ cat7 32 / cat19 49 / cat20 36 / cat11 35；cat7/17/18/19/20 已穷举确认本机无名字表（需截图 OCR 或新 build/新语料）。当前 build 30 个 `.strings` 解包后可再补 cat9/cat23 余量 |
+| 2 | 物品名字/类别覆盖：名字 **2383/3062**（目录行 2356/3020），未解 **679 行**；类别语义未解 **512 行** | 未解行显示 mixId +「未分类 catN（内部名未解）」；无证据类别不做臆测归类 | 剩余名字缺口：cat0 144 / cat9 38（28 疑似未发布）/ cat3 60（外观表本身无名）/ cat4 76 / cat2 51（未发布改装选项）/ cat23 23（旧 strings 语料缺 locid）/ cat7 32 / cat19 49 / cat20 36 / cat11 35；cat7/17/18/19/20 已穷举确认本机无名字表（需截图 OCR 或新 build/新语料）；当前 build 的 30 个 `.strings` 已全部解包复核，英文本地化 24,834 条与旧 build 逐 id 相同（新增 0），cat9 剩的 10 行 / cat23 剩的 23 行是「服务器目录领先客户端内容」（未发布），**语料路线已到尽头**，只能等新 build 或截图 OCR |
 | 3 | `effects.live_planets` 保留原始文本 | 不能按「当前在线星球」过滤效果 | 解析成 index 列表（effects-full 文本可能被截断，需与 `planet-live.csv` 交叉） |
 | 4 | `variants.json.build = 25988413`，落后当前 build 26568081 | 变种 id 是否随 build 漂移未复核 | 每次 build 变更重跑并对照研究仓的 effect id 表；GUI 显示 build 不一致警告 |
 

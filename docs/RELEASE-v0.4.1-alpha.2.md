@@ -54,8 +54,9 @@ GUI 无需改动：`items.json` / `catalog_names_resolved.json` 同机制读取�
   cat17 仅在 116B 的 `body_settings` 里出现，无名）。
 - cat 9 剩余 38 行：28 行根本不在客户端 banner 表（疑似未发布内容）、10 行缺旧语料文本；
 - cat 23 剩余 23 行：旧 strings 语料没有这些 locid。
-- **仍在进行**：当前 build 的 30 个 bundle `.strings` 解包（已解 5 个），解完可再补 cat9 约 10 行 +
-  cat23 部分（对 cat7/17 无效——它们缺表不缺口文本）。
+- **已复核完**：当前 build 的 30 个 bundle `.strings` 已全部解包，英文语料 24,834 条与旧 build
+  **逐 id 相同（新增 0）** ⇒ 本版已包含所有可解名字；cat9 剩 10 行 / cat23 剩 23 行属于服务器
+  目录领先客户端内容（未发布），只能等新 build 或截图 OCR（详见 CATALOG-NAMES-V3 文末 v4 复核）。
 
 ## 验证
 

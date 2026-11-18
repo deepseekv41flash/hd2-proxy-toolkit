@@ -120,3 +120,23 @@ python resolve_v3.py \
 ## 7. 证据文件哈希
 
 `resolved_v3.json.sources` 内记录了 dll / strings / v2 / catalog 的 sha256；侦察用的 dll 是本机安装目录的当前 build（`Steam appmanifest buildid=26568081`，与目录 build 一致）。
+
+## 附：v4 复核（当前 build `.strings` 已解包，净增 0）
+
+v3 报告里「当前 build 30 个 bundle `.strings` 解包后预计再补 cat9 约 10 行 + cat23 部分」的预期，
+已完成复核，**结论：净增 0 行，`.strings` 补充路线到此为止**。
+
+- 30/30 bundle 全部解包成功（`ALL DONE 20:01:34`，每 bundle 3,523 文件）；按 bundle 内相对路径去重后
+  4,054 唯一文件 → 264 个 `.strings` blob → **18 个英文 blob**；
+- 合并后的当前 build 语料 = **24,834 个 locid，与旧语料（build 26088801）逐 id 完全相同**
+  （新增 0、文本变更 0）⇒ 至少**英文本地化在 build 26568081 里没有新增任何条目**；
+- 因此：cat9 剩余 38 行 = 28 行不在客户端 banner 表 + 10 行表内但**两端语料都没有这些 locid**；
+  cat23 剩余 23 行的 locid 同样不存在。这两类属于「**服务器目录领先客户端内容**（未发布/未来内容）」，
+  不是语料缺口，已穷尽；
+- cat7 / cat17 / cat18 / cat19 / cat20 依然 0 行命中（缺的是客户端**表/字段**，不是文本：
+  cat7 的 mixId 在任何二进制 / `data/game/*.dl_bin` 无表；cat17 只在 116 B `generated_body_settings.dl_bin`
+  出现且无名字字段；cat18/19/20 只有 id 数组）——与 v3 结论一致；
+- v4 产物（研究侧）：`D:\mod	mp\catalog-names4\{resolved_v4.json, strings-merged.json,
+  report-v4.md, _diff.json, unpack-status.txt}`，`resolved_v4.json` 与 v3 **逐行差异 0**，不集成。
+
+> 剩余 664 行的唯一可行路径：**等新 build / 未发布内容上线**（或游戏 UI 截图 OCR 兜底，需新会话截图）。
