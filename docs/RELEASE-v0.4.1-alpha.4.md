@@ -73,6 +73,17 @@ effect.values[0]（战备 effect_hash）
   效果剩余 110 条（纯数值 / 占位 / tag 设计上无名字）。
 - 剩余目录未名 642 → **606** 行，瓶颈都是「客户端里没有文本」，不是方法缺失。
 
+## 实机/打包版验证
+
+- 打包：`HD2PROXY_SIGN=1 python tools/build_dist.py` → 双 exe 本机自签 Valid，zip 17.7 MB，
+  sha256 `fc4e35baa3eecb45858f4b27cbd5e9b03ef97bbbd5b5ad705a97e3ca3abeee8c`；
+  干净路径解压后 `hd2proxy.exe preview` 正常、两个 exe 窗口存活（build 脚本内自检）。
+- 打包数据核对：`dist/hd2proxy/data/catalogs/items.json` 有名字 **2441**（3062 条）、
+  `effects.json` 有名字 **202**（312 条）。
+- GUI 截图（同数据渲染，`tools/gui_smoke.py`）：目录总览「已命名 2441 · 未解 621」，
+  列表里可见新补的 `Eagle Air-to-Air Missiles` / `Eagle Rearm`（战备）：
+  - [目录总览（2441 命名）](../research/screenshots/alpha44-catalog-named-2441.png)
+
 ## 安装
 
 同前：下载 `hd2proxy-release.zip` + `SHA256SUMS`，解压后运行 `hd2proxy_gui.exe`；
