@@ -6,6 +6,26 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.4.1-alpha.2（2026-11-18）— 补完物品名字（客户端 game.dll 静态表路线，命名 2191 → 2383）
+
+- **数据补全（用户要求「补完没解出来的项」）**：先抓 store/season 响应验证「API 里没有名字」
+  （26 个战争债券详情 + 商店 6 货架/76 section/329 item 位置；只给结构锚点，无 name/locid），
+  再按 `/api/Progression/inventory.avatarCustomization` 的线索去**客户端 `game.dll`（build 26568081）
+  静态表**取名字，行 id 与目录 mixId 精确相等、名字字段是 locid，用本机 strings 语料（24,834 条）解出：
+  - cat9 横幅 **+65**（`0x2C7FEF0` stride `0x18`，high）｜cat23 称号 **+38**（mixId 本身即 locid，high）
+  - cat8 胜利姿势 **+27**（`0x2CB4CF0`，high）｜cat13 语音 **+5**｜cat15 资源 **+3**
+  - cat0 战团 **+27**（战团表 + SeasonPass premiumTokenMixId 配对，medium）｜cat6 **+13**｜
+    cat21 礼包 **+12**（`0x2CAD240`，medium）｜cat16 难度 **+2**
+- **数据**：`items.json` 有名字 2191 → **2383**（目录行 2356/3020），未解 871 → **679**；
+  `name_source` 新增 7 种 dlbin/locid 来源；`name_confidence` medium 263 → 317。
+  交叉验证：`banner 3460374366 → Patient Zero's Rememberance`、`title 926009925 → ADMIRABLE ADMIRAL`、
+  `voice 4010084743 → Default Helldiver Voice 2`（与抓包 avatarCustomization 一一对应）。
+- **已穷举失败路径**：cat7/17/18/19/20 的 mixId 不在本机任何二进制里以「行 id+名字字段」出现；
+  cat9 剩 38（28 疑似未发布）、cat23 剩 23（旧语料缺 locid）。当前 build 的 30 个 `.strings` 仍在解包，
+  解完可再补 cat9 约 10 + cat23 部分（对 cat7/17 无效）。
+- **验证**：单测 **472 passed**（3 条断言扩展到 v3 来源）；`check_gate.py` **GATE=PASS**。
+- 规则：数据补全（非新功能）⇒ 只动 alpha 位：`0.4.1-alpha.1` → **`0.4.1-alpha.2`**。
+
 ## v0.4.1-alpha.1（2026-11-18）— 物品解锁：一键清空全部已添加项（批量移除库存/目录追加）
 
 - **新功能（用户报）**：附件这类成百上千条的物品能「批量添加」（一级选武器 → 一键解锁该武器全部配件），

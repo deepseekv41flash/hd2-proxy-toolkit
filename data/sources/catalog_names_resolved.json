@@ -1,5 +1,5 @@
 {
- "note": "只读解析产物：服务端 /api/Progression/items 目录 3020 行的名字与 progressionCategory 语义；名字只取自本机只读数据表的显式 id->name 映射与等值结构推断（cat10/cat11 战备 hash、cat4 套装名=同名子行），查不到即为 null（不编造、不音译、不按顺序猜）；脚本 resolve.py 可重复运行（只读输入、不联网、确定性输出）。",
+ "note": "v3：在 v2 基础上，从本机客户端只读数据（game.dll 的 banner/pose/voice/sample/pack/difficulty/warbond 表 + 本地化 strings 的 locid）补名字；只填空位、不覆盖 v2；查不到保持 null，不编造。脚本 resolve_v3.py 可复跑（只读、不联网、确定性）。",
  "build": "26568081",
  "category_meaning": {
   "0": {
@@ -150,9 +150,9 @@
    "item": 4693889,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "At Ease",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 8469881,
@@ -384,9 +384,9 @@
    "item": 41315794,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "EXECUTIONER'S CANOPY",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 42912052,
@@ -573,9 +573,9 @@
    "item": 68245049,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Helmet Durability Check",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 68853752,
@@ -600,9 +600,9 @@
    "item": 72872360,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MARTYRIS REX",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 84480982,
@@ -789,9 +789,9 @@
    "item": 108830821,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "10-STAR GENERAL",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 109735057,
@@ -870,9 +870,9 @@
    "item": 115015730,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Helldivers Mobilize!",
+   "name_source": "dlbin-item-pack-table",
+   "confidence": "medium"
   },
   {
    "mix": 122350785,
@@ -906,9 +906,9 @@
    "item": 123425058,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "STAMINA BOOST",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 123566382,
@@ -978,9 +978,9 @@
    "item": 131627305,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Super Citizen",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 131945085,
@@ -1077,18 +1077,18 @@
    "item": 151318266,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Proof of Faultless Virtue",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 155105392,
    "item": 155105392,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Standard of Safe Distance",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 160503527,
@@ -1122,9 +1122,9 @@
    "item": 165957804,
    "cat": 13,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Default Helldiver Voice 3",
+   "name_source": "dlbin-voice-table",
+   "confidence": "high"
   },
   {
    "mix": 167213700,
@@ -1212,9 +1212,9 @@
    "item": 181395595,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Grenade Belt-Hooks",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 182382540,
@@ -1239,9 +1239,9 @@
    "item": 185624238,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Siege Breakers",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 187766962,
@@ -1284,18 +1284,18 @@
    "item": 191718733,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Veil of the Valorous Vagabond",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 192164723,
    "item": 192164723,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Triangulation Veil",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 192264097,
@@ -1365,9 +1365,9 @@
    "item": 194843198,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Miranda's Legacy",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 195691750,
@@ -1401,9 +1401,9 @@
    "item": 198334139,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "High-Five",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 198907808,
@@ -1590,9 +1590,9 @@
    "item": 224494684,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "TYRANT HUNTER",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 224926624,
@@ -1707,9 +1707,9 @@
    "item": 237346628,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Humble Regalia",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 238241501,
@@ -1860,9 +1860,9 @@
    "item": 270165902,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "UAV RECON SUPPORT",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 270193524,
@@ -2040,9 +2040,9 @@
    "item": 299597462,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Draw!",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 302895071,
@@ -2121,9 +2121,9 @@
    "item": 311805898,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Entrenched Division",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 312241138,
@@ -2499,9 +2499,9 @@
    "item": 362649168,
    "cat": 16,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "EASY",
+   "name_source": "dlbin-difficulty-table",
+   "confidence": "medium"
   },
   {
    "mix": 369237559,
@@ -2715,9 +2715,9 @@
    "item": 400428599,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "VITALITY BOOST",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 401555819,
@@ -2904,9 +2904,9 @@
    "item": 436363760,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "SPACE CADET",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 436377568,
@@ -2949,9 +2949,9 @@
    "item": 446090859,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eye of the Clandestine",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 447130245,
@@ -2976,18 +2976,18 @@
    "item": 449813757,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Helldivers Mobilize!",
+   "name_source": "dlbin-item-pack-table",
+   "confidence": "medium"
   },
   {
    "mix": 449978032,
    "item": 449978032,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Honored Heirloom",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 450036554,
@@ -3093,9 +3093,9 @@
    "item": 464633211,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Per Democrasum",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 469340936,
@@ -3327,9 +3327,9 @@
    "item": 501796483,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Schema Laid Bare",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 502817220,
@@ -3795,9 +3795,9 @@
    "item": 601062191,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Pride of the Whistleblower",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 602374314,
@@ -3831,9 +3831,9 @@
    "item": 605306049,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Pinions of Everlasting Glory",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 605524954,
@@ -4038,9 +4038,9 @@
    "item": 627785620,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Faster Reinforcement",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 628829860,
@@ -4263,9 +4263,9 @@
    "item": 666689924,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Rags of the Fashionable",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 667040048,
@@ -4344,9 +4344,9 @@
    "item": 684418136,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Chemical Agents",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 684729784,
@@ -4767,9 +4767,9 @@
    "item": 739236005,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "SUPER PRIVATE",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 739329594,
@@ -4803,9 +4803,9 @@
    "item": 743335871,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "CASTELLAN'S CREED",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 745628335,
@@ -4893,9 +4893,9 @@
    "item": 752968066,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Package of 1000 (750 + 250 bonus) Super Credits",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 754365924,
@@ -5064,18 +5064,18 @@
    "item": 781916859,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "COMMANDER",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 783035461,
    "item": 783035461,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MASTER SERGEANT",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 783152568,
@@ -5145,9 +5145,9 @@
    "item": 788445221,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Package of 2100 (1500 + 600 bonus) Super Credits",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 789755500,
@@ -5190,9 +5190,9 @@
    "item": 797585161,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Lightweight Grenades",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 800601069,
@@ -5235,9 +5235,9 @@
    "item": 801750565,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MASTER DIVEMASTER MAJOR OMEGA",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 801921334,
@@ -5298,9 +5298,9 @@
    "item": 808992907,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MAX RANK INFINITY +1",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 808998160,
@@ -5496,9 +5496,9 @@
    "item": 836157113,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Rock Paper Scissors",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 837248252,
@@ -5604,9 +5604,9 @@
    "item": 845259075,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "DEVELOPER",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 848415000,
@@ -5640,9 +5640,9 @@
    "item": 851523026,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MAX RANK",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 854690167,
@@ -5658,18 +5658,18 @@
    "item": 854794995,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "HARBINGER OF TRUE EQUALITY",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 856177168,
    "item": 856177168,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "DIVEMASTER MAJOR",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 857611820,
@@ -5685,9 +5685,9 @@
    "item": 860720602,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "BLAZING SAMARITAN",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 861637146,
@@ -5748,9 +5748,9 @@
    "item": 878895470,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Grenade Belt-Hooks",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 879717956,
@@ -5838,9 +5838,9 @@
    "item": 889683237,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Stratagem Priority",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 893302782,
@@ -6027,9 +6027,9 @@
    "item": 911872437,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Package of 150 Super Credits",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 914098365,
@@ -6054,18 +6054,18 @@
    "item": 914584429,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Strength in Our Arms",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 915763348,
    "item": 915763348,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Reaper of Bounties",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 917715141,
@@ -6117,27 +6117,27 @@
    "item": 926009925,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "ADMIRABLE ADMIRAL",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 926087156,
    "item": 926087156,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Urban Legends",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 928137782,
    "item": 928137782,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Ranger",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 928519291,
@@ -6414,9 +6414,9 @@
    "item": 955771480,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "THE BREACH",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 958121814,
@@ -6459,9 +6459,9 @@
    "item": 965539214,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Order of the Venerated Ballot",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 966166797,
@@ -6810,9 +6810,9 @@
    "item": 1007910937,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Backup Crew",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 1009542424,
@@ -7116,9 +7116,9 @@
    "item": 1067957260,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Light of Eternal Liberty",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1068052453,
@@ -7197,9 +7197,9 @@
    "item": 1079594447,
    "cat": 13,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Randomize Voice",
+   "name_source": "dlbin-voice-table",
+   "confidence": "high"
   },
   {
    "mix": 1081738573,
@@ -7359,9 +7359,9 @@
    "item": 1113008379,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "RANGER, BALD EAGLE CLASS",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 1113390928,
@@ -7620,9 +7620,9 @@
    "item": 1157246699,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Viper Commandos",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 1159284196,
@@ -7881,9 +7881,9 @@
    "item": 1188162047,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Thumb of Approval",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 1190739042,
@@ -7962,18 +7962,18 @@
    "item": 1198876516,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Vision of Freedom",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1200031688,
    "item": 1200031688,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Explosive Handshake",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 1203776863,
@@ -8025,9 +8025,9 @@
    "item": 1216836409,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Mark of the Constrictor",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1218432717,
@@ -8385,9 +8385,9 @@
    "item": 1270272614,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "DEATH CAPTAIN",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 1272332128,
@@ -8754,9 +8754,9 @@
    "item": 1337976685,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "POSTERITY'S GRATITUDE",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1339288659,
@@ -8979,9 +8979,9 @@
    "item": 1379960997,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Exo Experts",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 1382612374,
@@ -9465,18 +9465,18 @@
    "item": 1455517800,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Raise Weapon",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 1456717076,
    "item": 1456717076,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Package of 375 Super Credits",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 1460361075,
@@ -9492,9 +9492,9 @@
    "item": 1460633236,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "STARS AND SUFFRAGE",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1461859757,
@@ -9717,9 +9717,9 @@
    "item": 1498536478,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Front-leaning rest position",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 1498719631,
@@ -9825,9 +9825,9 @@
    "item": 1508758952,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Scout Handshake",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 1509273795,
@@ -9897,9 +9897,9 @@
    "item": 1515684873,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Federation's Embrace",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1519952185,
@@ -10041,9 +10041,9 @@
    "item": 1541157352,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Solid Black",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1541695550,
@@ -10221,9 +10221,9 @@
    "item": 1575224205,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Holder of the Yellow Line",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1576786850,
@@ -10248,9 +10248,9 @@
    "item": 1579562448,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Conductor of Brilliance",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1583911583,
@@ -10365,9 +10365,9 @@
    "item": 1602327515,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "HELL COMMANDER",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 1602836857,
@@ -10419,9 +10419,9 @@
    "item": 1609244204,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "THORACIC COLLISION EXULTATION MANEUVER",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 1612294451,
@@ -10527,9 +10527,9 @@
    "item": 1622948328,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Rightful Occupier",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1625792993,
@@ -10554,9 +10554,9 @@
    "item": 1630752331,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Badge of Order",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1631026563,
@@ -10626,9 +10626,9 @@
    "item": 1643102290,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Seal of General Consensus",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1644310648,
@@ -10779,9 +10779,9 @@
    "item": 1673399986,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Helldivers Mobilize!",
+   "name_source": "dlbin-item-pack-table",
+   "confidence": "medium"
   },
   {
    "mix": 1675214662,
@@ -10851,9 +10851,9 @@
    "item": 1680566598,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Cover of Darkness",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1680978700,
@@ -10977,9 +10977,9 @@
    "item": 1708145693,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MAX RANK INFINITY",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 1711165299,
@@ -11166,18 +11166,18 @@
    "item": 1745550084,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "300 SC",
+   "name_source": "dlbin-item-pack-table",
+   "confidence": "medium"
   },
   {
    "mix": 1745784928,
    "item": 1745784928,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "FREEDOM'S TAPESTRY",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1749917951,
@@ -11850,18 +11850,18 @@
    "item": 1845984949,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Tideturner",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1846720240,
    "item": 1846720240,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Marshal",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 1847723484,
@@ -11967,9 +11967,9 @@
    "item": 1861407750,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Independence Bringer",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1861552069,
@@ -12246,9 +12246,9 @@
    "item": 1917009630,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Private",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 1917125054,
@@ -12480,9 +12480,9 @@
    "item": 1958682459,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "100 SC",
+   "name_source": "dlbin-item-pack-table",
+   "confidence": "medium"
   },
   {
    "mix": 1958867923,
@@ -12588,9 +12588,9 @@
    "item": 1974035413,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Over Artifice Triumphant",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 1974231068,
@@ -12633,9 +12633,9 @@
    "item": 1976285819,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Scope of Authority",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 1978117092,
@@ -12939,9 +12939,9 @@
    "item": 2021502022,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Steeled Veterans",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 2022698159,
@@ -13029,9 +13029,9 @@
    "item": 2032304616,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Helldivers Mobilize!",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 2033089277,
@@ -13101,9 +13101,9 @@
    "item": 2043868029,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Mother Eagle's Wings",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 2049280843,
@@ -13119,9 +13119,9 @@
    "item": 2050983655,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "CHIEF",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 2053119498,
@@ -13335,9 +13335,9 @@
    "item": 2068596849,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "10-STAR SUPER PRIVATE",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 2070089097,
@@ -13506,9 +13506,9 @@
    "item": 2085786680,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Grenade Belt-Hooks",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 2086365543,
@@ -13749,9 +13749,9 @@
    "item": 2119654064,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "EAGLE'S FURY",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 2121387072,
@@ -13785,9 +13785,9 @@
    "item": 2124284534,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Lockstep",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 2127151862,
@@ -13812,18 +13812,18 @@
    "item": 2128091030,
    "cat": 13,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Default Helldiver Voice 4",
+   "name_source": "dlbin-voice-table",
+   "confidence": "high"
   },
   {
    "mix": 2129328462,
    "item": 2129328462,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Servants of Freedom",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 2129553675,
@@ -14046,9 +14046,9 @@
    "item": 2158812628,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "FIRST DIVEMASTER",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 2159053705,
@@ -14370,9 +14370,9 @@
    "item": 2210380156,
    "cat": 13,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Default Helldiver Voice 1",
+   "name_source": "dlbin-voice-table",
+   "confidence": "high"
   },
   {
    "mix": 2211263571,
@@ -14514,9 +14514,9 @@
    "item": 2234906439,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Enthusiastic Mirth",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 2237630340,
@@ -14595,9 +14595,9 @@
    "item": 2247138805,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Gilded Quill",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 2247351401,
@@ -14640,9 +14640,9 @@
    "item": 2253810203,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Ironclad Democracy",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 2253894130,
@@ -14676,9 +14676,9 @@
    "item": 2255845491,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Python Commandos",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 2256609910,
@@ -15252,9 +15252,9 @@
    "item": 2333022316,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "CADET",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 2340232366,
@@ -15333,9 +15333,9 @@
    "item": 2360256987,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "VITALITY BOOST",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 2365828782,
@@ -15423,9 +15423,9 @@
    "item": 2380605312,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Foe Rent Asunder",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 2380729224,
@@ -16179,9 +16179,9 @@
    "item": 2521504751,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Tip Hat",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 2522345293,
@@ -16350,9 +16350,9 @@
    "item": 2543299044,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Protect Eardrums",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 2545935501,
@@ -16980,9 +16980,9 @@
    "item": 2665206765,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Hug",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 2668379095,
@@ -17025,9 +17025,9 @@
    "item": 2671481101,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Helldivers Mobilize!",
+   "name_source": "dlbin-item-pack-table",
+   "confidence": "medium"
   },
   {
    "mix": 2671489717,
@@ -17052,9 +17052,9 @@
    "item": 2675103067,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "5-STAR GENERAL",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 2679756720,
@@ -17241,9 +17241,9 @@
    "item": 2708952936,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "DIVEMASTER",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 2709264466,
@@ -17403,9 +17403,9 @@
    "item": 2730511750,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Democratic Detonation",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 2731764878,
@@ -17484,9 +17484,9 @@
    "item": 2744478874,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "GALACTIC COMMANDER",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 2745401725,
@@ -17682,9 +17682,9 @@
    "item": 2778260362,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "BOTSLAYER",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 2779185355,
@@ -17997,9 +17997,9 @@
    "item": 2818741242,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Dust Devils",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 2820962248,
@@ -18231,9 +18231,9 @@
    "item": 2846232719,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Agent of Oblivion",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 2849519694,
@@ -18276,9 +18276,9 @@
    "item": 2864776199,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "SERGEANT",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 2865137668,
@@ -18312,9 +18312,9 @@
    "item": 2866303435,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Obedient Democracy Support Troopers",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 2868708785,
@@ -18708,9 +18708,9 @@
    "item": 2940317409,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "De-Forester's Sailcloth",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 2943038243,
@@ -18762,9 +18762,9 @@
    "item": 2947925671,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "This Is Democracy",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 2948747084,
@@ -18807,9 +18807,9 @@
    "item": 2951759505,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MANTLE OF TRUE CITIZENSHIP",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 2951814276,
@@ -18969,9 +18969,9 @@
    "item": 2979044991,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Control Group",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 2979227221,
@@ -19014,9 +19014,9 @@
    "item": 2985106497,
    "cat": 15,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Rare Sample",
+   "name_source": "dlbin-resource-sample-table",
+   "confidence": "high"
   },
   {
    "mix": 2987104401,
@@ -19149,9 +19149,9 @@
    "item": 3016462333,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "STAR MARSHAL",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 3016612851,
@@ -19581,9 +19581,9 @@
    "item": 3082865393,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Signal: Silence",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 3083759911,
@@ -20013,9 +20013,9 @@
    "item": 3159264367,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Freedom's Flame",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 3162205529,
@@ -20319,9 +20319,9 @@
    "item": 3198940275,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Masters of Ceremony",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 3201373673,
@@ -20418,9 +20418,9 @@
    "item": 3211162293,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Defender of Our Dream",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3212037062,
@@ -20607,9 +20607,9 @@
    "item": 3235311858,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "5-STAR SUPER PRIVATE",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 3235557074,
@@ -20760,9 +20760,9 @@
    "item": 3269987972,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Rebar Resolve",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3271863995,
@@ -20895,9 +20895,9 @@
    "item": 3294022076,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Truth Enforcers",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 3294203026,
@@ -21093,9 +21093,9 @@
    "item": 3337346642,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "ARROWHEAD",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 3340753755,
@@ -21246,9 +21246,9 @@
    "item": 3361168857,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "SKULL ADMIRAL",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 3361222976,
@@ -21363,9 +21363,9 @@
    "item": 3377946761,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Righteous Revenants",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 3379471146,
@@ -21570,9 +21570,9 @@
    "item": 3414381310,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Dissident's Nightmare",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3416334608,
@@ -21624,9 +21624,9 @@
    "item": 3423239089,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "VITALITY BOOST",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 3425208119,
@@ -21822,9 +21822,9 @@
    "item": 3459484557,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MASTER DIVEMASTER",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 3460094024,
@@ -21840,9 +21840,9 @@
    "item": 3460374366,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Patient Zero's Rememberance",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3460932914,
@@ -22047,9 +22047,9 @@
    "item": 3502486012,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Force of Law",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 3502710660,
@@ -22236,9 +22236,9 @@
    "item": 3534500369,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "SPACE CHIEF PRIME",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 3536194289,
@@ -22497,9 +22497,9 @@
    "item": 3566084877,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "JUDGMENT DAY",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3566190754,
@@ -22668,9 +22668,9 @@
    "item": 3587077630,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "COMMAND DIVEMASTER MAJOR",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 3588090750,
@@ -22803,9 +22803,9 @@
    "item": 3606953766,
    "cat": 6,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "LEG-MUSCLE ENHANCERS",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 3608481516,
@@ -22875,9 +22875,9 @@
    "item": 3617534856,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Way of the Bandolier",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3618222380,
@@ -23172,9 +23172,9 @@
    "item": 3670075867,
    "cat": 15,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Super Sample",
+   "name_source": "dlbin-resource-sample-table",
+   "confidence": "high"
   },
   {
    "mix": 3673697902,
@@ -23235,9 +23235,9 @@
    "item": 3686957532,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "FLEET ADMIRAL",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 3687109925,
@@ -23424,9 +23424,9 @@
    "item": 3707613985,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Bastion of Integrity",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3708787264,
@@ -23487,9 +23487,9 @@
    "item": 3718468069,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Pillar of the Abyss",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3720864448,
@@ -23667,9 +23667,9 @@
    "item": 3757336775,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Cutting Edge",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 3757606668,
@@ -23730,9 +23730,9 @@
    "item": 3765579043,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "PURIFYING ECLIPSE",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3771355689,
@@ -23883,9 +23883,9 @@
    "item": 3790145971,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Borderline Justice",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 3791047893,
@@ -23955,9 +23955,9 @@
    "item": 3797678333,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Casual Salute",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 3798522567,
@@ -24036,9 +24036,9 @@
    "item": 3811623693,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eternal Corona",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3813318023,
@@ -24054,9 +24054,9 @@
    "item": 3813715175,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Manual Ballistic Projection Protocol",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 3814689025,
@@ -24090,9 +24090,9 @@
    "item": 3818154189,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Display of Brawn",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 3822047995,
@@ -24171,9 +24171,9 @@
    "item": 3835891472,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Natural Gas Extraction",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 3837863752,
@@ -24198,9 +24198,9 @@
    "item": 3844236979,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Signal: Hold",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 3847625280,
@@ -24378,9 +24378,9 @@
    "item": 3866848642,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Fre Liberam",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3867039847,
@@ -24468,9 +24468,9 @@
    "item": 3873029268,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Redacted Regiment",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 3874291291,
@@ -24567,9 +24567,9 @@
    "item": 3886371824,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "General",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 3886621278,
@@ -24594,9 +24594,9 @@
    "item": 3889850488,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "50 SC",
+   "name_source": "dlbin-item-pack-table",
+   "confidence": "medium"
   },
   {
    "mix": 3890117596,
@@ -24684,9 +24684,9 @@
    "item": 3897051683,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MARK OF THE CRIMSON FANG",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3897223121,
@@ -24711,9 +24711,9 @@
    "item": 3901310565,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Wedgeful Tricorn",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3901895556,
@@ -24765,9 +24765,9 @@
    "item": 3910091509,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MEDIUM ARMOR SET",
+   "name_source": "locid-id",
+   "confidence": "medium"
   },
   {
    "mix": 3910328088,
@@ -24837,9 +24837,9 @@
    "item": 3922925518,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Diplomatic Handshake",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 3923064864,
@@ -24873,9 +24873,9 @@
    "item": 3925525294,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Liberty's Herald",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 3928191775,
@@ -25224,9 +25224,9 @@
    "item": 3992382197,
    "cat": 15,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Common Sample",
+   "name_source": "dlbin-resource-sample-table",
+   "confidence": "high"
   },
   {
    "mix": 3997705262,
@@ -25260,9 +25260,9 @@
    "item": 4002419096,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "TEST OF CONVICTION",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 4002427272,
@@ -25323,9 +25323,9 @@
    "item": 4010084743,
    "cat": 13,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Default Helldiver Voice 2",
+   "name_source": "dlbin-voice-table",
+   "confidence": "high"
   },
   {
    "mix": 4010439330,
@@ -25701,9 +25701,9 @@
    "item": 4061008342,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Windswept Wayfinder",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 4062012700,
@@ -25809,9 +25809,9 @@
    "item": 4076697763,
    "cat": 0,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Polar Patriots",
+   "name_source": "dlbin-warbond-table",
+   "confidence": "medium"
   },
   {
    "mix": 4077726023,
@@ -26142,9 +26142,9 @@
    "item": 4114132787,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Unblemished Allegiance",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 4114158063,
@@ -26205,9 +26205,9 @@
    "item": 4122507581,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Raider's Cheer",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 4123456080,
@@ -26259,9 +26259,9 @@
    "item": 4129085568,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "RANGER, EAGLE CLASS",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 4129649228,
@@ -26313,9 +26313,9 @@
    "item": 4144689194,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Stone-Wrought Perseverance",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 4144811944,
@@ -26448,9 +26448,9 @@
    "item": 4161927870,
    "cat": 23,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "ADMIRAL",
+   "name_source": "locid-id",
+   "confidence": "high"
   },
   {
    "mix": 4163717373,
@@ -26646,9 +26646,9 @@
    "item": 4184663652,
    "cat": 16,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "TRIVIAL",
+   "name_source": "dlbin-difficulty-table",
+   "confidence": "medium"
   },
   {
    "mix": 4184862023,
@@ -26808,9 +26808,9 @@
    "item": 4219002488,
    "cat": 21,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "100 SC",
+   "name_source": "dlbin-item-pack-table",
+   "confidence": "medium"
   },
   {
    "mix": 4221023775,
@@ -26844,9 +26844,9 @@
    "item": 4228242356,
    "cat": 8,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Signal: Group Up",
+   "name_source": "dlbin-victory-pose-table",
+   "confidence": "high"
   },
   {
    "mix": 4230550908,
@@ -26880,9 +26880,9 @@
    "item": 4236565715,
    "cat": 9,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Cresting Honor",
+   "name_source": "dlbin-banner-table",
+   "confidence": "high"
   },
   {
    "mix": 4237253274,
@@ -27319,14 +27319,17 @@
  ],
  "coverage": {
   "total": 3020,
-  "named": 2164,
-  "unresolved": 856,
+  "named": 2356,
+  "unresolved": 664,
   "by_cat": {
    "0": {
     "rows": 173,
-    "named": 0,
-    "unresolved": 173,
-    "sources": {}
+    "named": 27,
+    "unresolved": 146,
+    "sources": {
+     "dlbin-warbond-table": 26,
+     "locid-id": 1
+    }
    },
    "1": {
     "rows": 115,
@@ -27372,9 +27375,11 @@
    },
    "6": {
     "rows": 23,
-    "named": 0,
-    "unresolved": 23,
-    "sources": {}
+    "named": 13,
+    "unresolved": 10,
+    "sources": {
+     "locid-id": 13
+    }
    },
    "7": {
     "rows": 32,
@@ -27384,15 +27389,19 @@
    },
    "8": {
     "rows": 27,
-    "named": 0,
-    "unresolved": 27,
-    "sources": {}
+    "named": 27,
+    "unresolved": 0,
+    "sources": {
+     "dlbin-victory-pose-table": 27
+    }
    },
    "9": {
     "rows": 103,
-    "named": 0,
-    "unresolved": 103,
-    "sources": {}
+    "named": 65,
+    "unresolved": 38,
+    "sources": {
+     "dlbin-banner-table": 65
+    }
    },
    "10": {
     "rows": 111,
@@ -27413,9 +27422,11 @@
    },
    "13": {
     "rows": 5,
-    "named": 0,
-    "unresolved": 5,
-    "sources": {}
+    "named": 5,
+    "unresolved": 0,
+    "sources": {
+     "dlbin-voice-table": 5
+    }
    },
    "14": {
     "rows": 1,
@@ -27425,15 +27436,19 @@
    },
    "15": {
     "rows": 10,
-    "named": 0,
-    "unresolved": 10,
-    "sources": {}
+    "named": 3,
+    "unresolved": 7,
+    "sources": {
+     "dlbin-resource-sample-table": 3
+    }
    },
    "16": {
     "rows": 9,
-    "named": 0,
-    "unresolved": 9,
-    "sources": {}
+    "named": 2,
+    "unresolved": 7,
+    "sources": {
+     "dlbin-difficulty-table": 2
+    }
    },
    "17": {
     "rows": 2,
@@ -27461,126 +27476,74 @@
    },
    "21": {
     "rows": 32,
-    "named": 0,
-    "unresolved": 32,
-    "sources": {}
+    "named": 12,
+    "unresolved": 20,
+    "sources": {
+     "dlbin-item-pack-table": 8,
+     "locid-id": 4
+    }
    },
    "23": {
     "rows": 61,
-    "named": 0,
-    "unresolved": 61,
-    "sources": {}
+    "named": 38,
+    "unresolved": 23,
+    "sources": {
+     "locid-id": 38
+    }
    }
   },
   "by_source": {
    "armor-set-child": 118,
    "boosters": 20,
+   "dlbin-banner-table": 65,
+   "dlbin-difficulty-table": 2,
+   "dlbin-item-pack-table": 8,
+   "dlbin-resource-sample-table": 3,
+   "dlbin-victory-pose-table": 27,
+   "dlbin-voice-table": 5,
+   "dlbin-warbond-table": 26,
    "items.json": 1794,
    "loadout-entry": 100,
+   "locid-id": 56,
    "stratagem-hash": 59,
    "stratagem-permit-child": 73
   },
-  "v2_inference": {
-   "note": "第二批结构推断（cat10/cat11 战备 hash、cat4 套装名=同名子行）；named_before 是仅 v1 直接映射时的命名行数（对集成前 items.json 输入 = 1932）",
-   "named_before": 1932,
-   "named_after": 2164,
-   "delta": 232,
-   "breakdown": {
-    "cat10_stratagem_new": 41,
-    "cat10_loadout_replaced": 18,
-    "cat10_kept_loadout": 14,
-    "cat11_permit_child": 73,
-    "cat4_set_medium": 117,
-    "cat4_set_low": 1
-   }
+  "confidence": {
+   "None": 664,
+   "high": 2038,
+   "low": 1,
+   "medium": 317
   },
-  "baseline": {
-   "items_json_named_rows": 1794,
-   "items_json_hit_rows": 1794,
-   "lead_reference_1908": {
-    "value": 1908,
-    "meaning": "任务书里的『现状 1908』复核为**旧版 items.json（1950 条）的目录行覆盖率**：按 mixId 或 itemId 命中（cat2 另加 optionId）即算覆盖，含名字为空的条目；同一版 items.json 的『已命名』行数是 1794。两者不是同一口径。"
-   },
-   "delta_vs_items_json_named": 370,
-   "delta_vs_1908_coverage": 256
+  "v3_new": {
+   "dlbin-banner-table": 65,
+   "dlbin-difficulty-table": 2,
+   "dlbin-item-pack-table": 8,
+   "dlbin-resource-sample-table": 3,
+   "dlbin-victory-pose-table": 27,
+   "dlbin-voice-table": 5,
+   "dlbin-warbond-table": 26,
+   "locid-id": 56
   },
-  "default_owned": {
-   "note": "空号（未解锁任何东西）默认拥有的 55 个 mixId 在各目录类别的分布（只作类别对照，不参与命名）",
-   "count": 55,
-   "by_cat": {
-    "0": 11,
-    "1": 4,
-    "2": 8,
-    "3": 14,
-    "4": 5,
-    "7": 2,
-    "8": 1,
-    "9": 1,
-    "10": 2,
-    "11": 3,
-    "16": 1,
-    "18": 3
-   },
-   "named_by_cat": {
-    "0": 0,
-    "1": 4,
-    "2": 8,
-    "3": 14,
-    "4": 5,
-    "7": 0,
-    "8": 0,
-    "9": 0,
-    "10": 0,
-    "11": 1,
-    "16": 0,
-    "18": 0
-   }
-  }
+  "v3_new_total": 192,
+  "v2_named": 2164,
+  "conflicts": []
  },
  "sources": {
+  "dll": {
+   "path": "D:\\SteamLibrary\\steamapps\\common\\Helldivers 2\\data\\game\\game.dll",
+   "sha256": "08b756f535cdb9bdd1b4953fba53c3dfacd25730a155ea6593e5de63211acf5f"
+  },
+  "strings": {
+   "path": "D:\\mod\\refs\\strings-en-26088801.json",
+   "sha256": "0ce7d04f6de86f57d5b145132b52cf607c1b8b39448e094d50dd87a127138181"
+  },
+  "v2": {
+   "path": "D:\\mod\\tmp\\catalog-names\\resolved_v2.json",
+   "sha256": "fb02a5724965a20034b5ad9daecf9f7f093480fad2fc4a9c3c9556b03b070de2"
+  },
   "catalog": {
    "path": "hd2-proxy-toolkit/data/sources/progression_item_catalog.json",
    "sha256": "c46559130ea718beaef606e9617220d7ac79c785a124879c5bfba58cdcc1578c"
-  },
-  "items": {
-   "path": "hd2-proxy-toolkit/dist/hd2proxy/data/catalogs/items.json",
-   "sha256": "f6e6d1bb2a1da5a1f8e7365c7b7c7bf723a0445a804fce78845aea24b2b6fe00"
-  },
-  "item_names_derived": {
-   "path": "hd2-proxy-toolkit/data/sources/item_names_derived.json",
-   "sha256": "de2dca8e37dd92fb879b5635e81d5886717a64973d83b29062f7f28c52308867"
-  },
-  "unreleased_items": {
-   "path": "hd2-proxy-toolkit/data/sources/unreleased_items.json",
-   "sha256": "7741f57b7a96a257e6fd246540d32c4b1020da5ea03a236d7c95058afdda0e7f"
-  },
-  "fresh_account": {
-   "path": "hd2-proxy-toolkit/data/sources/fresh_account_inventory.json",
-   "sha256": "1cb1f5173eeace798f8b5682f95042de7620e39a85f2eb68a5065f2cca3ffe56"
-  },
-  "stratagem_catalog": {
-   "path": "hd2-proxy-toolkit/data/legacy/stratagem_catalog.json",
-   "sha256": "c4a6de4ebc90b09ba32b052e30f9947fe3b3a5c2da65d965bb744ce669f15b6f"
-  },
-  "effects": {
-   "path": "hd2-proxy-toolkit/data/catalogs/effects.json",
-   "sha256": "6695ba81cb3444804a5f9a4cfc63bfb6f170f35bf6b3b12e6052c07aaf4c99fe"
-  },
-  "armor_rows": {
-   "path": "variant-net/refs/armor_rows_parsed.json",
-   "sha256": "f1f9620be7f0cd094e8f9ed9f60a820b34d5800ddc7f465b8e5a0d60c2255d1f"
-  },
-  "store_cosmetics": {
-   "path": "variant-net/refs/store-cosmetics-20261106.json",
-   "sha256": "d0d6d6a8f4e1b165fd2f97783db279e20cb3a2625b77c225489ae92a405e28ce"
-  },
-  "weapon_options": {
-   "path": "repo-datamined/refs/weapon-customization-options-26251122.json",
-   "sha256": "adce068f56a350168edc92577d569b6ab0dc652e26007e09e97f74e66416e618"
-  },
-  "boosters": {
-   "path": "repo-datamined/refs/boosters-26088801.json",
-   "sha256": "b5c9d6d15c55b19b047a5ad4fc1498821d459611562dbfef6a0c3656c885e3c1"
   }
  }
 }

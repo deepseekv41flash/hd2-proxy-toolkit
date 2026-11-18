@@ -81,23 +81,36 @@ def test_loadout_item_names_source_file_is_wellformed():
 
 
 def test_names_do_not_cover_impossible_categories(items_doc):
-    """无证据类别（cat 14 / cat 16）必须留空；有证据的类别名字来源必须同族，不许串味。
+    """名字来源必须与类别证据同族，不许串味；确实无证据的类别保持空。
 
-    来源证据（2026-11-18 名称解析快照，详见 docs/CATALOG-NAMES-2026-11-18.md）：
-      * 武器（cat 1）只能来自 LoadoutEntry 实体（`loadout-entity` / `loadout-entry` 同族）；
-      * 战备许可（cat 11）只能来自「战备目录 hash 匹配 + 1:1 子行」推断（`stratagem-permit-child`，
-        confidence=medium，UNLOCK-MAP §9.2 实机 30 条 + stratagem_catalog hash 命中）；
-      * cat 14 / cat 16 整类无证据 → 必须 name=None（不编造）。
+    来源证据（2026-11-18 快照 v2/v3，详见 docs/CATALOG-NAMES-2026-11-18.md）：
+      * cat 1 武器：LoadoutEntry 同族（`loadout-entity` / `loadout-entry`）；
+      * cat 11 战备许可：战备目录 hash + 1:1 子行（`stratagem-permit-child`，medium）；
+      * cat 9 横幅 / cat 8 胜利姿势 / cat 13 语音 / cat 15 资源：客户端 game.dll 静态表
+        （`dlbin-banner-table` / `dlbin-victory-pose-table` / `dlbin-voice-table` /
+        `dlbin-resource-sample-table`，high，行 id == 目录 mixId）；
+      * cat 0 战团：`dlbin-warbond-table`（medium）；cat 23 称号：`locid-id`（mixId 即 locid）；
+      * cat 16 难度：`dlbin-difficulty-table`（medium）；
+      * cat 14 整类无证据 → 必须 name=None（不编造）。
     """
+    allowed = {
+        0: {"dlbin-warbond-table", "locid-id"},      # 1 条 cat0 的 mixId 本身即 locid
+        1: {"loadout-entity", "loadout-entry"},
+        8: {"dlbin-victory-pose-table"},
+        9: {"dlbin-banner-table"},
+        11: {"stratagem-permit-child"},
+        13: {"dlbin-voice-table"},
+        15: {"dlbin-resource-sample-table"},
+        16: {"dlbin-difficulty-table"},
+        23: {"locid-id"},
+    }
     for it in items_doc["items"]:
         cat = it.get("catalog_category")
         source = it.get("name_source")
-        if cat in (14, 16):
+        if cat == 14:
             assert it.get("name") is None, it
-        elif cat == 11 and it.get("name"):
-            assert source == "stratagem-permit-child", it
-        elif cat == 1 and it.get("name"):
-            assert source in ("loadout-entity", "loadout-entry"), it
+        elif it.get("name") and cat in allowed:
+            assert source in allowed[cat], it
 
 
 def test_catalog_category_is_recorded_for_catalog_rows(items_doc):

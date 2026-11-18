@@ -8,16 +8,17 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.4.1-alpha.1 已发布（2026-11-18，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.4.1-alpha.2 已发布（2026-11-18，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **472 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.4.1-alpha.1`（见下方「下载」）。
+> **472 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.4.1-alpha.2`（见下方「下载」）。
 > 0.3.0 起「启动引擎」会先做 **443/8080/17897 端口预检**（冲突列占用者、可换监听地址），总览页新增**系统自检**（端口 / hosts / 证书 / 游戏进程）；
 > alpha.2 修掉现场检查弹控制台窗 + 切总览卡顿（子进程隐藏窗口 / 一条 `netstat -ano` / 诊断节流）；
 > alpha.3 修掉「续期证书后游戏报 Error 60」：证书信任状态进自检/红字，GUI 新增「安装 / 修复（UAC）」，续期后自动引导导入信任；
 > alpha.1(0.4.0) 把**服务端物品目录 3020 行全量**做进产品：`items.json` 1950 → **3062 条**、名字 1821 → **2191**、
 > 标注**空号默认拥有 55 项**，物品页新增只读 **「目录总览」** tab（汇总 / 类别筛选 / 默认已有 · 目录缺标记）。
-> alpha.1(0.4.1) 物品解锁加 **「清空全部已添加」**：一键撤回四类库存 + 目录追加（附件批量添加后的批量移除）。
+> alpha.1(0.4.1) 物品解锁加 **「清空全部已添加」**：一键撤回四类库存 + 目录追加（附件批量添加后的批量移除）；
+> alpha.2(0.4.1) 从客户端 `game.dll` 静态表补完物品名字：命名 2191 → **2383**（横幅/称号/胜利姿势/战团包/礼包等），未解 871 → 679。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
 > [物品与战备](research/screenshots/gui-inventory.png) ｜ [目录总览（新）](research/screenshots/gui-inventory-catalog.png) ｜
 > [抓包与日志](research/screenshots/gui-capture.png) ｜
@@ -48,14 +49,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.4.1-alpha.1）
+## 下载（v0.4.1-alpha.2）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.4.1-alpha.1.md)。
+> [Release Notes](docs/RELEASE-v0.4.1-alpha.2.md)。
 
-- 下载：[GitHub Releases · v0.4.1-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.4.1-alpha.1)
-  （`hd2proxy-toolkit-v0.4.1-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.4.1-alpha.2](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.4.1-alpha.2)
+  （`hd2proxy-toolkit-v0.4.1-alpha.2-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，

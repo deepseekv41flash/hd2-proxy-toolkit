@@ -108,22 +108,35 @@ def test_categories_are_registered_labels(items):
 
 
 def test_inferred_names_carry_confidence(items):
-    """推断出来的名字（战备 hash / 许可子行 / 套装子行）必须带 name_confidence，便于追溯。
+    """非「直接 id→名字」的名字必须带 name_confidence，便于追溯。
 
-    这些是「跨表/父子推断」而不是显式 id→名字映射：名字本身是真的，但「属于哪一行」是推断，
-    数据里记 confidence=medium/low；显式来源（catalog-option / loadout-entity / boosters…）不记。
+    v2 的推断来源：战备 hash / 许可子行 / 套装子行；
+    v3 新增客户端 game.dll 静态表来源：其中 cat0 战团名（warbond 表 + SeasonPass premiumToken 配对）、
+    cat21 礼包短名、cat16 难度名、以及 56 条「mixId 本身就是 locid」的行是 medium（id=locid 约定），
+    其余静态表行（banner/pose/voice/sample）是显式 id→名字映射（high，不记 confidence）。
     """
-    inferred_sources = {"stratagem-hash", "stratagem-permit-child", "armor-set-child"}
-    inferred = [it for it in items if it.get("name_source") in inferred_sources]
-    assert inferred, "v2 名称快照没生效？"
+    # high 来源（显式 id→名字映射）：不允许带 confidence
+    high_only = {"catalog-option", "armor-table", "loadout-entity", "boosters",
+                 "dlbin-banner-table", "dlbin-victory-pose-table", "dlbin-voice-table",
+                 "dlbin-resource-sample-table"}
+    for it in items:
+        if it.get("name_source") in high_only:
+            assert not it.get("name_confidence"), it
+    # 非显式来源必须带 medium/low
+    non_explicit = {"stratagem-hash", "stratagem-permit-child", "armor-set-child",
+                    "loadout-entry", "dlbin-warbond-table", "dlbin-item-pack-table",
+                    "dlbin-difficulty-table", "locid-id"}
+    inferred = [it for it in items if it.get("name_source") in non_explicit
+                and it.get("name_confidence")]           # loadout-entry 有 high 也有 medium
+    assert inferred, "名称快照（v2/v3）没生效？"
     assert all(it.get("name_confidence") in ("medium", "low") for it in inferred)
     assert any(it.get("name_confidence") == "low" for it in inferred)   # 仅 1 个单子行套装名
-    # 置信度字段只出现在「非显式」来源上：推断来源 + loadout-entry 跨类别命中的 medium
-    allowed = inferred_sources | {"loadout-entry"}
+    # 已知 medium 来源必须全部带 confidence
+    must_medium = {"stratagem-hash", "stratagem-permit-child", "armor-set-child",
+                   "dlbin-warbond-table", "dlbin-item-pack-table", "dlbin-difficulty-table"}
     for it in items:
-        if it.get("name_confidence"):
-            assert it.get("name_source") in allowed, it
-            assert it.get("name_confidence") in ("medium", "low")
+        if it.get("name_source") in must_medium:
+            assert it.get("name_confidence") in ("medium", "low"), it
     # 战备许可名字全部来自 1:1 子行推断，且占三分之二以上（108 行里 73 行）
     stratagems = [it for it in items if it.get("category") == "stratagem"]
     named_stratagems = [it for it in stratagems if it.get("name")]
@@ -219,8 +232,8 @@ def test_catalog_entry_labels_are_explicit_about_unknowns():
     named = [(mix, label) for mix, label in unknown_entries
              if "内部名未解" not in label]
     assert unnamed and all("未分类 cat" in label for _mix, label in unnamed)
-    # cat 10（战备解锁清单子项）有跨表命中的名字，但**类别语义无证据**：名字照给、类别仍 unknown
-    assert named and all(label.endswith("（未分类）") for _mix, label in named)
+    # 类别语义仍 unknown 但有名字的行：名字照给、类别仍标「未分类」（末尾可能还有「默认已有」标记）
+    assert named and all("（未分类）" in label for _mix, label in named)
     default_labels = [label for _mix, label in cat.catalog_entries(scope="default")]
     assert all(label.endswith("默认已有") for label in default_labels)
     extra_labels = [label for _mix, label in cat.catalog_entries(scope="extra")]

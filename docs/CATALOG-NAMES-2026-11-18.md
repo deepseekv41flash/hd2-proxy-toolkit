@@ -1,6 +1,6 @@
 # 服务端物品目录 3020 行：名字解析与 `progressionCategory` 语义证据（2026-11-18）
 
-> 对应版本：[v0.4.0-alpha.1](RELEASE-v0.4.0-alpha.1.md)。
+> 对应版本：[v0.4.0-alpha.1](RELEASE-v0.4.0-alpha.1.md)（v2 快照）；v3 增量（客户端 game.dll 静态表，命名 2164→2356）见 [CATALOG-NAMES-V3-2026-11-18.md](CATALOG-NAMES-V3-2026-11-18.md)。
 > 产物：`data/sources/catalog_names_resolved.json`（v2 快照，**2164/3020 行有名字**）+ `coverage` +
 > 每个类别的 `category_meaning`（含证据出处）；生成器 `tools/resolve_catalog_names.py`（只读、离线、确定性）。
 > 数据落地：`tools/gen_catalogs.py` 读这份快照把目录 3020 行并入 `data/catalogs/items.json`。
