@@ -1,14 +1,16 @@
-"""物品与战备页：武器 / 附件 / 外观 / 战备 / 目录追加 五个 tab。
+"""物品与战备页：武器 / 附件 / 外观 / 战备 / 目录追加 / 目录总览 六个 tab。
 
-前四个 tab 写 `profile["inventory"][key]`（行格式 {"mixId","amount","isDiscovered"}），
-目录追加 tab 写 `profile["items"]`（template + add）。全部只改内存 profile，
-由右上角「应用配置」热更新到引擎。
+前四个 tab 写 `profile["inventory"][key]`（行格式 {"mixId","amount","isDiscovered"}）；
+目录追加 tab 写 `profile["items"]`（template + add）；目录总览是**只读**查询页
+（2026-11-18 起把服务端目录 3020 行全量做进来：名字/类别/空号默认标记）。
+全部只改内存 profile，由右上角「应用配置」热更新到引擎。
 """
 
 import tkinter as tk
 from tkinter import ttk
 
 from .. import theme
+from ..catalogs import CATALOG_SCOPES, ITEM_CATEGORY_LABELS
 from ..widgets import RowEditor, SearchList
 from . import Page
 
@@ -47,6 +49,7 @@ class InventoryPage(Page):
         self._attachment_groups = {}   # 附件 tab：武器 key -> (parent_id, 武器名, [(mix, label), ...])
         self._sel_attachment_weapon = None
         self._filled = {}              # tab 的列表是否已填过（切 tab 时补一次）
+        self._filled_catalog = False   # 目录总览列表是否已填（3062 行，切 tab 只补一次）
 
         bar = tk.Frame(self, bg=theme.BG)
         bar.pack(fill="x", padx=22, pady=(0, 8))
@@ -63,6 +66,7 @@ class InventoryPage(Page):
             else:
                 self._build_edit_tab(key, label)
         self._build_items_tab()
+        self._build_catalog_tab()
         self.nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
     # ---- 前四个 tab ----------------------------------------------------
@@ -495,8 +499,80 @@ class InventoryPage(Page):
         self.items_count.configure(text="目录追加 %d 条" % len(rows))
         self._render_summary()
 
+    # ---- 第六个 tab：目录总览（只读） ----------------------------------
+    def _build_catalog_tab(self):
+        """服务端目录 3020 行的只读总览：汇总行 + 类别筛选 + 全量列表。
+
+        为什么单独一页：目录补全后 items 有 3062 条（含 512 条类别语义未解的行），
+        编辑 tab 只显示各自类别；这里回答「目录到底有什么、哪些还没名字、哪些空号就有」
+        而不增加任何写入口（解锁仍在前四个 tab）。
+        """
+        tab = tk.Frame(self.nb, bg=theme.BG)
+        self.nb.add(tab, text="目录总览")
+
+        bar = tk.Frame(tab, bg=theme.BG)
+        bar.pack(fill="x", padx=12, pady=(10, 4))
+        tk.Label(bar, text="类别", bg=theme.BG, fg=theme.MUTED,
+                 font=theme.F_S).pack(side="left")
+        self.var_catalog_scope = tk.StringVar(value=CATALOG_SCOPES[0][1])
+        self._catalog_scope_keys = {label: key for key, label in CATALOG_SCOPES}
+        box = ttk.Combobox(bar, textvariable=self.var_catalog_scope,
+                           values=[label for _key, label in CATALOG_SCOPES],
+                           width=18, state="readonly", font=theme.F_S)
+        box.pack(side="left", padx=(6, 10))
+        box.bind("<<ComboboxSelected>>", lambda _e: self._fill_catalog_list())
+        theme.button(bar, "刷新", command=self._fill_catalog_list).pack(side="left")
+        self.catalog_count = tk.Label(bar, text="", bg=theme.BG, fg=theme.DIM, font=theme.F_S)
+        self.catalog_count.pack(side="right")
+
+        self.catalog_summary_lbl = tk.Label(
+            tab, text="", bg=theme.BG, fg=theme.MUTED, font=theme.F_S,
+            anchor="w", justify="left", wraplength=1000)
+        self.catalog_summary_lbl.pack(fill="x", padx=12, pady=(0, 6))
+
+        body = tk.Frame(tab, bg=theme.BG)
+        body.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        self.catalog_overview_list = SearchList(body, items=[], height=14)
+        self.catalog_overview_list.pack(fill="both", expand=True)
+        tk.Label(body, text="只读页：只查目录、不解锁任何东西；解锁/追加请用前五个 tab。"
+                            "「默认已有」= 空号也拥有，「目录缺」= 服务端目录里没有（走目录追加）",
+                 bg=theme.BG, fg=theme.DIM, font=theme.F_S, anchor="w",
+                 justify="left", wraplength=1000).pack(fill="x", pady=(4, 0))
+        self._render_catalog_summary()
+        self._fill_catalog_list()
+
+    def _render_catalog_summary(self):
+        """汇总行：目录行数 / 界面条目 / 命名覆盖 / 空号默认 / 各语义类别行数。"""
+        s = self.app.catalogs.catalog_summary()
+        order = ("attachment", "cosmetic", "weapon", "stratagem",
+                 "booster", "banner", "currency", "universal", "unknown")
+        kind_parts = []
+        for kind in order:
+            stat = s["by_kind"].get(kind) or {}
+            if stat.get("rows"):
+                kind_parts.append("%s %d" % (ITEM_CATEGORY_LABELS.get(kind, kind),
+                                             stat["rows"]))
+        for kind, stat in s["by_kind"].items():     # 未登记中文名的类别也要显示
+            if kind not in order and stat.get("rows"):
+                kind_parts.append("%s %d" % (kind, stat["rows"]))
+        line1 = ("服务端目录 %d 行（与账号无关）· 界面条目 %d（目录内 %d + 目录外 %d）"
+                 % (s["rows"], s["items"], s["in_catalog"], s["extra"]))
+        line2 = "已命名 %d · 未解 %d · 空号默认拥有 %d" % (
+            s["named"], s["unnamed"], s["default_owned"])
+        if kind_parts:
+            line2 += " · 目录行类别：" + " · ".join(kind_parts)
+        self.catalog_summary_lbl.configure(text=line1 + "\n" + line2)
+
+    def _fill_catalog_list(self):
+        scope = self._catalog_scope_keys.get(self.var_catalog_scope.get(), "all")
+        items = self.app.catalogs.catalog_entries(scope=scope)
+        self.catalog_overview_list.set_items(items)
+        self._filled_catalog = bool(items)
+        self.catalog_count.configure(
+            text="当前「%s」%d 条" % (self.var_catalog_scope.get(), len(items)))
+
     def _on_tab_changed(self, _event=None):
-        """切 tab 时校验当前 tab 的列表是否为空（空了就按关键词重查一遍）。"""
+        """切 tab 时补填当前 tab 的列表（只补一次；目录总览也是懒填）。"""
         try:
             current = self.nb.index(self.nb.select())
         except tk.TclError:
@@ -506,8 +582,11 @@ class InventoryPage(Page):
             key = keys[current]
             if not self._filled.get(key):
                 self._search_items(key)
-        elif not self._filled_items:
-            self._search_catalog_items()
+        elif current == len(keys):
+            if not self._filled_items:
+                self._search_catalog_items()
+        elif not self._filled_catalog:
+            self._fill_catalog_list()
 
     # ---------------------------------------------------------------- 数据
     def _inventory(self, create=True):
@@ -537,7 +616,12 @@ class InventoryPage(Page):
             parts.append("%s %d" % (label, len(rows) if isinstance(rows, list) else 0))
         add = self._items(create=False).get("add") or []
         parts.append("目录追加 %d" % (len(add) if isinstance(add, list) else 0))
-        self.sum_lbl.configure(text="已加入：" + " · ".join(parts))
+        line = "已加入：" + " · ".join(parts)
+        cat = self.app.catalogs.catalog_summary()
+        if cat["items"]:
+            line += " ｜ 目录 %d 行 · 命名 %d · 空号默认 %d" % (
+                cat["rows"], cat["named"], cat["default_owned"])
+        self.sum_lbl.configure(text=line)
 
     def refresh(self):
         for key, _label in EDIT_TABS:
@@ -546,6 +630,9 @@ class InventoryPage(Page):
         self._heal_catalog_rows()
         tmpl = self._items(create=False).get("template")
         self.var_template.set("" if tmpl is None else str(tmpl))
+        self._render_catalog_summary()
+        if getattr(self, "catalog_overview_list", None) is not None and not self._filled_catalog:
+            self._fill_catalog_list()
         self._render_summary()
 
     def _heal_catalog_rows(self):

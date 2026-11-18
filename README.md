@@ -8,15 +8,18 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.3.0-alpha.3 已发布（2026-11-17，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.4.0-alpha.1 已发布（2026-11-18，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **445 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.3.0-alpha.3`（见下方「下载」）。
+> **468 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.4.0-alpha.1`（见下方「下载」）。
 > 0.3.0 起「启动引擎」会先做 **443/8080/17897 端口预检**（冲突列占用者、可换监听地址），总览页新增**系统自检**（端口 / hosts / 证书 / 游戏进程）；
 > alpha.2 修掉现场检查弹控制台窗 + 切总览卡顿（子进程隐藏窗口 / 一条 `netstat -ano` / 诊断节流）；
-> alpha.3 修掉「续期证书后游戏报 Error 60」：证书信任状态进自检/红字，GUI 新增「安装 / 修复（UAC）」，续期后自动引导导入信任。
+> alpha.3 修掉「续期证书后游戏报 Error 60」：证书信任状态进自检/红字，GUI 新增「安装 / 修复（UAC）」，续期后自动引导导入信任；
+> alpha.1(0.4.0) 把**服务端物品目录 3020 行全量**做进产品：`items.json` 1950 → **3062 条**、名字 1821 → **2191**、
+> 标注**空号默认拥有 55 项**，物品页新增只读 **「目录总览」** tab（汇总 / 类别筛选 / 默认已有 · 目录缺标记）。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
-> [物品与战备](research/screenshots/gui-inventory.png) ｜ [抓包与日志](research/screenshots/gui-capture.png) ｜
+> [物品与战备](research/screenshots/gui-inventory.png) ｜ [目录总览（新）](research/screenshots/gui-inventory-catalog.png) ｜
+> [抓包与日志](research/screenshots/gui-capture.png) ｜
 > [设置](research/screenshots/gui-settings.png) ｜
 > [M4 实机：PARTION 出 PREDATOR STRAIN](research/screenshots/m4-partion-predator-strain.png)
 
@@ -44,14 +47,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.3.0-alpha.3）
+## 下载（v0.4.0-alpha.1）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.3.0-alpha.3.md)。
+> [Release Notes](docs/RELEASE-v0.4.0-alpha.1.md)。
 
-- 下载：[GitHub Releases · v0.3.0-alpha.3](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.3.0-alpha.3)
-  （`hd2proxy-toolkit-v0.3.0-alpha.3-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.4.0-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.4.0-alpha.1)
+  （`hd2proxy-toolkit-v0.4.0-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，
@@ -81,7 +84,7 @@ hd2proxy.exe uninstall
 ```bash
 python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
 set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
-python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 445 单测 + 5 个离线自检
+python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 468 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
@@ -116,7 +119,7 @@ python src/hd2proxy/engine/legacy_proxy.py --config data/legacy/config.example.j
 | 1 | 变种词条（tag + mechanic 成对；虫族 7 个含腐蚀/毒瘴） | ✓✓ M4 实机 | 战况 · 变种卡 / 「变种词条试用」模板 |
 | 2 | 全局效果（GWE type94） | ✓✓ M4 实机 | 战况 · 全局效果卡 / 「全局效果试用」模板 |
 | 3 | 战备试用（type32，≤3） | ✓✓ M4 实机 | 「战备试用」模板（`status.trials` + `trials_planet`） |
-| 4 | 物品解锁（武器/配件/外观 + 目录上架；附件按武器筛选 + 一键解锁整枪配件） | ✓✓ M4 实机 | 物品 · 各分类 / 「物品解锁」模板 |
+| 4 | 物品解锁（武器/配件/外观 + 目录上架；附件按武器筛选 + 一键解锁整枪配件；**目录 3020 行全量只读总览**） | ✓✓ M4 实机 | 物品 · 各分类 +「目录总览」/「物品解锁」模板 |
 | 5 | 休眠星可玩化（planetInfo + 节点 + 战役 + 归属） | ✓✓ 研究实机结算 + M4 节点/连线 | 战况 · 休眠星卡 / 「休眠星可玩化」模板 |
 | 6 | 生态借用（`settingsHash`） | ✓✓ M4 实机 | 战况 · 生态卡 / 「生态借用」模板 |
 
@@ -141,7 +144,7 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 src/hd2proxy/engine/                    引擎（server / 钩子 / 配置 / 证书 / 安装 / 控制面 / 离线预演 preview.py）
 src/hd2proxy/gui/                       Tk GUI：壳 + 5 页 + widgets + templates.py（能力模板）
 src/hd2proxy/versioning.py               版本规则与 PEP 440 映射（docs/VERSIONING.md 的实现）
-tests/unit/                             单元测试（445 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / CLI）
+tests/unit/                             单元测试（468 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / 目录补全 / CLI）
 tests/selftest*.py                      5 个脚本式离线自检（迁自研究线，仅改路径）
 tools/run_selftests.py                  自检总入口（独立证书/数据目录，GATE 判定）
 tools/check_gate.py                     门禁：版本一致性 + 语法 + 绝对路径 + pytest + 5 自检
@@ -150,8 +153,9 @@ tools/check_version.py                  版本一致性检查（__version__ ↔ 
 tools/extract_catalog_index.py           /api/Progression/items 抓包 → 紧凑索引（含附件 parent，供按武器分组）
 tools/extract_item_names.py             dlbin 只读路线：LoadoutEntry 物品内部名（武器/投掷物/背包）→ data/sources
 tools/gen_session_certs.py              会话证书签发（ca 模式，≤2 天硬上限）
-tools/gen_catalogs.py                   数据目录生成（GUI + 引擎目录；支持 data/sources 的变种覆盖层与物品目录索引）
-tools/gui_smoke.py                      GUI 冒烟：起真引擎 + 假上游 → 五页截图
+tools/gen_catalogs.py                   数据目录生成（GUI + 引擎目录；包含服务端目录 3020 行补全/命名/默认标记）
+tools/resolve_catalog_names.py          目录名字/类别解析快照生成（只读研究仓数据表；产物 data/sources/catalog_names_resolved.json）
+tools/gui_smoke.py                      GUI 冒烟：起真引擎 + 假上游 → 五页截图（`--tabs` 逐 tab 截图）
 tools/sign_local.ps1                    本机自签代码签名（装当前用户信任库 + 签 exe，见 docs/SIGNING-LOCAL.md）
 tools/sync_release_area.py              把打包产物同步到「release 产物测试区」（解包最新版 + 归档旧 zip）
 tools/win_integrity.py                  把目录树完整性标签标回 Medium（避免 Low IL 下写不了 AppData，见 docs/WIN-INTEGRITY-TRAP.md）

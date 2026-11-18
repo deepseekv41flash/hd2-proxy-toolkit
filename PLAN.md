@@ -735,6 +735,32 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
+### 15.4 v0.4.0-alpha.1（2026-11-18，服务端物品目录全量：3020 行 + GUI「目录总览」）
+
+- 目标（上一轮已与用户敲定）：把 `/api/Progression/items` 的 **3020 行全量目录**做进产品
+  （名字/类别/空号默认标记 + GUI 目录总览），解决「`items.json` 只覆盖 1950 行、缺口 1112 行看不见」。
+- 证据：目录**与账号无关** —— 主号 / 新号两次抓包 sha256 逐字节一致（`d71655e6…`，3020 行 / 559,950 B）；
+  缺口不是数据源问题，是名字/类别加工与界面呈现问题。
+- 数据：`items.json` 1950 → **3062**（3020 目录行 + 42 目录外）；名字 1821 → **2191**（目录行 2164/3020）；
+  `in_catalog` / `default_owned` 每行标记；顶层 `catalog` 覆盖段；空号默认 **55** 项。
+- 三条铁律：名字解析不到就 `null`（不编译/不音译/不猜）；名字来源 = 显式映射三路 + 结构证据两路
+  （战备 hash 对表 / 许可子行 / 套装子行，推断名带 `name_confidence` medium 263 / low 1）；
+  类别=多数投票（≥60%）+ 名称快照 `category_meaning` 证据（新增 booster/banner/currency；
+  仍无证据 512 行记 unknown 并保留 cat 编号）；
+  `default_owned` 的 itemId 补匹配只在该 itemId 目录里唯一时生效（否则 55 → 150 误标）。
+- GUI：物品页第 6 个只读 tab「目录总览」——汇总两行 + 类别筛选（含「仅空号默认拥有」/「仅目录外」）+
+  3062 条全量列表（有名字行补类别、`默认已有` / `目录缺` 标记）；物品页汇总行并入目录统计；
+  切 tab 不写 profile。
+- 数据源新增：`data/sources/catalog_names_resolved.json`（3020 行解析快照 + 22 个 cat 的证据）、
+  `data/sources/fresh_account_inventory.json`（空号基线 55 个 mixId，附抓包 sha256）；
+  证据报告 `docs/CATALOG-NAMES-2026-11-18.md`。
+- 生成器：`tools/gen_catalogs.py` 目录补全阶段 + `--resolved-names` / `--fresh-inventory`；
+  修 `cat 0` 被 `int(x or -1)` 变 -1、itemId 兜底索引错误。
+- 回归测试 445 → **468 passed**；`gui_smoke.py --tabs` 逐 tab 截图；门禁 PASS。
+- 版本规则：功能变化 ⇒ `0.3.0-alpha.3` → **`0.4.0-alpha.1`**（minor bump，alpha.1 重置）。
+
+---
+
 ## 附：本轮不做
 
 - 星图可视化大画布、多人同步、服务端写入（幻影战局不落账，交接档 §6.1 已定证）

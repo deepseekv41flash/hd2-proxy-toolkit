@@ -63,6 +63,7 @@ import csv
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any, Callable
 
@@ -86,6 +87,10 @@ DEFAULT_CATALOG_INDEX = REPO_ROOT / "data" / "sources" / "progression_item_catal
 DEFAULT_ITEM_NAMES = REPO_ROOT / "data" / "sources" / "item_names_derived.json"
 # 未发布/目录缺失物品 -> 克隆模板 itemId 的配对（本仓库输入，值来自研究线 M4 实机验证）
 DEFAULT_UNRELEASED_ITEMS = REPO_ROOT / "data" / "sources" / "unreleased_items.json"
+# 目录名称解析快照（研究线只读数据表二次解析产物；缺失时跳过额外命名）
+DEFAULT_RESOLVED_NAMES = REPO_ROOT / "data" / "sources" / "catalog_names_resolved.json"
+# 空号库存基线（55 项默认拥有；缺失时 default_owned 全 False）
+DEFAULT_FRESH_INVENTORY = REPO_ROOT / "data" / "sources" / "fresh_account_inventory.json"
 
 # build.json 的手工常量（游戏 build 变化时改这里并重跑；variant_catalog 里的 build 另见 generated_from）
 GAME_BUILD = "26568081"
@@ -917,6 +922,224 @@ def enrich_item_names(
     return resolved
 
 
+# 服务端 progressionCategory -> 语义类别：不写死猜测，先用「已有物品的多数类别」投票推断，
+# 再用 data/sources/catalog_names_resolved.json 里的证据补没投票到的类别（仍无证据=unknown）。
+_ITEM_KINDS = ("weapon", "attachment", "cosmetic", "stratagem",
+               "booster", "banner", "currency", "unknown")
+
+
+def _load_resolved_catalog(path: Path | None) -> tuple[dict[int, dict[str, Any]], dict[int, str]]:
+    """读「目录名称解析快照」-> (mix -> 名称信息, cat -> 语义类别)。文件缺失则返回空表。"""
+    if path is None or not Path(path).exists():
+        log(f"note: 目录名称解析快照缺失（{path}），跳过额外命名（items.json 仍会补全行集）")
+        return {}, {}
+    doc = load_json(Path(path), "目录名称解析快照 catalog_names_resolved.json", dict)
+    by_mix: dict[int, dict[str, Any]] = {}
+    for row in doc.get("rows") or []:
+        if not isinstance(row, dict) or not row.get("name"):
+            continue
+        try:
+            mix = int(row.get("mix"))
+        except (TypeError, ValueError):
+            continue
+        by_mix[mix] = {
+            "name": str(row["name"]),
+            "name_source": str(row.get("name_source") or "resolved"),
+            "confidence": str(row.get("confidence") or "high"),
+        }
+    cat_kind: dict[int, str] = {}
+    for key, meta in (doc.get("category_meaning") or {}).items():
+        label = str((meta or {}).get("label") or "")
+        if label not in _ITEM_KINDS:
+            continue
+        try:
+            cat_kind[int(key)] = label
+        except (TypeError, ValueError):
+            continue
+    return by_mix, cat_kind
+
+
+def _load_fresh_defaults(path: Path | None) -> set[int]:
+    """空号（未解锁任何东西）的库存基线 -> 默认拥有 mixId 集合。文件缺失返回空集。"""
+    if path is None or not Path(path).exists():
+        log(f"note: 空号库存基线缺失（{path}），default_owned 全部记为 False")
+        return set()
+    doc = load_json(Path(path), "空号库存基线 fresh_account_inventory.json", dict)
+    out: set[int] = set()
+    for raw in doc.get("mix_ids") or []:
+        try:
+            out.add(int(raw))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _infer_catalog_kinds(items: list[dict[str, Any]]) -> dict[int, str]:
+    """catalog cat -> 语义类别：已有物品里该 cat 的多数类别（≥60% 才认）。"""
+    votes: dict[int, Counter] = {}
+    for item in items:
+        cat = item.get("catalog_category")
+        kind = item.get("category")
+        if cat is None or not kind:
+            continue
+        votes.setdefault(int(cat), Counter())[str(kind)] += 1
+    out: dict[int, str] = {}
+    for cat, counter in votes.items():
+        total = sum(counter.values())
+        kind, count = counter.most_common(1)[0]
+        if total and count / total >= 0.6:
+            out[cat] = kind
+    return out
+
+
+def _complete_catalog_items(
+    items: list[dict[str, Any]],
+    catalog_by_mix: dict[int, dict[str, Any]],
+    resolved_by_mix: dict[int, dict[str, Any]],
+    cat_kind: dict[int, str],
+    defaults: set[int],
+) -> dict[str, Any]:
+    """把服务端目录 3020 行**全部**并入 items，标记 in_catalog / default_owned，返回覆盖统计。
+
+    WHY：此前 items.json 只覆盖「有名字或研究注入用到的子集」（1950/3020），界面既看不到
+    剩余行、也不知道它们属于哪个类别。这里补成完整目录：
+      * 名字能解析的用解析结果（resolved_by_mix），解不出的 name=None（界面显示 mixId + 类别，
+        **绝不编造**）；
+      * 类别：catalog cat -> 语义类别（投票推断 + 解析快照证据），都没证据 = "unknown"；
+      * default_owned：空号默认拥有的 55 项（解锁工具不必再添加）。
+    """
+    by_mix = {int(item["mix_id"]): item for item in items if item.get("mix_id") is not None}
+    # 兜底索引：已有条目的 itemId / optionId -> 条目（外观行的 itemId 就是目录行 itemId，
+    # 但它们的 mixId 与目录 mixId 不同，所以必须按 itemId 兜底，否则会重复造行）
+    by_existing_item: dict[int, dict[str, Any]] = {}
+    for item in items:
+        for key in ("item_id", "option_id"):
+            raw = item.get(key)
+            if raw is None:
+                continue
+            try:
+                by_existing_item.setdefault(int(raw), item)
+            except (TypeError, ValueError):
+                continue
+
+    appended = 0
+    matched_by_item = 0
+    named_from_snapshot = 0
+    for mix, row in sorted(catalog_by_mix.items()):
+        cat = int(row["cat"])
+        kind = cat_kind.get(cat, "unknown")
+        item = by_mix.get(int(mix))
+        if item is None:
+            try:
+                alt = by_existing_item.get(int(row.get("item") or 0))
+            except (TypeError, ValueError):
+                alt = None
+            # 只在「该条目还没被别的目录行认领」时复用，避免一条外观被多行重复计数
+            if alt is not None and alt.get("catalog_category") is None:
+                item = alt
+                matched_by_item += 1
+        if item is not None:
+            item["in_catalog"] = True
+            if item.get("catalog_category") is None:
+                item["catalog_category"] = cat
+            if row.get("parent") is not None and item.get("parent_id") is None:
+                item["parent_id"] = int(row["parent"])
+            if not item.get("category"):
+                item["category"] = kind
+            if not item.get("name"):
+                # 已有条目但没名字：用解析快照补（v2 起战备许可/套装行的名字走这条路）
+                extra_name = resolved_by_mix.get(int(mix)) or {}
+                if extra_name.get("name"):
+                    item["name"] = extra_name["name"]
+                    item["name_source"] = extra_name.get("name_source")
+                    if extra_name.get("confidence") not in (None, "high"):
+                        item["name_confidence"] = extra_name["confidence"]
+                    named_from_snapshot += 1
+            continue
+        extra_name = resolved_by_mix.get(int(mix)) or {}
+        entry: dict[str, Any] = {
+            "mix_id": int(mix),
+            "item_id": int(row.get("item") or mix),
+            "name": extra_name.get("name"),
+            "name_source": extra_name.get("name_source"),
+            "catalog_category": cat,
+            "category": kind,
+            "in_catalog": True,
+            "source": "catalog-completion",
+        }
+        if cat == 2:
+            entry["option_id"] = int(row.get("item") or mix)
+        if row.get("parent") is not None:
+            entry["parent_id"] = int(row["parent"])
+        if entry.get("name") and extra_name.get("confidence") not in (None, "high"):
+            entry["name_confidence"] = extra_name["confidence"]
+        items.append(entry)
+        appended += 1
+
+    # 空号基线给的是「库存 mixId」；有少数默认项的 mixId 在目录里对应的是行的 itemId。
+    # 只对「该 itemId 在目录里唯一」的行做补充匹配：附件 optionId 会被成百上千行共享，
+    # 按 itemId 泛匹配会把 150 行都标成默认（实测踩到），这里必须收紧。
+    default_row_mixes = {int(mix) for mix in defaults if int(mix) in catalog_by_mix}
+    default_items = {int(catalog_by_mix[mix]["item"]) for mix in default_row_mixes
+                     if catalog_by_mix[mix].get("item") is not None}
+    item_row_count = Counter(int(row["item"]) for row in catalog_by_mix.values()
+                             if row.get("item") is not None)
+
+    def _is_default_owned(item: dict[str, Any]) -> bool:
+        mix = item.get("mix_id")
+        if mix is not None and int(mix) in defaults:
+            return True
+        for key in ("item_id", "option_id"):
+            raw = item.get(key)
+            if raw is None:
+                continue
+            try:
+                value = int(raw)
+            except (TypeError, ValueError):
+                continue
+            if value in default_items and item_row_count.get(value, 0) == 1:
+                return True
+        return False
+
+    for item in items:
+        if item.get("catalog_category") is not None:
+            item["in_catalog"] = True
+        elif item.get("in_catalog") is None:
+            item["in_catalog"] = False
+        if not item.get("category"):
+            item["category"] = "unknown"
+        item["default_owned"] = _is_default_owned(item)
+
+    in_catalog = [item for item in items if item.get("in_catalog")]
+    by_cat: dict[int, dict[str, Any]] = {}
+    for item in in_catalog:
+        raw_cat = item.get("catalog_category")
+        cat = int(raw_cat) if raw_cat is not None else -1
+        stat = by_cat.setdefault(cat, {"rows": 0, "named": 0,
+                                       "kind": cat_kind.get(cat, "unknown")})
+        stat["rows"] += 1
+        if item.get("name"):
+            stat["named"] += 1
+    coverage = {
+        "catalog_rows": len(catalog_by_mix),
+        "in_catalog": len(in_catalog),
+        "named": sum(1 for item in items if item.get("name")),
+        "unnamed": sum(1 for item in items if not item.get("name")),
+        "default_owned": sum(1 for item in items if item.get("default_owned")),
+        "by_category": {str(key): by_cat[key] for key in sorted(by_cat)},
+        "note": "服务端 /api/Progression/items 全量行集（与账号无关，3020 行）；"
+                "named=有名字的行数，unnamed=只有 mixId（界面显示类别占位，不编造名字）；"
+                "default_owned=空号基线里默认拥有的项（解锁工具不必再添加）。",
+    }
+    log(
+        f"note: 目录补全 {appended} 行（其中 itemId 复用匹配 {matched_by_item} 行、"
+        f"给已有条目补名 {named_from_snapshot} 行）"
+        f" -> items 共 {len(items)} 条，在目录 {coverage['in_catalog']}/{coverage['catalog_rows']}，"
+        f"有名字 {coverage['named']}，默认拥有 {coverage['default_owned']}"
+    )
+    return coverage
+
+
 def build_items(
     variant_net: Path,
     variant_mod: Path,
@@ -924,6 +1147,8 @@ def build_items(
     catalog_index_path: Path,
     item_names_path: Path,
     unreleased_items_path: Path | None = None,
+    resolved_names_path: Path | None = None,
+    fresh_inventory_path: Path | None = None,
 ) -> tuple[dict[str, Any], int]:
     records: list[dict[str, Any]] = []
 
@@ -1225,6 +1450,15 @@ def build_items(
             "引擎按模板克隆目录行，界面添加库存时自动配对）"
         )
 
+    # --- 完整目录：并入服务端 3020 行全量行集 + default_owned 标记 -------------
+    resolved_by_mix, resolved_cat_kind = _load_resolved_catalog(resolved_names_path)
+    defaults = _load_fresh_defaults(fresh_inventory_path)
+    cat_kind = _infer_catalog_kinds(merged_items)
+    cat_kind.update({key: value for key, value in resolved_cat_kind.items()
+                     if key not in cat_kind})
+    coverage = _complete_catalog_items(merged_items, catalog_by_mix, resolved_by_mix,
+                                       cat_kind, defaults)
+
     merged_items.sort(
         key=lambda item: (
             item["mix_id"] is None,
@@ -1232,7 +1466,8 @@ def build_items(
             item["item_id"] if item["item_id"] is not None else 0,
         )
     )
-    return {"items": merged_items, "count": len(merged_items)}, len(merged_items)
+    return ({"items": merged_items, "count": len(merged_items), "catalog": coverage},
+            len(merged_items))
 
 
 # ---------------------------------------------------------------- 6. build 指纹
@@ -1316,6 +1551,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"目录缺失物品的模板配对（默认 {DEFAULT_UNRELEASED_ITEMS}），写入 items.json 的 unlock_template",
     )
     parser.add_argument(
+        "--resolved-names",
+        type=Path,
+        default=DEFAULT_RESOLVED_NAMES,
+        help=f"目录名称解析快照（默认 {DEFAULT_RESOLVED_NAMES}）",
+    )
+    parser.add_argument(
+        "--fresh-inventory",
+        type=Path,
+        default=DEFAULT_FRESH_INVENTORY,
+        help=f"空号库存基线（默认 {DEFAULT_FRESH_INVENTORY}），写 items.json 的 default_owned",
+    )
+    parser.add_argument(
         "--no-legacy",
         action="store_true",
         help="只写 GUI 目录，不写引擎目录 data/legacy/variant_catalog.json",
@@ -1336,7 +1583,8 @@ def main(argv: list[str] | None = None) -> int:
         planets, planets_count = build_planets(args.datamined)
         items, items_count = build_items(
             args.variant_net, args.variant_mod, args.datamined, args.catalog_index,
-            args.item_names, args.unreleased_items
+            args.item_names, args.unreleased_items,
+            args.resolved_names, args.fresh_inventory,
         )
         build, build_count = build_build(variants)
 

@@ -81,16 +81,23 @@ def test_loadout_item_names_source_file_is_wellformed():
 
 
 def test_names_do_not_cover_impossible_categories(items_doc):
-    """战备（cat 11）在本地数据里没有 id 映射：必须留空，**不许**编名字。
+    """无证据类别（cat 14 / cat 16）必须留空；有证据的类别名字来源必须同族，不许串味。
 
-    武器（cat 1）现在能从 LoadoutEntry 实体拿到内部名，但名字来源必须是 loadout-entity，
-    不能是别的来源（防止把附件选项名误配到武器上）。
+    来源证据（2026-11-18 名称解析快照，详见 docs/CATALOG-NAMES-2026-11-18.md）：
+      * 武器（cat 1）只能来自 LoadoutEntry 实体（`loadout-entity` / `loadout-entry` 同族）；
+      * 战备许可（cat 11）只能来自「战备目录 hash 匹配 + 1:1 子行」推断（`stratagem-permit-child`，
+        confidence=medium，UNLOCK-MAP §9.2 实机 30 条 + stratagem_catalog hash 命中）；
+      * cat 14 / cat 16 整类无证据 → 必须 name=None（不编造）。
     """
     for it in items_doc["items"]:
-        if it.get("catalog_category") == 11:
+        cat = it.get("catalog_category")
+        source = it.get("name_source")
+        if cat in (14, 16):
             assert it.get("name") is None, it
-        elif it.get("catalog_category") == 1 and it.get("name"):
-            assert it.get("name_source") == "loadout-entity", it
+        elif cat == 11 and it.get("name"):
+            assert source == "stratagem-permit-child", it
+        elif cat == 1 and it.get("name"):
+            assert source in ("loadout-entity", "loadout-entry"), it
 
 
 def test_catalog_category_is_recorded_for_catalog_rows(items_doc):
@@ -104,10 +111,17 @@ def test_catalog_category_is_recorded_for_catalog_rows(items_doc):
 
 
 def test_item_label_shows_name_or_explicit_unknown():
+    from hd2proxy.gui.catalogs import ITEM_CATEGORY_LABELS
+
     cat = Catalogs()
     assert cat.item_label(4591677).endswith("TUBE REDDOT 1,5x")
-    unknown = cat.item_label(8469881)          # cat 11 战备：没有名字来源
-    assert "内部名未解" in unknown and "战备" in unknown
+    # 目录里有行但没名字的条目：数据驱动挑一条（避免写死某 mix 后名字被补上导致测试失效）
+    unnamed = next(it for it in cat.items
+                   if it.get("mix_id") is not None and not it.get("name")
+                   and it.get("category") in ("weapon", "attachment", "cosmetic", "stratagem"))
+    label = cat.item_label(unnamed["mix_id"])
+    assert "内部名未解" in label
+    assert ITEM_CATEGORY_LABELS[unnamed["category"]] in label
     # 目录里没有的 id 也不能崩
     assert "内部名未解" in cat.item_label(1)
 
@@ -145,12 +159,14 @@ def test_search_items_category_filter_keeps_attachment_names_out_of_cosmetics():
     weapons = cat.search_items("", limit=100000, category="weapon")
     assert any("Shear" in label for _mix, label in weapons)
     stratagems = cat.search_items("", limit=100000, category="stratagem")
-    assert len(stratagems) == 30
+    # 2026-11-18 目录补全后战备从 30 条涨到目录全量（108 行）：条数不写死，按数据算
+    assert len(stratagems) == sum(1 for it in cat.items if it.get("category") == "stratagem")
+    assert len(stratagems) >= 30
     # 类别之间不重叠，且四类之和 + 未分类 = 全部
     total = len(cat.items)
     categorized = sum(len(cat.search_items("", limit=100000, category=c))
                       for c in ("weapon", "attachment", "cosmetic", "stratagem"))
-    assert categorized < total                       # 另有 15 条混类探测条目（category=None）
+    assert categorized < total                       # 余下是类别无证据的 unknown 行（不臆测归类）
     assert cat.item_category(4591677) == "attachment"
     assert cat.item_category(2112173638) == "weapon"
     assert cat.item_category(1) is None

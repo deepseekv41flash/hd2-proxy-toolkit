@@ -98,10 +98,26 @@ def build_profile(tmp: Path, port, crl, control, up_port) -> Path:
     return path
 
 
+def grab_shot(root, out: Path, stem: str, shots: list) -> None:
+    """把当前窗口截到 out/<stem>.png（失败只打印，不影响冒烟结论）。"""
+    try:
+        from PIL import ImageGrab
+        x, y = root.winfo_rootx(), root.winfo_rooty()
+        w, h = root.winfo_width(), root.winfo_height()
+        png = out / (stem + ".png")
+        ImageGrab.grab(bbox=(x, y, x + w, y + h)).save(png)
+        shots.append(str(png))
+        print("screenshot -> %s (%dx%d)" % (png, w, h))
+    except Exception as e:          # noqa: BLE001
+        print("screenshot 失败（%s）：%r" % (stem, e))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(REPO / "research" / "screenshots"))
     ap.add_argument("--pages", default=",".join(PAGES))
+    ap.add_argument("--tabs", action="store_true",
+                    help="额外截取「物品与战备」页的每个 tab（含 0.4.0 的「目录总览」）")
     ap.add_argument("--keep", action="store_true")
     a = ap.parse_args()
     pages = [p.strip() for p in a.pages.split(",") if p.strip()]
@@ -150,21 +166,26 @@ def main():
                 root.update()
                 time.sleep(0.5)
                 root.update()
-                try:
-                    from PIL import ImageGrab
-                    x, y = root.winfo_rootx(), root.winfo_rooty()
-                    w, h = root.winfo_width(), root.winfo_height()
-                    png = out / ("gui-%s.png" % page)
-                    ImageGrab.grab(bbox=(x, y, x + w, y + h)).save(png)
-                    shots.append(str(png))
-                    print("screenshot -> %s (%dx%d)" % (png, w, h))
-                except Exception as e:      # noqa: BLE001
-                    print("screenshot 失败（%s）：%r" % (page, e))
+                grab_shot(root, out, "gui-%s" % page, shots)
                 if not status_snapshot:
                     try:
                         status_snapshot = client.status()
                     except Exception as e:      # noqa: BLE001
                         status_snapshot = {"error": repr(e)}
+            if a.tabs:
+                # 「物品与战备」页每个 tab 单独截一张：0.4.0 的「目录总览」是唯一证据来源
+                app.show_page("inventory")
+                inv = app.pages.get("inventory")
+                if inv is not None:
+                    for idx in range(len(inv.nb.tabs())):
+                        inv.nb.select(idx)
+                        inv._on_tab_changed()
+                        root.update_idletasks()
+                        root.update()
+                        time.sleep(0.35)
+                        root.update()
+                        label = inv.nb.tab(idx, "text")
+                        grab_shot(root, out, "gui-inventory-tab%d-%s" % (idx, label), shots)
         finally:
             (out / "gui-status.json").write_text(
                 json.dumps(status_snapshot, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -176,7 +197,7 @@ def main():
             else:
                 print("临时 profile 保留在：%s" % tmp)
     print("shots:", len(shots))
-    return 0 if len(shots) == len(pages) else 2
+    return 0 if len(shots) >= len(pages) else 2
 
 
 if __name__ == "__main__":

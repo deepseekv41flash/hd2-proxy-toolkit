@@ -6,6 +6,42 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.4.0-alpha.1（2026-11-18）— 服务端物品目录全量做进产品（3020 行 · GUI「目录总览」· 空号默认 55）
+
+- **新功能（用户要求）**：把 `/api/Progression/items` 的 **3020 行全量目录**做进产品 ——
+  此前 `data/catalogs/items.json` 只覆盖 1950 行，缺口 1112 行的名字/类别在界面上完全是空的。
+- **数据（items.json 1950 → 3062）**：
+  1. **行集补齐**：3020 服务端目录行全部并入（`in_catalog=true`），另保留 42 条目录外研究线条目
+     （`in_catalog=false`，其中 3 条仍有 `unlock_template`）；每行带 `catalog_category` 服务端类别编号。
+     依据：目录与账号无关 —— 主号与新号两次抓包 sha256 逐字节一致（`d71655e6…`，3020 行）。
+  2. **名字 1821 → 2191**（目录行 2164/3020）：新增 `data/sources/catalog_names_resolved.json`
+     名称解析快照 v2，按 items.json 内部名 / dlbin LoadoutEntry 实体 / boosters 表 三条只读路线，
+     再加两条**结构证据**路线（战备目录 `(effect_hash, native_hash)` 与 effects.json GWE
+     `values_raw[0]` 对表 → cat10 记账行名字 + cat11 许可按 1:1 子行取名；外观套装行取全部同名
+     子行的名字 → cat4）**逐行匹配**后补名；**解析不到就 `name=null`**（界面显示
+     `mixId · 类别（内部名未解）`，不编译、不音译、不猜）。推断名在数据里带 `name_confidence`
+     （medium 263 / low 1），不冒充显式映射。
+  3. **类别语义（不臆测）**：`progressionCategory` → 语义类别先按「已有物品多数投票（≥60%）」推断，
+     再用快照里的 `category_meaning`（每个 cat 附证据出处）补空缺；新增 `booster`（强化资源）/
+     `banner`（徽章）/ `currency`（货币）三类；仍无证据的 **512 行记 `unknown`** 并保留 cat 编号。
+  4. **空号默认拥有 55 项**：新增 `data/sources/fresh_account_inventory.json`（新号首进游戏的库存
+     基线），标 `default_owned`；按 `itemId` 补匹配**只在该 itemId 目录里唯一时**生效（附件 optionId
+     被大量共享，泛匹配会把 55 误标成 150 —— 实测踩到并收紧）。
+  5. items.json 顶层新增 `catalog` 覆盖统计段（catalog_rows / in_catalog / named / unnamed /
+     default_owned / by_category），GUI 与测试都直读它，不再各自数。
+- **GUI（第 6 个只读 tab「目录总览」）**：汇总两行（目录 3020 · 界面条目 3062 = 目录内 3020 + 目录外 42 ·
+  已命名 1959 · 未解 1103 · 空号默认 55 · 各类别行数）+ 类别筛选（全部/武器/附件/外观/战备/强化资源/
+  徽章/货币/未分类/仅空号默认拥有/仅目录外）+ 全量列表（3062 条不截断，标签带类别与
+  「默认已有」「目录缺」标记）；页面**不解锁任何东西**。物品页顶部汇总行同时并入「目录 3020 行 ·
+  命名 1959 · 空号默认 55」。
+- **生成器**（`tools/gen_catalogs.py`）：新增目录补全阶段（`_complete_catalog_items` + 类别投票 +
+  名称快照 + 空号基线）与 `--resolved-names` / `--fresh-inventory` 参数；修两个 bug：`cat 0` 被
+  `int(x or -1)` 变成 -1；itemId 兜底匹配曾用错索引。
+- **验证**：单测 **445 → 468**（目录补全纯函数 12 条 / 真实数据验收 10 条 / GUI 目录总览 1 条 +
+  旧测试口径更新）；`python tools/check_gate.py` **GATE=PASS**；`gui_smoke.py --tabs` 新增逐 tab
+  截图能力，6 个 tab 渲染正常。
+- 规则：功能变化 ⇒ `0.3.0-alpha.3` → **`0.4.0-alpha.1`**（minor bump + alpha.1 重置）。
+
 ## v0.3.0-alpha.3（2026-11-17）— 修复「续期证书后游戏报 Error 60 / Status -1」（CA 未受信 + GUI 无真安装入口）
 
 - **修复（现场实测踩到）**：游戏弹 `ERROR / Request: … / Error: 60 / Status: -1`（"communicate with

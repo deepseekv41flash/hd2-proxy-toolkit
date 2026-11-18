@@ -385,7 +385,10 @@ def test_inventory_tabs_only_show_their_own_category(inv_page):
                                            for x in labels["cosmetics"])
     assert any("Shear" in x for x in labels["weapons"])
     assert not any("Shear" in x for x in labels["cosmetics"])
-    assert labels["stratagems"] and all("内部名未解" in x for x in labels["stratagems"])
+    # 战备（cat 11）2026-11-18 起可由战备目录 hash 匹配命名（部分行有名字）：这里只守类别不串味
+    assert labels["stratagems"]
+    assert not any("TUBE REDDOT" in x or "Vertical Grip" in x or "Shear" in x
+                   for x in labels["stratagems"])
     # 一级：武器列表 = 目录里所有「有配件」的武器（57 把）；二级初始为空
     groups = page.app.catalogs.attachment_groups()
     assert len(groups) == 57
@@ -467,6 +470,51 @@ def test_inventory_lists_are_not_truncated(inv_page):
     assert page._lists["attachments"].listbox.size() == len(items)
     # 目录追加 tab 也不截断
     assert page.catalog_list.listbox.size() == len(catalog.search_items("", limit=None))
+
+
+def test_inventory_catalog_overview_is_read_only_and_filters(inv_page, app):
+    """0.4.0「目录总览」只读页：全量目录 + 类别筛选 + 汇总，切 tab 不写 profile。
+
+    断言是数据驱动的（目录行数随 build 变），具体数值由 test_catalogs_data.py 守。
+    """
+    page = inv_page
+    catalog = page.app.catalogs
+    tabs = [page.nb.tab(i, "text") for i in range(len(page.nb.tabs()))]
+    assert tabs == ["武器", "附件", "外观", "战备", "目录追加", "目录总览"]
+    summary = catalog.catalog_summary()
+    assert page.catalog_overview_list.listbox.size() == len(catalog.search_items("", limit=None))
+    text = page.catalog_summary_lbl.cget("text")
+    assert ("服务端目录 %d 行" % summary["rows"]) in text
+    assert ("界面条目 %d" % summary["items"]) in text
+    assert ("空号默认拥有 %d" % summary["default_owned"]) in text
+    # 类别筛选与编辑 tab 同口径
+    page.var_catalog_scope.set("附件")
+    page._fill_catalog_list()
+    assert page.catalog_overview_list.listbox.size() == len(
+        catalog.search_items("", category="attachment"))
+    assert "当前「附件」" in page.catalog_count.cget("text")
+    page.var_catalog_scope.set("仅空号默认拥有")
+    page._fill_catalog_list()
+    assert page.catalog_overview_list.listbox.size() == summary["default_owned"]
+    assert page.catalog_overview_list.listbox.size() > 0
+    assert all("默认已有" in label
+               for label in page.catalog_overview_list.listbox.get(0, "end"))
+    page.var_catalog_scope.set("仅目录外（可追加）")
+    page._fill_catalog_list()
+    extra_labels = list(page.catalog_overview_list.listbox.get(0, "end"))
+    assert extra_labels and all("目录缺" in label for label in extra_labels)
+    assert any("Shear" in label for label in extra_labels)     # 研究线未上架武器
+    # 只读：切 tab / 重填列表不产生 profile 改动
+    page.var_catalog_scope.set("全部")
+    page._fill_catalog_list()
+    dirty_before = app.dirty
+    add_before = len((app.profile.get("items") or {}).get("add") or [])
+    page.nb.select(5)
+    page._on_tab_changed()
+    page.nb.select(4)
+    page._on_tab_changed()
+    assert app.dirty == dirty_before
+    assert len((app.profile.get("items") or {}).get("add") or []) == add_before
 
 
 def test_inventory_search_keeps_category_filter(inv_page):
