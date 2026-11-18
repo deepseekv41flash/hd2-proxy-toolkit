@@ -87,12 +87,37 @@
 - 数据不变量：3020/3020、3062、55、42、附件 1455/57、目录行已命名 2164、名字来源三类推断全部带
   `name_confidence`（测试 `test_inferred_names_carry_confidence` 锁定）。
 
+## 打包版实机验证（计算机操作，非源码版）
+
+用 `HD2PROXY_SIGN=1 python tools/build_dist.py` 构建的 `dist\hd2proxy\` 实测（本机自签，签名
+status=Valid），覆盖本次新增的 GUI 与数据：
+
+| 场景 | 结果 |
+|---|---|
+| 启动打包版 `hd2proxy-gui.exe`（无控制台窗口） | 主窗口「HD2 战况代理工坊」正常；总览页渲染正常，引擎未运行时有现场检查红字提示 ✓ |
+| 切「物品与战备」页 | **6 个 tab** 全部渲染：武器 / 附件 / 外观 / 战备 / 目录追加 / **目录总览**；顶部汇总行含「目录 3020 行 · 命名 2191 · 空号默认 55」✓ |
+| 点「目录总览」tab | 汇总两行正确：`服务端目录 3020 行（与账号无关）· 界面条目 3062（目录内 3020 + 目录外 42）` / `已命名 2191 · 未解 871 · 空号默认拥有 55 · 目录行类别：附件 1455 · 外观 682 · 武器 115 · 战备 108 · 强化资源 30 · 徽章 103 · 货币 15 · 未分类 512`；列表 **3062/3062 条**，条目带类别与「默认已有」标记 ✓ |
+| 列表关键词过滤（输入 `reddot`） | **71/3062** 条，全部是 `TUBE REDDOT 1,5x / 2x` 变体且标签带类别（附件）✓ |
+| 类别筛选切「武器」 | 「当前「武器」118 条」，列表只剩武器条目（有名字的直接显示名字，无语义的显示「武器（内部名未解）」）✓ |
+| 打包数据完整性 | 打包内 `data/catalogs/items.json` 与仓库生成物 **3062 条、sha256 一致**；`hd2proxy.exe --version` = `0.4.0-alpha.1`，`--version/info/preview` 构建自检均 OK ✓ |
+| 控制台窗口回归（alpha.2 修复） | GUI 全程 **180 s / 3496 次采样（50 ms 间隔）**，新出现的可见控制台类窗口（ConsoleWindowClass / CASCADIA_HOSTING_WINDOW_CLASS / PseudoConsoleWindow）**0 个** ✓ |
+
+截图（打包版实机）：`research/screenshots/alpha4-packaged-catalog.png`（目录总览全量）、
+`alpha4-packaged-catalog-search.png`（reddot 过滤 71 条）、`alpha4-packaged-catalog-weapons.png`
+（类别筛选「武器」118 条）、`alpha4-packaged-inventory.png`（物品页 6 个 tab）。
+
 ## 下载
 
 | 文件 | 说明 |
 |---|---|
-| `hd2proxy-toolkit-v0.4.0-alpha.1-windows-x64.zip` | onedir 分发包（解压即用） |
+| `hd2proxy-toolkit-v0.4.0-alpha.1-windows-x64.zip` | onedir 分发包（解压即用，17.6 MB） |
 | `SHA256SUMS.txt` | 校验和（zip + 两个 exe，签名之后计算） |
+
+```text
+7dd4fcbbb34b25b41cddb80df8b06e75e80767b9da95f92764656629a6a7a4bf  hd2proxy-toolkit-v0.4.0-alpha.1-windows-x64.zip
+300aabb0a90b017a0d65cabe65d26eed63f0e0e88ec6df186aafd3cf72855ffb  hd2proxy/hd2proxy.exe
+0bfe86588f945d4e1791dd4b8d38b80c5d3d07cb6023e1d27e04458b61843a09  hd2proxy/hd2proxy-gui.exe
+```
 
 ```powershell
 Get-FileHash .\hd2proxy-toolkit-v0.4.0-alpha.1-windows-x64.zip -Algorithm SHA256
