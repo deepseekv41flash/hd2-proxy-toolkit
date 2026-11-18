@@ -803,6 +803,19 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
+### 15.8 v0.4.1-alpha.4（2026-11-19，战备命名收尾 + 效果 target 链）
+
+- 战备：cat11 再补 7 条 client 表名（cat11 102/108）；cat10 记账子行按 1:1 结构反推 29 条
+  （新 `stratagem-permit-parent`，cat10 102/111）；新增 `tools/apply_cat10_parent_names.py`。
+- 效果：剩余未名效果的 `nameHash` locid 不在完整英文语料里（v4 已证语料完整），改走 target 链
+  （`values[0]`=战备 effect_hash → cat10.mix → native_hash → client 英文名），只派生语义已验证的
+  type32/type36 共 28 条（`target-chain`）；效果名 174 → **202/312**。
+- 数据：`items.json` 命名 2405 → **2441**（目录行 2414/3020）、未解 657 → 621。
+- 口径：新增名字**一律英文**（用户定），中文留待本地化批次。
+- 回归测试 **486 passed**；门禁 PASS。规则：数据补全 ⇒ 只动 alpha 位（alpha.3 → alpha.4）。
+
+---
+
 ## 附：本轮不做
 
 - 星图可视化大画布、多人同步、服务端写入（幻影战局不落账，交接档 §6.1 已定证）

@@ -48,6 +48,12 @@ CONFIDENCE = "high"
 STRATAGEM_CAT = 11
 REQUIRED_FIELDS = ("mix_id", "name", "client_internal_name", "native_hash")
 
+CLIENT_NAME_PATCH_NOTE = (
+    "cat11 战备许可行的客户端静态表英文名：cat11.mix_id --parent--> cat10 子行.item"
+    "(uint32 原生哈希) --> stratagem_settings.csv 的 +4 列 --> client 内部名 --> 显示名；"
+    "中文译名待后续批次。"
+)
+
 
 class PatchError(RuntimeError):
     """输入/快照结构或证据不自洽。"""
@@ -136,11 +142,15 @@ def apply_patch(snapshot: dict, names: dict[int, str], source_name: str) -> tupl
         patched += 1
 
     if patched:
-        update_coverage(snapshot, patched, source_name)
+        update_coverage(
+            snapshot, patched, NAME_SOURCE, STRATAGEM_CAT, source_name, CLIENT_NAME_PATCH_NOTE
+        )
     return patched, skipped
 
 
-def update_coverage(snapshot: dict, patched: int, source_name: str) -> None:
+def update_coverage(snapshot: dict, patched: int, name_source: str, cat: int,
+                    source_file: str, note: str) -> None:
+    """把 patched 条名字计入 coverage（named/unresolved/by_cat[cat]/by_source + name_patches）。"""
     coverage = snapshot.get("coverage")
     if not isinstance(coverage, dict):
         raise PatchError("快照缺少 coverage（无法保持统计自洽）")
@@ -149,35 +159,31 @@ def update_coverage(snapshot: dict, patched: int, source_name: str) -> None:
 
     by_cat = coverage.get("by_cat")
     if isinstance(by_cat, dict):
-        key = str(STRATAGEM_CAT)
+        key = str(cat)
         cat_cov = by_cat.get(key)
         if isinstance(cat_cov, dict):
             cat_cov["named"] = int(cat_cov.get("named", 0)) + patched
             cat_cov["unresolved"] = int(cat_cov.get("unresolved", 0)) - patched
             sources = cat_cov.get("sources")
             if isinstance(sources, dict):
-                sources[NAME_SOURCE] = int(sources.get(NAME_SOURCE, 0)) + patched
+                sources[name_source] = int(sources.get(name_source, 0)) + patched
 
     by_source = coverage.get("by_source")
     if isinstance(by_source, dict):
-        by_source[NAME_SOURCE] = int(by_source.get(NAME_SOURCE, 0)) + patched
+        by_source[name_source] = int(by_source.get(name_source, 0)) + patched
 
     patches = coverage.get("name_patches")
     if not isinstance(patches, list):
         patches = []
         coverage["name_patches"] = patches
     record = {
-        "name_source": NAME_SOURCE,
-        "source_file": "data/sources/stratagem_client_names.json",
+        "name_source": name_source,
+        "source_file": source_file,
         "added": patched,
-        "note": (
-            "cat11 战备许可行的客户端静态表英文名：cat11.mix_id --parent--> cat10 子行.item"
-            "(uint32 原生哈希) --> stratagem_settings.csv 的 +4 列 --> client 内部名 --> 显示名；"
-            "中文译名待后续批次。"
-        ),
+        "note": note,
     }
     for index, existing in enumerate(patches):
-        if isinstance(existing, dict) and existing.get("name_source") == NAME_SOURCE:
+        if isinstance(existing, dict) and existing.get("name_source") == name_source:
             patches[index] = record
             break
     else:

@@ -103,6 +103,7 @@ SRC_VARIANTS = "variant_mod/variant_catalog.json"
 SRC_VARIANTS_OVERLAY = "data/sources/variant_overlay.json"
 SRC_STRATAGEMS = "variant_mod/stratagem_catalog.json"
 SRC_EFFECTS_FULL = "variant-net/out/effects-full.csv"
+SRC_EFFECT_NAMES = "data/sources/effect_names_derived.json"   # 效果名 target 链派生结果（只补空位）
 SRC_EFFECTS_MENU = "variant-net/out/effect-menu.csv"
 SRC_ARMOR_ROWS = "variant-net/refs/armor_rows_parsed.json"
 SRC_STORE_COSMETICS = "variant-net/refs/store-cosmetics-20261106.json"
@@ -518,7 +519,69 @@ EFFECT_MENU_COLUMNS = (
 )
 
 
-def build_effects(variant_net: Path) -> tuple[dict[str, Any], int]:
+EFFECT_DERIVED_NAME_SOURCE = "target-chain"
+
+
+def _load_effect_name_overlay(path: Path | None) -> dict[int, dict[str, Any]]:
+    """读「效果名 target 链派生」覆盖层 -> effect_id -> {name, ...}。文件缺失返回空表。"""
+    if path is None or not Path(path).exists():
+        log(f"note: 效果名覆盖层缺失（{path}），effects.json 不做名称派生")
+        return {}
+    doc = load_json(Path(path), "效果名派生表 effect_names_derived.json", dict)
+    rows = doc.get("rows")
+    if not isinstance(rows, list):
+        raise SourceError("effect_names_derived.json 结构异常：缺少 rows[]")
+    overlay: dict[int, dict[str, Any]] = {}
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise SourceError(f"effect_names_derived.json rows[{index}] 不是对象")
+        effect_id = to_int(row.get("effect_id"), f"effect_names_derived.json rows[{index}].effect_id")
+        name = str(row.get("name") or "").strip()
+        if not name:
+            raise SourceError(f"effect_names_derived.json rows[{index}].name 为空")
+        if effect_id in overlay:
+            raise SourceError(f"effect_names_derived.json effect_id 重复: {effect_id}")
+        overlay[effect_id] = {
+            "name": name,
+            "effect_type": to_opt_int(row.get("effect_type"), f"effect {effect_id} effect_type"),
+            "value_index": to_opt_int(row.get("value_index"), f"effect {effect_id} value_index"),
+            "value_hex": row.get("value_hex"),
+            "ref_mix": to_opt_int(row.get("ref_mix"), f"effect {effect_id} ref_mix"),
+            "ref_native_hash": row.get("ref_native_hash"),
+            "ref_client_internal_name": row.get("ref_client_internal_name"),
+        }
+    log(f"效果名覆盖层: {len(overlay)} 条（{SRC_EFFECT_NAMES}）")
+    return overlay
+
+
+def _apply_effect_name_overlay(items: list[dict[str, Any]], overlay: dict[int, dict[str, Any]]) -> int:
+    """把派生名写进 name 为空的效果条目；已有名字不动（不覆盖任何上游来源）。返回补的条数。"""
+    if not overlay:
+        return 0
+    by_id = {int(item["effect_id"]): item for item in items if item.get("effect_id") is not None}
+    missing = sorted(set(overlay) - set(by_id))
+    if missing:
+        raise SourceError(f"效果名覆盖层有 {len(missing)} 个 effect_id 不在 effects 表里: {missing[:20]}")
+    applied = 0
+    for effect_id, record in overlay.items():
+        item = by_id[effect_id]
+        if item.get("name"):
+            continue
+        item["name"] = record["name"]
+        item["name_source"] = EFFECT_DERIVED_NAME_SOURCE
+        item["name_evidence"] = {
+            "chain": "values[i] -> 战备 effect_hash -> cat10.mix -> item(native_hash) -> client +4 -> display_name",
+            "value_index": record.get("value_index"),
+            "value_hex": record.get("value_hex"),
+            "ref_mix": record.get("ref_mix"),
+            "ref_native_hash": record.get("ref_native_hash"),
+            "ref_client_internal_name": record.get("ref_client_internal_name"),
+        }
+        applied += 1
+    return applied
+
+
+def build_effects(variant_net: Path, effect_names_path: Path | None = None) -> tuple[dict[str, Any], int]:
     full_rows = load_csv(
         variant_net / "out" / "effects-full.csv", "效果全量表 effects-full.csv", EFFECTS_FULL_COLUMNS
     )
@@ -615,6 +678,10 @@ def build_effects(variant_net: Path) -> tuple[dict[str, Any], int]:
 
     if not items:
         raise SourceError("effects 两表合并后为空")
+    overlay = _load_effect_name_overlay(effect_names_path)
+    applied = _apply_effect_name_overlay(items, overlay)
+    if applied:
+        log(f"效果名派生: name 空位补 {applied} 条（name_source={EFFECT_DERIVED_NAME_SOURCE}）")
     return {"items": items, "count": len(items)}, len(items)
 
 
@@ -1579,7 +1646,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         variants, variants_count, variants_source = build_variants(args.variant_mod, args.overlay)
         stratagems, stratagems_count = build_stratagems(args.variant_mod)
-        effects, effects_count = build_effects(args.variant_net)
+        effects, effects_count = build_effects(
+            args.variant_net, REPO_ROOT / SRC_EFFECT_NAMES
+        )
         planets, planets_count = build_planets(args.datamined)
         items, items_count = build_items(
             args.variant_net, args.variant_mod, args.datamined, args.catalog_index,

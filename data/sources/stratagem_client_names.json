@@ -1,14 +1,15 @@
 {
- "note": "cat11（服务端战备许可行）的英文显示名，共 22 条 —— 这批是 v0.4.1-alpha.2 之前唯一还缺名字的已发布战备（v3 快照里 cat11 73/108 有名，剩 35 无名，其中 22 条是已发布战备、13 条非战备行）。只读解析：不编造、不翻译；中文名留待以后补。",
+ "note": "cat11（服务端战备许可行）的英文显示名。第一批 22 条 = v0.4.1-alpha.3 补齐的「已发布但缺名字」战备；第二批 7 条 = v0.4.1-alpha.4 收尾：client 表里有显示名、但不属于 wiki 已发布 Permit 表的行（Eagle Rearm / Resupply / Medical Supplies / A2A missiles / Walking Barrage Smoke / Confetti / Fly By）。只读解析：不编造、不翻译；中文名留待本地化批次。",
  "build": "26568081",
  "derivation": {
   "chain": "cat11.mix_id --parent--> cat10 子行.item(uint32 原生哈希) --> repo-datamined/refs/exports/stratagem_settings.csv 的 +4 列 --> client 内部名 --> repo-datamined/refs/stratagem-display-names.json 的 display_name",
   "verified": "stratagem_settings.csv 的 +4 列 == data/legacy/stratagem_catalog.json 的 native_hash，58/153 条逐一对上（列语义已证）；cat10.item 与 +4 精确等值共命中 cat11 108 行中的 100 行。",
   "wiki_cross_check": "https://helldivers.wiki.gg/wiki/Stratagems 的 7 个 Permit 表共 95 条已发布战备（排除 Other/Unavailable 与 Orbital Confetti、Eagle Fly By），95 条全部有对应目录行；其中 73 条已有名字，本文件的 22 条即剩下的缺口。",
   "name_policy": "name 取 wiki 全名（含代号前缀，与当前游戏内显示一致）；client_display_name 是 client 静态表里的原始显示名（旧名可能不带代号），两者一并保留便于追溯。",
-  "snapshot": "2026-11-19"
+  "snapshot": "2026-11-19",
+  "cat10_parent_propagation": "cat10 记账行与 cat11 许可行严格 1:1（子行 parent == 许可 mixId）；工具 tools/apply_cat10_parent_names.py 把许可行的名字反向补给未命名的 cat10 子行，name_source=\"stratagem-permit-parent\"、confidence=medium。"
  },
- "count": 22,
+ "count": 29,
  "rows": [
   {
    "mix_id": 4111938309,
@@ -38,6 +39,16 @@
    "wiki_type": "Backpack"
   },
   {
+   "mix_id": 8469881,
+   "name": "Eagle Air-to-Air Missiles",
+   "client_display_name": "Eagle Air-to-Air Missiles",
+   "client_internal_name": "EAGLE. (NOT USED) AIR-TO-AIR MISSLES",
+   "native_hash": "b2e060bb",
+   "wiki_title": "Eagle Air-to-Air Missiles",
+   "wiki_type": "Eagle",
+   "note": "客户端表内标记 (NOT USED)，但名字齐全；不在 wiki 已发布 Permit 表里"
+  },
+  {
    "mix_id": 2474408748,
    "name": "Eagle Airstrike",
    "client_display_name": "Eagle Airstrike",
@@ -54,6 +65,16 @@
    "native_hash": "d9efc7d3",
    "wiki_title": "Eagle Cluster Bomb",
    "wiki_type": "Eagle"
+  },
+  {
+   "mix_id": 3705419442,
+   "name": "Eagle Fly By",
+   "client_display_name": "Eagle Fly By",
+   "client_internal_name": "EAGLE FLY BY",
+   "native_hash": "443bc93",
+   "wiki_title": "Eagle Fly By",
+   "wiki_type": "Eagle",
+   "note": "Liberty Day 2026 限时（用户已明确排除在「已发布缺口」清单外，但名字齐全，保留命名）"
   },
   {
    "mix_id": 1726445906,
@@ -92,6 +113,16 @@
    "wiki_type": "Orbital"
   },
   {
+   "mix_id": 3318281709,
+   "name": "Orbital Confetti",
+   "client_display_name": "Orbital Confetti",
+   "client_internal_name": "ORBITAL CONFETTI",
+   "native_hash": "fe5dc262",
+   "wiki_title": "Orbital Confetti",
+   "wiki_type": "Orbital",
+   "note": "Liberty Day 2026 限时（用户已明确排除在「已发布缺口」清单外，但名字齐全，保留命名）"
+  },
+  {
    "mix_id": 1497469599,
    "name": "Orbital Precision Strike",
    "client_display_name": "Orbital Precision Strike",
@@ -99,6 +130,16 @@
    "native_hash": "d2062cbc",
    "wiki_title": "Orbital Precision Strike",
    "wiki_type": "Orbital"
+  },
+  {
+   "mix_id": 2659326411,
+   "name": "Orbital Walking Barrage Smoke",
+   "client_display_name": "Orbital Walking Barrage Smoke",
+   "client_internal_name": "ORBITAL. WALKING BARRAGE SMOKE",
+   "native_hash": "e2446220",
+   "wiki_title": "Orbital Walking Barrage Smoke",
+   "wiki_type": "Orbital",
+   "note": "不在 wiki 已发布 Permit 表里（烟幕变体）"
   },
   {
    "mix_id": 2393461238,
@@ -153,6 +194,36 @@
    "native_hash": "2ac7580f",
    "wiki_title": "A/MLS-4X Rocket Sentry",
    "wiki_type": "Sentry"
+  },
+  {
+   "mix_id": 37634583,
+   "name": "Eagle Rearm",
+   "client_display_name": "Eagle Rearm",
+   "client_internal_name": "EAGLE. REARM",
+   "native_hash": "e4b4f558",
+   "wiki_title": "Eagle Rearm",
+   "wiki_type": "Ship",
+   "note": "wiki 归 Ship（战备呼叫，不是可解锁战备）"
+  },
+  {
+   "mix_id": 3852140214,
+   "name": "Medical Supplies",
+   "client_display_name": "Medical Supplies",
+   "client_internal_name": "CONSUMABLES. HEALTH PACK RACK",
+   "native_hash": "84df23be",
+   "wiki_title": "Medical Supplies",
+   "wiki_type": "Ship",
+   "note": "补给类消耗品呼叫，不在 wiki Permit 表"
+  },
+  {
+   "mix_id": 879717956,
+   "name": "Resupply",
+   "client_display_name": "Resupply",
+   "client_internal_name": "CONSUMABLES. RESUPPLY",
+   "native_hash": "33babe96",
+   "wiki_title": "Resupply",
+   "wiki_type": "Ship",
+   "note": "wiki 归 Ship（补给呼叫）"
   },
   {
    "mix_id": 1256411515,

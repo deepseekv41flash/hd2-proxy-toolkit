@@ -6,6 +6,27 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.4.1-alpha.4（2026-11-19）— 战备命名收尾 + 全局效果 target 链补名（命名 2405 → 2441，效果 174 → 202）
+
+- **战备命名收尾（+36 行）**：
+  - cat11 再补 **7** 条客户端表名（Eagle Rearm / Resupply / Medical Supplies / Eagle A2A Missiles /
+    Walking Barrage Smoke / Orbital Confetti / Eagle Fly By），来源同 v5：`+4 == 原生哈希` → client 显示名
+    （`name_source=stratagem-client-settings`，cat11 有名 95 → **102/108**）。
+  - cat10 记账子行**反推 29 条**：cat11 许可行与 cat10 子行严格 1:1，用已命名的许可行名反补未命名子行
+    （新 `name_source=stratagem-permit-parent`，medium；cat10 有名 73 → **102/111**）。
+  - 新增工具 `tools/apply_cat10_parent_names.py`（只补空位 / 幂等 / 无 parent 跳过 / `--check` 只读）+ 5 条单测。
+- **全局效果按 target 链补 28 条英文名**：剩余未名效果的 `nameHash` locid 在完整英文语料里不存在
+  （v4 已证语料完整），改走「`values[0]` = 战备 effect_hash → cat10.mix → native_hash → client 显示名」，
+  只对语义已验证的 type32（临时配发战备）/ type36（DSS 临时装备）派生，共 **28** 条
+  （`name_source=target-chain`，带 `name_evidence`）；type50 虽技术上匹配但语义未验证，未纳入。
+  **效果名 174 → 202 / 312**。
+- **数据**：`items.json` 有名字 2405 → **2441**（目录行 2414/3020），未解 657 → **621**；
+  `effects.json` 有名字 **202/312**；`gen_catalogs.py` 新增效果名覆盖层（只补空位、不覆盖上游名）。
+- **口径**：效果/星球/战备新增名字**一律英文**（与游戏内本地化文本一致，避免中文译名不一致）；
+  中文统一留待后续本地化批次。
+- **验证**：单测 **486 passed**（478 + 5 + 3）；`check_gate.py` **GATE=PASS**。
+- 规则：数据补全（非新功能）⇒ 只动 alpha 位：`0.4.1-alpha.3` → **`0.4.1-alpha.4`**。
+
 ## v0.4.1-alpha.3（2026-11-19）— 战备名字补齐（wiki 已发布清单对账，cat11 73 → 95 有名）
 
 - **数据补全（用户要求「补这 22 条，先只补英文名」）**：对照 wiki `Stratagems` 页的 7 个 Permit 表

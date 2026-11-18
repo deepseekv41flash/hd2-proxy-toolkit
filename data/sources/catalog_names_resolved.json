@@ -159,9 +159,9 @@
    "item": 8469881,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Air-to-Air Missiles",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 9696495,
@@ -312,9 +312,9 @@
    "item": 37634583,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Rearm",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 38242442,
@@ -2580,9 +2580,9 @@
    "item": 4267557474,
    "cat": 10,
    "parent": 3318281709,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital Confetti",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 376718346,
@@ -3075,9 +3075,9 @@
    "item": 1582497738,
    "cat": 10,
    "parent": 689724506,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/M-12 Mortar Sentry",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 463066946,
@@ -3570,9 +3570,9 @@
    "item": 867876502,
    "cat": 10,
    "parent": 879717956,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Resupply",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 549682780,
@@ -4290,9 +4290,9 @@
    "item": 474724029,
    "cat": 10,
    "parent": 3721265441,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/FLAM-40 Flame Sentry",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 671123458,
@@ -4506,9 +4506,9 @@
    "item": 1238358532,
    "cat": 10,
    "parent": 2474408748,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Airstrike",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 702859694,
@@ -5550,9 +5550,9 @@
    "item": 563851843,
    "cat": 10,
    "parent": 4190666565,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "EXO-55 Breakthrough Exosuit",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 841940762,
@@ -5757,9 +5757,9 @@
    "item": 879717956,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Resupply",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 879781902,
@@ -5874,9 +5874,9 @@
    "item": 2229216190,
    "cat": 10,
    "parent": 3852140214,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Medical Supplies",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 896447475,
@@ -5982,9 +5982,9 @@
    "item": 1337271929,
    "cat": 10,
    "parent": 699439563,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MS-11 Solo Silo",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 908842877,
@@ -6045,9 +6045,9 @@
    "item": 960389145,
    "cat": 10,
    "parent": 133465871,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/LAS-98 Laser Sentry",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 914584429,
@@ -8043,9 +8043,9 @@
    "item": 3656370131,
    "cat": 10,
    "parent": 4102799034,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Cluster Bomb",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 1221134181,
@@ -8106,9 +8106,9 @@
    "item": 4239785897,
    "cat": 10,
    "parent": 1565347406,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/MG-43 Machine Gun Sentry",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 1232734620,
@@ -8538,9 +8538,9 @@
    "item": 3086305673,
    "cat": 10,
    "parent": 1868571870,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "EXO-51 Lumberer Exosuit",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 1300371244,
@@ -12957,9 +12957,9 @@
    "item": 2808191861,
    "cat": 10,
    "parent": 1726445906,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Strafing Run",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2026170549,
@@ -15369,9 +15369,9 @@
    "item": 3353508219,
    "cat": 10,
    "parent": 4062012700,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "SH-20 Ballistic Shield Backpack",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2371602829,
@@ -15450,9 +15450,9 @@
    "item": 71548051,
    "cat": 10,
    "parent": 3705419442,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Fly By",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2383822493,
@@ -15513,9 +15513,9 @@
    "item": 3523620028,
    "cat": 10,
    "parent": 1497469599,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital Precision Strike",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2392945261,
@@ -15693,9 +15693,9 @@
    "item": 2271469939,
    "cat": 10,
    "parent": 1256411515,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "B/FLAM-80 Cremator",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2428462099,
@@ -15729,9 +15729,9 @@
    "item": 2002187052,
    "cat": 10,
    "parent": 815654998,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "TD-220 Bastion MK XVI",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2440327677,
@@ -16764,9 +16764,9 @@
    "item": 854563507,
    "cat": 10,
    "parent": 2393461238,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/AC-8 Autocannon Sentry",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2622359419,
@@ -16944,9 +16944,9 @@
    "item": 2659326411,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital Walking Barrage Smoke",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 2659834687,
@@ -17637,9 +17637,9 @@
    "item": 3001049275,
    "cat": 10,
    "parent": 8469881,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Air-to-Air Missiles",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2774254113,
@@ -18150,9 +18150,9 @@
    "item": 1560416221,
    "cat": 10,
    "parent": 4266803236,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital Airburst Strike",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2834084747,
@@ -18663,9 +18663,9 @@
    "item": 1063322614,
    "cat": 10,
    "parent": 2273387135,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital 120mm HE Barrage",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2932089918,
@@ -18870,9 +18870,9 @@
    "item": 4261593827,
    "cat": 10,
    "parent": 1598175737,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "PLAS-45 Epoch",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 2961949068,
@@ -19464,9 +19464,9 @@
    "item": 3837064536,
    "cat": 10,
    "parent": 37634583,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Rearm",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 3065481881,
@@ -19671,9 +19671,9 @@
    "item": 762584056,
    "cat": 10,
    "parent": 3559742963,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "E/AT-12 Anti-Tank Emplacement",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 3108735894,
@@ -21012,9 +21012,9 @@
    "item": 3318281709,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital Confetti",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 3321147331,
@@ -21894,9 +21894,9 @@
    "item": 717707279,
    "cat": 10,
    "parent": 3847625280,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/MLS-4X Rocket Sentry",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 3467881425,
@@ -23397,9 +23397,9 @@
    "item": 3705419442,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Fly By",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 3705573268,
@@ -23892,9 +23892,9 @@
    "item": 485866824,
    "cat": 10,
    "parent": 4111938309,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "AX/AR-23 Guard Dog",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 3792160842,
@@ -24234,9 +24234,9 @@
    "item": 3852140214,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Medical Supplies",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 3853908447,
@@ -24927,9 +24927,9 @@
    "item": 3796132384,
    "cat": 10,
    "parent": 2659326411,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital Walking Barrage Smoke",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 3944359936,
@@ -26988,9 +26988,9 @@
    "item": 1125307795,
    "cat": 10,
    "parent": 1522042130,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "AX/FLAM-75 Hot Dog",
+   "name_source": "stratagem-permit-parent",
+   "confidence": "medium"
   },
   {
    "mix": 4253257530,
@@ -27319,8 +27319,8 @@
  ],
  "coverage": {
   "total": 3020,
-  "named": 2378,
-  "unresolved": 642,
+  "named": 2414,
+  "unresolved": 606,
   "by_cat": {
    "0": {
     "rows": 173,
@@ -27405,20 +27405,21 @@
    },
    "10": {
     "rows": 111,
-    "named": 73,
-    "unresolved": 38,
+    "named": 102,
+    "unresolved": 9,
     "sources": {
      "loadout-entry": 14,
-     "stratagem-hash": 59
+     "stratagem-hash": 59,
+     "stratagem-permit-parent": 29
     }
    },
    "11": {
     "rows": 108,
-    "named": 95,
-    "unresolved": 13,
+    "named": 102,
+    "unresolved": 6,
     "sources": {
      "stratagem-permit-child": 73,
-     "stratagem-client-settings": 22
+     "stratagem-client-settings": 29
     }
    },
    "13": {
@@ -27508,7 +27509,8 @@
    "locid-id": 56,
    "stratagem-hash": 59,
    "stratagem-permit-child": 73,
-   "stratagem-client-settings": 22
+   "stratagem-client-settings": 29,
+   "stratagem-permit-parent": 29
   },
   "confidence": {
    "None": 664,
@@ -27532,9 +27534,15 @@
   "name_patches": [
    {
     "name_source": "stratagem-client-settings",
-    "source_file": "data/sources/stratagem_client_names.json",
-    "added": 22,
+    "source_file": "stratagem_client_names.json",
+    "added": 7,
     "note": "cat11 战备许可行的客户端静态表英文名：cat11.mix_id --parent--> cat10 子行.item(uint32 原生哈希) --> stratagem_settings.csv 的 +4 列 --> client 内部名 --> 显示名；中文译名待后续批次。"
+   },
+   {
+    "name_source": "stratagem-permit-parent",
+    "source_file": "data/sources/catalog_names_resolved.json（cat11 已命名行）",
+    "added": 29,
+    "note": "cat10 战备记账行与 cat11 许可行 1:1（子行 parent == 许可 mixId）；用已命名的许可行名字反推未命名的子行（与 v2 stratagem-permit-child 同一条结构、方向相反）。"
    }
   ]
  },
