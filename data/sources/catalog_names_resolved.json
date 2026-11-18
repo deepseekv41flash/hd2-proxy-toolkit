@@ -996,9 +996,9 @@
    "item": 133465871,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/LAS-98 Laser Sentry",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 141179840,
@@ -4407,9 +4407,9 @@
    "item": 689724506,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/M-12 Mortar Sentry",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 690708765,
@@ -4497,9 +4497,9 @@
    "item": 699439563,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "MS-11 Solo Silo",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 700547364,
@@ -5361,9 +5361,9 @@
    "item": 815654998,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "TD-220 Bastion MK XVI",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 819008890,
@@ -8286,9 +8286,9 @@
    "item": 1256411515,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "B/FLAM-80 Cremator",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 1257387459,
@@ -9708,9 +9708,9 @@
    "item": 1497469599,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital Precision Strike",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 1498536478,
@@ -9951,9 +9951,9 @@
    "item": 1522042130,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "AX/FLAM-75 Hot Dog",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 1528416293,
@@ -10158,9 +10158,9 @@
    "item": 1565347406,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/MG-43 Machine Gun Sentry",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 1566507958,
@@ -10338,9 +10338,9 @@
    "item": 1598175737,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "PLAS-45 Epoch",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 1598352681,
@@ -11058,9 +11058,9 @@
    "item": 1726445906,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Strafing Run",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 1730855398,
@@ -12012,9 +12012,9 @@
    "item": 1868571870,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "EXO-51 Lumberer Exosuit",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 1869637596,
@@ -14829,9 +14829,9 @@
    "item": 2273387135,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital 120mm HE Barrage",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 2273912558,
@@ -15531,9 +15531,9 @@
    "item": 2393461238,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/AC-8 Autocannon Sentry",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 2393885006,
@@ -15900,9 +15900,9 @@
    "item": 2474408748,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Airstrike",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 2478276465,
@@ -22416,9 +22416,9 @@
    "item": 3559742963,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "E/AT-12 Anti-Tank Emplacement",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 3560709547,
@@ -23505,9 +23505,9 @@
    "item": 3721265441,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/FLAM-40 Flame Sentry",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 3722765189,
@@ -24207,9 +24207,9 @@
    "item": 3847625280,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "A/MLS-4X Rocket Sentry",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 3849573872,
@@ -25710,9 +25710,9 @@
    "item": 4062012700,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "SH-20 Ballistic Shield Backpack",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 4063863184,
@@ -25980,9 +25980,9 @@
    "item": 4102799034,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Eagle Cluster Bomb",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 4103984053,
@@ -26115,9 +26115,9 @@
    "item": 4111938309,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "AX/AR-23 Guard Dog",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 4112773733,
@@ -26718,9 +26718,9 @@
    "item": 4190666565,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "EXO-55 Breakthrough Exosuit",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 4191577848,
@@ -27105,9 +27105,9 @@
    "item": 4266803236,
    "cat": 11,
    "parent": null,
-   "name": null,
-   "name_source": null,
-   "confidence": null
+   "name": "Orbital Airburst Strike",
+   "name_source": "stratagem-client-settings",
+   "confidence": "high"
   },
   {
    "mix": 4267565180,
@@ -27319,8 +27319,8 @@
  ],
  "coverage": {
   "total": 3020,
-  "named": 2356,
-  "unresolved": 664,
+  "named": 2378,
+  "unresolved": 642,
   "by_cat": {
    "0": {
     "rows": 173,
@@ -27414,10 +27414,11 @@
    },
    "11": {
     "rows": 108,
-    "named": 73,
-    "unresolved": 35,
+    "named": 95,
+    "unresolved": 13,
     "sources": {
-     "stratagem-permit-child": 73
+     "stratagem-permit-child": 73,
+     "stratagem-client-settings": 22
     }
    },
    "13": {
@@ -27506,7 +27507,8 @@
    "loadout-entry": 100,
    "locid-id": 56,
    "stratagem-hash": 59,
-   "stratagem-permit-child": 73
+   "stratagem-permit-child": 73,
+   "stratagem-client-settings": 22
   },
   "confidence": {
    "None": 664,
@@ -27526,7 +27528,15 @@
   },
   "v3_new_total": 192,
   "v2_named": 2164,
-  "conflicts": []
+  "conflicts": [],
+  "name_patches": [
+   {
+    "name_source": "stratagem-client-settings",
+    "source_file": "data/sources/stratagem_client_names.json",
+    "added": 22,
+    "note": "cat11 战备许可行的客户端静态表英文名：cat11.mix_id --parent--> cat10 子行.item(uint32 原生哈希) --> stratagem_settings.csv 的 +4 列 --> client 内部名 --> 显示名；中文译名待后续批次。"
+   }
+  ]
  },
  "sources": {
   "dll": {

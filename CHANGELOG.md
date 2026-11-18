@@ -6,6 +6,28 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.4.1-alpha.3（2026-11-19）— 战备名字补齐（wiki 已发布清单对账，cat11 73 → 95 有名）
+
+- **数据补全（用户要求「补这 22 条，先只补英文名」）**：对照 wiki `Stratagems` 页的 7 个 Permit 表
+  （Orbital / Eagle / Support Weapon / Backpack / Vehicle / Sentry / Emplacement，排除 Other /
+  Unavailable 与 Orbital Confetti、Eagle Fly By，去重后 **95 条已发布战备**）逐条核对目录：
+  **95 条全部有 id（cat11 行都在）**，其中 73 条已有名字 —— 剩 **22 条只缺名字**，本轮补齐。
+- **名字来源（客户端静态表，非 wiki）**：`cat11.mix_id --parent--> cat10 子行 item(原生哈希)
+  --(+4 列)--> stratagem_settings.csv 的 client 行 --> 内部名 --> display_name`。
+  列语义已验证：`+4 == 旧 stratagem_catalog.json 的 native_hash`（58/153 逐一对上）；
+  该链反查 108 条 cat11 行命中 100 行。
+- **补的 22 条**：Orbital 3（120mm HE Barrage / Airburst Strike / Precision Strike）、
+  Eagle 3（Airstrike / Cluster Bomb / Strafing Run）、支援武器 3（B/FLAM-80 Cremator /
+  MS-11 Solo Silo / PLAS-45 Epoch）、背包 3（AX/AR-23 Guard Dog / AX/FLAM-75 Hot Dog /
+  SH-20 Ballistic Shield）、载具 3（EXO-51 Lumberer / EXO-55 Breakthrough / TD-220 Bastion）、
+  哨戒炮 6（A/AC-8、A/FLAM-40、A/LAS-98、A/M-12、A/MG-43、A/MLS-4X）、阵地 1（E/AT-12）。
+- **数据**：`items.json` 有名字 2383 → **2405**（目录行 2378/3020），未解 679 → **657**；
+  cat11 战备行 108 行里有名 **73 → 95**；`name_source` 新增 `stratagem-client-settings`（high）。
+- **工具**：新增 `tools/apply_stratagem_client_names.py`（只补空位 / 同名幂等 / 异名拒绝覆盖 /
+  `--check` 只读 / 同步 coverage 并记 `coverage.name_patches`）+ 6 条单测。
+- **验证**：单测 **478 passed**；`check_gate.py` **GATE=PASS**。
+- 规则：数据补全（非新功能）⇒ 只动 alpha 位：`0.4.1-alpha.2` → **`0.4.1-alpha.3`**。
+
 ## v0.4.1-alpha.2（2026-11-18）— 补完物品名字（客户端 game.dll 静态表路线，命名 2191 → 2383）
 
 - **数据补全（用户要求「补完没解出来的项」）**：先抓 store/season 响应验证「API 里没有名字」

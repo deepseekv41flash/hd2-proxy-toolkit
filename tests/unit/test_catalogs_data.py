@@ -118,7 +118,7 @@ def test_inferred_names_carry_confidence(items):
     # high 来源（显式 id→名字映射）：不允许带 confidence
     high_only = {"catalog-option", "armor-table", "loadout-entity", "boosters",
                  "dlbin-banner-table", "dlbin-victory-pose-table", "dlbin-voice-table",
-                 "dlbin-resource-sample-table"}
+                 "dlbin-resource-sample-table", "stratagem-client-settings"}
     for it in items:
         if it.get("name_source") in high_only:
             assert not it.get("name_confidence"), it
@@ -137,12 +137,12 @@ def test_inferred_names_carry_confidence(items):
     for it in items:
         if it.get("name_source") in must_medium:
             assert it.get("name_confidence") in ("medium", "low"), it
-    # 战备许可名字全部来自 1:1 子行推断，且占三分之二以上（108 行里 73 行）
+    # 战备许可名字来自两路：1:1 子行推断（73 行）+ 客户端静态表哈希直证（22 行），合计 95/108
     stratagems = [it for it in items if it.get("category") == "stratagem"]
     named_stratagems = [it for it in stratagems if it.get("name")]
-    assert len(named_stratagems) >= 70
-    assert all(it.get("name_source") == "stratagem-permit-child"
-               for it in named_stratagems)
+    assert len(named_stratagems) >= 90
+    assert {it.get("name_source") for it in named_stratagems} == {
+        "stratagem-permit-child", "stratagem-client-settings"}
 
 
 # ---------------------------------------------------------------- 空号默认拥有

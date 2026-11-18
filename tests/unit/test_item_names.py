@@ -85,7 +85,8 @@ def test_names_do_not_cover_impossible_categories(items_doc):
 
     来源证据（2026-11-18 快照 v2/v3，详见 docs/CATALOG-NAMES-2026-11-18.md）：
       * cat 1 武器：LoadoutEntry 同族（`loadout-entity` / `loadout-entry`）；
-      * cat 11 战备许可：战备目录 hash + 1:1 子行（`stratagem-permit-child`，medium）；
+      * cat 11 战备许可：战备目录 hash + 1:1 子行（`stratagem-permit-child`，medium）
+        + 客户端 stratagem_settings 表（`stratagem-client-settings`，high，+4==原生哈希）；
       * cat 9 横幅 / cat 8 胜利姿势 / cat 13 语音 / cat 15 资源：客户端 game.dll 静态表
         （`dlbin-banner-table` / `dlbin-victory-pose-table` / `dlbin-voice-table` /
         `dlbin-resource-sample-table`，high，行 id == 目录 mixId）；
@@ -98,7 +99,7 @@ def test_names_do_not_cover_impossible_categories(items_doc):
         1: {"loadout-entity", "loadout-entry"},
         8: {"dlbin-victory-pose-table"},
         9: {"dlbin-banner-table"},
-        11: {"stratagem-permit-child"},
+        11: {"stratagem-permit-child", "stratagem-client-settings"},
         13: {"dlbin-voice-table"},
         15: {"dlbin-resource-sample-table"},
         16: {"dlbin-difficulty-table"},

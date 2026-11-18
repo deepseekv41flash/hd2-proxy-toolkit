@@ -1,0 +1,212 @@
+{
+ "note": "cat11（服务端战备许可行）的英文显示名，共 22 条 —— 这批是 v0.4.1-alpha.2 之前唯一还缺名字的已发布战备（v3 快照里 cat11 73/108 有名，剩 35 无名，其中 22 条是已发布战备、13 条非战备行）。只读解析：不编造、不翻译；中文名留待以后补。",
+ "build": "26568081",
+ "derivation": {
+  "chain": "cat11.mix_id --parent--> cat10 子行.item(uint32 原生哈希) --> repo-datamined/refs/exports/stratagem_settings.csv 的 +4 列 --> client 内部名 --> repo-datamined/refs/stratagem-display-names.json 的 display_name",
+  "verified": "stratagem_settings.csv 的 +4 列 == data/legacy/stratagem_catalog.json 的 native_hash，58/153 条逐一对上（列语义已证）；cat10.item 与 +4 精确等值共命中 cat11 108 行中的 100 行。",
+  "wiki_cross_check": "https://helldivers.wiki.gg/wiki/Stratagems 的 7 个 Permit 表共 95 条已发布战备（排除 Other/Unavailable 与 Orbital Confetti、Eagle Fly By），95 条全部有对应目录行；其中 73 条已有名字，本文件的 22 条即剩下的缺口。",
+  "name_policy": "name 取 wiki 全名（含代号前缀，与当前游戏内显示一致）；client_display_name 是 client 静态表里的原始显示名（旧名可能不带代号），两者一并保留便于追溯。",
+  "snapshot": "2026-11-19"
+ },
+ "count": 22,
+ "rows": [
+  {
+   "mix_id": 4111938309,
+   "name": "AX/AR-23 Guard Dog",
+   "client_display_name": "Guard Dog",
+   "client_internal_name": "BACKPACK. GUARD DOG (Drone)",
+   "native_hash": "1cf5bd48",
+   "wiki_title": "AX/AR-23 Guard Dog",
+   "wiki_type": "Backpack"
+  },
+  {
+   "mix_id": 1522042130,
+   "name": "AX/FLAM-75 Hot Dog",
+   "client_display_name": "Hot Dog",
+   "client_internal_name": "BACKPACK. GUARD DOG FLAMETHROWER (Drone)",
+   "native_hash": "4312d593",
+   "wiki_title": "AX/FLAM-75 Hot Dog",
+   "wiki_type": "Backpack"
+  },
+  {
+   "mix_id": 4062012700,
+   "name": "SH-20 Ballistic Shield Backpack",
+   "client_display_name": "Ballistic Shield Backpack",
+   "client_internal_name": "BACKPACK. BALLISTIC SHIELD BACKPACK",
+   "native_hash": "c7e2797b",
+   "wiki_title": "SH-20 Ballistic Shield Backpack",
+   "wiki_type": "Backpack"
+  },
+  {
+   "mix_id": 2474408748,
+   "name": "Eagle Airstrike",
+   "client_display_name": "Eagle Airstrike",
+   "client_internal_name": "EAGLE. AIRSTRIKE",
+   "native_hash": "49cfda04",
+   "wiki_title": "Eagle Airstrike",
+   "wiki_type": "Eagle"
+  },
+  {
+   "mix_id": 4102799034,
+   "name": "Eagle Cluster Bomb",
+   "client_display_name": "Eagle Cluster Bomb",
+   "client_internal_name": "EAGLE. CLUSTERBOMBS",
+   "native_hash": "d9efc7d3",
+   "wiki_title": "Eagle Cluster Bomb",
+   "wiki_type": "Eagle"
+  },
+  {
+   "mix_id": 1726445906,
+   "name": "Eagle Strafing Run",
+   "client_display_name": "Eagle Strafing Run",
+   "client_internal_name": "EAGLE. AIR SUPPORT",
+   "native_hash": "a7619b75",
+   "wiki_title": "Eagle Strafing Run",
+   "wiki_type": "Eagle"
+  },
+  {
+   "mix_id": 3559742963,
+   "name": "E/AT-12 Anti-Tank Emplacement",
+   "client_display_name": "Anti-Tank Emplacement",
+   "client_internal_name": "EMPLACEMENTS. ANTI TANK EMPLACEMENT",
+   "native_hash": "2d741bf8",
+   "wiki_title": "E/AT-12 Anti-Tank Emplacement",
+   "wiki_type": "Emplacement"
+  },
+  {
+   "mix_id": 2273387135,
+   "name": "Orbital 120mm HE Barrage",
+   "client_display_name": "Orbital 120mm HE Barrage",
+   "client_internal_name": "ORBITAL. 120MM HE STRIKE",
+   "native_hash": "3f6103f6",
+   "wiki_title": "Orbital 120mm HE Barrage",
+   "wiki_type": "Orbital"
+  },
+  {
+   "mix_id": 4266803236,
+   "name": "Orbital Airburst Strike",
+   "client_display_name": "Orbital Airburst Strike",
+   "client_internal_name": "ORBITAL. AIRBURST STRIKE",
+   "native_hash": "5d020fdd",
+   "wiki_title": "Orbital Airburst Strike",
+   "wiki_type": "Orbital"
+  },
+  {
+   "mix_id": 1497469599,
+   "name": "Orbital Precision Strike",
+   "client_display_name": "Orbital Precision Strike",
+   "client_internal_name": "ORBITAL. PRECISION STRIKE",
+   "native_hash": "d2062cbc",
+   "wiki_title": "Orbital Precision Strike",
+   "wiki_type": "Orbital"
+  },
+  {
+   "mix_id": 2393461238,
+   "name": "A/AC-8 Autocannon Sentry",
+   "client_display_name": "Autocannon Sentry",
+   "client_internal_name": "SENTRYS. AUTOCANNON",
+   "native_hash": "32ef9ab3",
+   "wiki_title": "A/AC-8 Autocannon Sentry",
+   "wiki_type": "Sentry"
+  },
+  {
+   "mix_id": 3721265441,
+   "name": "A/FLAM-40 Flame Sentry",
+   "client_display_name": "Flame Sentry",
+   "client_internal_name": "SENTRYS. FLAMETHROWER",
+   "native_hash": "1c4bb6bd",
+   "wiki_title": "A/FLAM-40 Flame Sentry",
+   "wiki_type": "Sentry"
+  },
+  {
+   "mix_id": 133465871,
+   "name": "A/LAS-98 Laser Sentry",
+   "client_display_name": "Laser Sentry",
+   "client_internal_name": "SENTRIES. LASER CANNON SENTRY",
+   "native_hash": "393e6019",
+   "wiki_title": "A/LAS-98 Laser Sentry",
+   "wiki_type": "Sentry"
+  },
+  {
+   "mix_id": 689724506,
+   "name": "A/M-12 Mortar Sentry",
+   "client_display_name": "Mortar Sentry",
+   "client_internal_name": "SENTRYS. MORTAR",
+   "native_hash": "5e52ffca",
+   "wiki_title": "A/M-12 Mortar Sentry",
+   "wiki_type": "Sentry"
+  },
+  {
+   "mix_id": 1565347406,
+   "name": "A/MG-43 Machine Gun Sentry",
+   "client_display_name": "Machine Gun Sentry",
+   "client_internal_name": "SENTRYS. MACHINEGUN",
+   "native_hash": "fcb5ffa9",
+   "wiki_title": "A/MG-43 Machine Gun Sentry",
+   "wiki_type": "Sentry"
+  },
+  {
+   "mix_id": 3847625280,
+   "name": "A/MLS-4X Rocket Sentry",
+   "client_display_name": "Rocket Sentry",
+   "client_internal_name": "SENTRYS. ROCKET",
+   "native_hash": "2ac7580f",
+   "wiki_title": "A/MLS-4X Rocket Sentry",
+   "wiki_type": "Sentry"
+  },
+  {
+   "mix_id": 1256411515,
+   "name": "B/FLAM-80 Cremator",
+   "client_display_name": "Cremator",
+   "client_internal_name": "TEAM WEAPONS. HEAVY FLAMETHROWER",
+   "native_hash": "8763e173",
+   "wiki_title": "B/FLAM-80 Cremator",
+   "wiki_type": "Support Weapon"
+  },
+  {
+   "mix_id": 699439563,
+   "name": "MS-11 Solo Silo",
+   "client_display_name": "Solo Silo",
+   "client_internal_name": "TEAM WEAPONS. MINI MISSILE SILO",
+   "native_hash": "4fb52679",
+   "wiki_title": "MS-11 Solo Silo",
+   "wiki_type": "Support Weapon"
+  },
+  {
+   "mix_id": 1598175737,
+   "name": "PLAS-45 Epoch",
+   "client_display_name": "Epoch",
+   "client_internal_name": "TEAM WEAPONS. PLASMA BLASTER",
+   "native_hash": "fe02c2e3",
+   "wiki_title": "PLAS-45 Epoch",
+   "wiki_type": "Support Weapon"
+  },
+  {
+   "mix_id": 1868571870,
+   "name": "EXO-51 Lumberer Exosuit",
+   "client_display_name": "Lumberer Exosuit",
+   "client_internal_name": "VEHICLES. COMBAT WALKER LUMBERER",
+   "native_hash": "b7f54989",
+   "wiki_title": "EXO-51 Lumberer Exosuit",
+   "wiki_type": "Vehicle"
+  },
+  {
+   "mix_id": 4190666565,
+   "name": "EXO-55 Breakthrough Exosuit",
+   "client_display_name": "Breakthrough Exosuit",
+   "client_internal_name": "VEHICLES. COMBAT WALKER BREACHER",
+   "native_hash": "219bb243",
+   "wiki_title": "EXO-55 Breakthrough Exosuit",
+   "wiki_type": "Vehicle"
+  },
+  {
+   "mix_id": 815654998,
+   "name": "TD-220 Bastion MK XVI",
+   "client_display_name": "Bastion Mk XVI",
+   "client_internal_name": "VEHICLES. BASTION(tank)",
+   "native_hash": "7756f32c",
+   "wiki_title": "TD-220 Bastion MK XVI",
+   "wiki_type": "Vehicle"
+  }
+ ]
+}

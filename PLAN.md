@@ -786,6 +786,23 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
+### 15.7 v0.4.1-alpha.3（2026-11-19，战备名字补齐：wiki 已发布清单对账）
+
+- 路线：Cargo API 取 wiki `Stratagems` 页 7 个 Permit 表（渲染 HTML 会在 ~50KB 截断；
+  本机 `curl`/PowerShell 直连被 Cloudflare 403，走本地代理可通），排除 Other / Unavailable /
+  Orbital Confetti / Eagle Fly By 后得 **95 条已发布战备**。
+- 对账：cat11 `mix_id` →（parent）cat10 子行 `item`（原生哈希）→ `stratagem_settings.csv` 的 `+4` 列
+  → client 内部名 → display_name（`+4 == 旧 stratagem_catalog native_hash`，58/153 验证）。
+  **95 条全部有 id**，73 条已有名字，剩 22 条缺名字。
+- 结果：cat11 有名 **73 → 95**；`items.json` 命名 2383 → **2405**（目录行 2378/3020），未解 679 → 657；
+  新增 `name_source=stratagem-client-settings`（high）。名字暂为英文（用户明确「先只补英文名」），
+  中文译名后续批次再做。
+- 副产物：`tools/apply_stratagem_client_names.py`（补丁工具，幂等/拒绝覆盖/--check）+ 6 条单测；
+  证据与 22 条明细见 `docs/CATALOG-NAMES-V5-2026-11-19.md`。
+- 回归测试 **478 passed**；门禁 PASS。规则：数据补全 ⇒ 只动 alpha 位（alpha.2 → alpha.3）。
+
+---
+
 ## 附：本轮不做
 
 - 星图可视化大画布、多人同步、服务端写入（幻影战局不落账，交接档 §6.1 已定证）

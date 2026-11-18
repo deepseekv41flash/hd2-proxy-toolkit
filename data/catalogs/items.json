@@ -18,7 +18,7 @@
    },
    "11": {
     "kind": "stratagem",
-    "named": 73,
+    "named": 95,
     "rows": 108
    },
    "13": {
@@ -115,9 +115,9 @@
   "catalog_rows": 3020,
   "default_owned": 55,
   "in_catalog": 3020,
-  "named": 2383,
+  "named": 2405,
   "note": "服务端 /api/Progression/items 全量行集（与账号无关，3020 行）；named=有名字的行数，unnamed=只有 mixId（界面显示类别占位，不编造名字）；default_owned=空号基线里默认拥有的项（解锁工具不必再添加）。",
-  "unnamed": 679
+  "unnamed": 657
  },
  "count": 3062,
  "items": [
@@ -1161,8 +1161,8 @@
    "in_catalog": true,
    "item_id": 133465871,
    "mix_id": 133465871,
-   "name": null,
-   "name_source": null,
+   "name": "A/LAS-98 Laser Sentry",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -5354,8 +5354,8 @@
    "in_catalog": true,
    "item_id": 689724506,
    "mix_id": 689724506,
-   "name": null,
-   "name_source": null,
+   "name": "A/M-12 Mortar Sentry",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -5489,7 +5489,8 @@
    "in_catalog": true,
    "item_id": null,
    "mix_id": 699439563,
-   "name": null,
+   "name": "MS-11 Solo Silo",
+   "name_source": "stratagem-client-settings",
    "source": "variant_mod/runtime/inventory_stratagem_inject.json"
   },
   {
@@ -6646,8 +6647,8 @@
    "in_catalog": true,
    "item_id": 815654998,
    "mix_id": 815654998,
-   "name": null,
-   "name_source": null,
+   "name": "TD-220 Bastion MK XVI",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -10376,7 +10377,8 @@
    "in_catalog": true,
    "item_id": null,
    "mix_id": 1256411515,
-   "name": null,
+   "name": "B/FLAM-80 Cremator",
+   "name_source": "stratagem-client-settings",
    "source": "variant_mod/runtime/inventory_stratagem_inject.json"
   },
   {
@@ -12145,8 +12147,8 @@
    "in_catalog": true,
    "item_id": 1497469599,
    "mix_id": 1497469599,
-   "name": null,
-   "name_source": null,
+   "name": "Orbital Precision Strike",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -12514,8 +12516,8 @@
    "in_catalog": true,
    "item_id": 1522042130,
    "mix_id": 1522042130,
-   "name": null,
-   "name_source": null,
+   "name": "AX/FLAM-75 Hot Dog",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -12759,8 +12761,8 @@
    "in_catalog": true,
    "item_id": 1565347406,
    "mix_id": 1565347406,
-   "name": null,
-   "name_source": null,
+   "name": "A/MG-43 Machine Gun Sentry",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -12981,8 +12983,8 @@
    "in_catalog": true,
    "item_id": 1598175737,
    "mix_id": 1598175737,
-   "name": null,
-   "name_source": null,
+   "name": "PLAS-45 Epoch",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -13918,8 +13920,8 @@
    "in_catalog": true,
    "item_id": 1726445906,
    "mix_id": 1726445906,
-   "name": null,
-   "name_source": null,
+   "name": "Eagle Strafing Run",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -15099,7 +15101,8 @@
    "in_catalog": true,
    "item_id": null,
    "mix_id": 1868571870,
-   "name": null,
+   "name": "EXO-51 Lumberer Exosuit",
+   "name_source": "stratagem-client-settings",
    "source": "variant_mod/runtime/inventory_stratagem_inject.json"
   },
   {
@@ -18689,8 +18692,8 @@
    "in_catalog": true,
    "item_id": 2273387135,
    "mix_id": 2273387135,
-   "name": null,
-   "name_source": null,
+   "name": "Orbital 120mm HE Barrage",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -19657,8 +19660,8 @@
    "in_catalog": true,
    "item_id": 2393461238,
    "mix_id": 2393461238,
-   "name": null,
-   "name_source": null,
+   "name": "A/AC-8 Autocannon Sentry",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -20118,8 +20121,8 @@
    "in_catalog": true,
    "item_id": 2474408748,
    "mix_id": 2474408748,
-   "name": null,
-   "name_source": null,
+   "name": "Eagle Airstrike",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -28468,8 +28471,8 @@
    "in_catalog": true,
    "item_id": 3559742963,
    "mix_id": 3559742963,
-   "name": null,
-   "name_source": null,
+   "name": "E/AT-12 Anti-Tank Emplacement",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -29884,8 +29887,8 @@
    "in_catalog": true,
    "item_id": 3721265441,
    "mix_id": 3721265441,
-   "name": null,
-   "name_source": null,
+   "name": "A/FLAM-40 Flame Sentry",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -30767,8 +30770,8 @@
    "in_catalog": true,
    "item_id": 3847625280,
    "mix_id": 3847625280,
-   "name": null,
-   "name_source": null,
+   "name": "A/MLS-4X Rocket Sentry",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -32759,8 +32762,8 @@
    "in_catalog": true,
    "item_id": 4062012700,
    "mix_id": 4062012700,
-   "name": null,
-   "name_source": null,
+   "name": "SH-20 Ballistic Shield Backpack",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -33069,8 +33072,8 @@
    "in_catalog": true,
    "item_id": 4102799034,
    "mix_id": 4102799034,
-   "name": null,
-   "name_source": null,
+   "name": "Eagle Cluster Bomb",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -33203,8 +33206,8 @@
    "in_catalog": true,
    "item_id": 4111938309,
    "mix_id": 4111938309,
-   "name": null,
-   "name_source": null,
+   "name": "AX/AR-23 Guard Dog",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
@@ -33951,7 +33954,8 @@
    "in_catalog": true,
    "item_id": null,
    "mix_id": 4190666565,
-   "name": null,
+   "name": "EXO-55 Breakthrough Exosuit",
+   "name_source": "stratagem-client-settings",
    "source": "variant_mod/runtime/inventory_stratagem_inject.json"
   },
   {
@@ -34471,8 +34475,8 @@
    "in_catalog": true,
    "item_id": 4266803236,
    "mix_id": 4266803236,
-   "name": null,
-   "name_source": null,
+   "name": "Orbital Airburst Strike",
+   "name_source": "stratagem-client-settings",
    "source": "catalog-completion"
   },
   {
