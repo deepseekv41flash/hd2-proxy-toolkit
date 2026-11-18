@@ -7,7 +7,7 @@
 """
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 from .. import theme
 from ..catalogs import CATALOG_SCOPES, ITEM_CATEGORY_LABELS
@@ -55,6 +55,9 @@ class InventoryPage(Page):
         bar.pack(fill="x", padx=22, pady=(0, 8))
         self.sum_lbl = tk.Label(bar, text="", bg=theme.BG, fg=theme.MUTED, font=theme.F_S)
         self.sum_lbl.pack(side="left")
+        # 一键撤回本页所有改动：四类库存行 + 目录追加（附件这类成百上千条的库存没法手点删）
+        theme.button(bar, "清空全部已添加", danger=True,
+                     command=self._clear_all_added).pack(side="left", padx=(14, 0))
         tk.Label(bar, text="库存行 = 解锁/试用；目录追加 = 让物品出现在列表里",
                  bg=theme.BG, fg=theme.DIM, font=theme.F_S).pack(side="right")
 
@@ -606,6 +609,44 @@ class InventoryPage(Page):
             doc = {}
             self.app.profile["items"] = doc
         return doc
+
+    # ---------------------------------------------------------------- 批量清空
+    def _clear_all_added(self):
+        """一键移除本页**所有已添加项**：四类库存行 + 目录追加行（只改本机 profile）。
+
+        为什么需要：附件是「武器 × 附件」粒度，一把枪批量添加能一次进几十条，
+        但没有批量移除时只能逐条点删除（附件最多 1455 条）。这里按「全部撤回」处理：
+        四类库存行清空 + 目录追加清空（目录缺失物品自动配对的目录行随之消失），
+        template 这类标量设置保留。确认框会先列出各类条数，取消不改任何东西。
+        """
+        inv = self._inventory(create=False)
+        counts = {key: len(inv.get(key) or []) for key, _label in EDIT_TABS}
+        add = self._items(create=False).get("add") or []
+        add_count = len(add) if isinstance(add, list) else 0
+        total = sum(counts.values()) + add_count
+        if not total:
+            self.app.toast("本页没有已添加项（库存与目录追加都是空的）", error=True)
+            return
+        detail = " · ".join("%s %d" % (label, counts[key]) for key, label in EDIT_TABS)
+        if add_count:
+            detail += " · 目录追加 %d" % add_count
+        message = chr(10).join([
+            "确定移除本页所有已添加项？", "", detail, "",
+            "只改本机 profile；点「应用配置」后才影响引擎。",
+        ])
+        if not messagebox.askyesno("清空全部已添加", message):
+            return
+        for key, _label in EDIT_TABS:
+            inv[key] = []
+        if add_count:
+            self._items()["add"] = []
+        self.app.mark_dirty()
+        for key, _label in EDIT_TABS:
+            self._render_tab(key)
+        self._render_items()
+        self._render_summary()
+        self.app.toast("已清空全部已添加项：库存 %d 条 · 目录追加 %d 条"
+                       % (sum(counts.values()), add_count))
 
     # ---------------------------------------------------------------- 刷新
     def _render_summary(self):

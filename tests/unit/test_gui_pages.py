@@ -555,6 +555,60 @@ def test_inventory_catalog_add_dedup(inv_page, app):
     assert app.profile["items"]["add"] == []
 
 
+def test_inventory_clear_all_added_removes_everything(inv_page, app, monkeypatch):
+    """一键清空：四类库存行 + 目录追加全撤（附件批量加整把武器后不必逐条删）。
+
+    附件是「武器 × 附件」粒度：一把枪批量添加一次几十条，最多 1455 条。本按钮是
+    「全部撤回」语义 —— 库存四类清空 + 目录追加清空，template 这类标量设置保留。
+    """
+    page = inv_page
+    gallery = page.app.catalogs.attachment_groups()
+    _pid, _name, items = gallery[0]
+    page._weapon_lists["attachments"].listbox.selection_set(0)
+    page._weapon_lists["attachments"]._on_select()
+    page._add_item("attachments")                       # 批量加整把武器的配件
+    assert len(app.profile["inventory"]["attachments"]) == len(items) > 0
+    weapon_mix = page.app.catalogs.search_items("", category="weapon")[0][0]
+    page._append_inventory_row("weapons", weapon_mix, 1)
+    page.catalog_list.listbox.selection_set(0)
+    page.var_template.set("2797466032")
+    page._add_catalog_item()                            # 目录追一条
+    assert app.profile["inventory"]["weapons"] and app.profile["items"]["add"]
+    # 取消：一条也不改
+    monkeypatch.setattr("hd2proxy.gui.pages.inventory.messagebox.askyesno",
+                        lambda *a, **k: False)
+    page._clear_all_added()
+    assert app.profile["inventory"]["weapons"]
+    assert app.profile["inventory"]["attachments"]
+    assert app.profile["items"]["add"]
+    # 确认：库存四类 + 目录追加全部清空
+    monkeypatch.setattr("hd2proxy.gui.pages.inventory.messagebox.askyesno",
+                        lambda *a, **k: True)
+    dirty_before = app.dirty
+    page._clear_all_added()
+    for key, _label in (("weapons", "武器"), ("attachments", "附件"),
+                        ("cosmetics", "外观"), ("stratagems", "战备")):
+        assert app.profile["inventory"][key] == [], key
+    assert app.profile["items"]["add"] == []
+    assert app.profile["items"]["template"] == 2797466032       # 标量设置保留
+    assert app.dirty > dirty_before
+    text, error = app.last_toast()
+    assert not error and "已清空全部已添加项" in text
+    assert "武器 0" in page.sum_lbl.cget("text")
+
+
+def test_inventory_clear_all_added_when_empty_toasts_error(inv_page, app):
+    """没有已添加项时点按钮：明确提示，不弹确认框、不标脏。"""
+    page = inv_page
+    app.profile["inventory"] = {}
+    app.profile.setdefault("items", {})["add"] = []
+    dirty_before = app.dirty
+    page._clear_all_added()
+    text, error = app.last_toast()
+    assert error and "没有已添加项" in text
+    assert app.dirty == dirty_before
+
+
 # ---------------------------------------------------------------- CapturePage
 
 
