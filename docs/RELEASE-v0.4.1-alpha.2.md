@@ -64,12 +64,31 @@ GUI 无需改动：`items.json` / `catalog_names_resolved.json` 同机制读取�
 - `python tools/check_gate.py` → **GATE=PASS**。
 - 数据不变量：3020 行、目录内 2356 行已命名、55 空号默认、42 目录外、附件 1455/57 均不变。
 
+## 打包版实机验证（计算机操作，非源码版）
+
+打包版（`HD2PROXY_SIGN=1`，本机自签）以临时 `HD2PROXY_STATE` 隔离用户 profile 启动：
+
+| 场景 | 结果 |
+|---|---|
+| 启动 + 物品与战备页 | 顶部汇总「目录 3020 行 · **命名 2383** · 空号默认 55」✓ |
+| 目录总览 tab | 汇总两行正确（界面条目 3062 = 目录内 3020 + 目录外 42；已命名 2383 · 未解 679）；列表里可见新命名：`4693889 · At Ease（外观）` 等 ✓ |
+| 关键词搜 `ADMIRAL` | 命中 4 条称号：`926009925 · ADMIRABLE ADMIRAL`、`3361168857 · SKULL ADMIRAL`、`3686957532 · FLEET ADMIRAL`、`4161927870 · ADMIRAL`（此前全为「内部名未解」）✓ |
+
+截图：`research/screenshots/alpha42-catalog-named-2383.png`（目录总览汇总）、
+`alpha42-names-title-search.png`（称号搜索命中）。
+
 ## 下载
 
 | 文件 | 说明 |
 |---|---|
-| `hd2proxy-toolkit-v0.4.1-alpha.2-windows-x64.zip` | onedir 分发包（解压即用） |
+| `hd2proxy-toolkit-v0.4.1-alpha.2-windows-x64.zip` | onedir 分发包（解压即用，17.7 MB） |
 | `SHA256SUMS.txt` | 校验和（zip + 两个 exe，签名之后计算） |
+
+```text
+8ae480c4fa1c93b9fae8b08554b1b3ff815efad3d59cc63bebded14a4a6e2ad9  hd2proxy-toolkit-v0.4.1-alpha.2-windows-x64.zip
+9b5c7fc05281452abf444b23b147e9aba9a3b65dffcdb503a5c37411ea10fe65  hd2proxy/hd2proxy.exe
+49e3aebdc2b0dd5e9331bfe6634818205aed59a45e2ba6357e0a63b57509ba69  hd2proxy/hd2proxy-gui.exe
+```
 
 ```powershell
 Get-FileHash .\hd2proxy-toolkit-v0.4.1-alpha.2-windows-x64.zip -Algorithm SHA256
