@@ -29,8 +29,31 @@ def test_hosts_diag_states():
     assert ok["state"] == "ok" and ok["ip"] == "100.67.169.17"
     commented = diagnostics.hosts_diag(HOSTS_COMMENTED, "100.67.169.17")
     assert commented["state"] == "commented" and commented["commented"] is True
+    assert commented["comment_prefix"] == "#g_acc"
+    uu = diagnostics.hosts_diag(
+        "#uu_acc100.67.169.17 api.live.prod.thehelldiversgame.com # hd2proxy",
+        "100.67.169.17")
+    assert uu["state"] == "commented" and uu["comment_prefix"] == "#uu_acc"
     wrong = diagnostics.hosts_diag(HOSTS_OK, "192.168.1.5")
     assert wrong["state"] == "wrong-ip" and wrong["expected_ip"] == "192.168.1.5"
+
+
+def test_hosts_startup_advice():
+    assert diagnostics.hosts_startup_advice(HOSTS_OK, "100.67.169.17") == []
+    missing = diagnostics.hosts_startup_advice("", "100.67.169.17")
+    assert missing and "没有本工具那一行" in missing[0]
+    commented = diagnostics.hosts_startup_advice(HOSTS_COMMENTED, "100.67.169.17")
+    assert commented and "#g_acc" in commented[0] and "重启引擎" in commented[0]
+    wrong = diagnostics.hosts_startup_advice(HOSTS_OK, "192.168.1.5")
+    assert wrong and "192.168.1.5" in wrong[0]
+
+
+def test_evaluate_commented_hosts_mentions_accelerator_prefix():
+    snap = _snapshot()
+    snap["hosts"] = diagnostics.hosts_diag(HOSTS_COMMENTED, "100.67.169.17")
+    ev = diagnostics.evaluate(snap)
+    errors = " ".join(w["text"] for w in ev["errors"])
+    assert "#g_acc" in errors and "重启引擎" in errors
 
 
 # ---------------------------------------------------------------- 快照结论

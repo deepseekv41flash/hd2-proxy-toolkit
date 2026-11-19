@@ -213,7 +213,30 @@ def test_resolve_listen_ip_rejects_bad_values(value):
 @pytest.mark.parametrize("value", [None, "", "auto", "AUTO"])
 def test_resolve_listen_ip_auto_uses_default_route(value, monkeypatch):
     monkeypatch.setattr(sysprobe, "_default_route_ip", lambda: "100.67.169.17")
+    monkeypatch.setattr(sysprobe, "local_ipv4_addresses", lambda: [
+        {"ip": "100.67.169.17", "interface": "以太网", "is_loopback": False,
+         "is_virtual": False},
+    ])
     assert sysprobe.resolve_listen_ip(value) == "100.67.169.17"
+
+
+def test_resolve_listen_ip_auto_skips_virtual_default_route(monkeypatch):
+    """TUN / 路由模式代理把默认路由接管到虚拟网卡时，不能采信它（实测 Clash TUN / UU 路由）。"""
+    monkeypatch.setattr(sysprobe, "_default_route_ip", lambda: "198.18.0.1")
+    monkeypatch.setattr(sysprobe, "local_ipv4_addresses", lambda: [
+        {"ip": "198.18.0.1", "interface": "Mihomo", "is_loopback": False,
+         "is_virtual": True},
+        {"ip": "100.67.169.17", "interface": "以太网", "is_loopback": False,
+         "is_virtual": False},
+    ])
+    assert sysprobe.resolve_listen_ip("auto") == "100.67.169.17"
+
+
+def test_resolve_listen_ip_auto_trusts_route_when_enumeration_empty(monkeypatch):
+    """网卡枚举失败（entries 为空）时保留旧行为，避免无 ipconfig 环境直接报错。"""
+    monkeypatch.setattr(sysprobe, "_default_route_ip", lambda: "10.1.2.3")
+    monkeypatch.setattr(sysprobe, "local_ipv4_addresses", lambda: [])
+    assert sysprobe.resolve_listen_ip("auto") == "10.1.2.3"
 
 
 def test_resolve_listen_ip_auto_prefers_physical_nic(monkeypatch):
@@ -633,3 +656,9 @@ def test_primary_ip_returns_string_or_empty():
     value = sysprobe.primary_ip()
     assert isinstance(value, str)
     assert value == "" or sysprobe.validate_listen_ip(value) is None
+
+def test_is_virtual_interface_marks_accelerator_adapters():
+    assert sysprobe._is_virtual_interface("Mihomo", "198.18.0.1") is True
+    assert sysprobe._is_virtual_interface("UU Wintun Tunnel", "172.19.84.5") is True
+    assert sysprobe._is_virtual_interface("UU", "172.19.84.5") is True
+    assert sysprobe._is_virtual_interface("以太网", "100.67.169.17") is False

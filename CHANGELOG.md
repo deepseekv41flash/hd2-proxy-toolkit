@@ -6,6 +6,27 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.4.1-alpha.5（2026-11-20）— 加速器共存修复（TUN/路由模式监听 IP、hosts 注释识别、启动自检）
+
+- **背景**：现场开启 Clash Verge TUN 与 UU 路由模式后，注入链路出现故障；实测定位到 3 个真实问题。
+- **修复 1（TUN 下监听 IP 选错）**：`sysprobe.resolve_listen_ip` 以前直接采信默认路由 IP，TUN/路由模式
+  会把默认路由转到虚拟网卡 → 引擎绑到 `198.18.0.1`（Clash）或 UU Wintun 地址，而 hosts 指向 LAN IP，
+  游戏连不上。现在默认路由 IP **只有落在物理网卡上才采信**；`_VIRTUAL_MARKS` 增加
+  `mihomo / meta tunnel / wintun / sing-box / v2ray / xray / uu wintun / 加速器` 等关键词。
+- **修复 2（install 与引擎口径不一致）**：`install` 未传 `--profile` 时回退读取**默认 profile** 的
+  `listen_ip`（以前直接 `auto`，与引擎不一致 → 把 hosts 写成虚拟网卡地址）。
+- **修复 3（hosts 被加速器注释不可见）**：`diagnostics.hosts_diag` 新增 `comment_prefix`
+  （识别 `#uu_acc` / `#g_acc`）；报错文案点明「加速器 hosts 保护 + 重写 hosts 后需重启引擎」；
+  总览页/系统自检沿用同一结论，问题现在一眼可见。
+- **修复 4（引擎启动自检）**：引擎启动时新增 hosts 自检（`diagnostics.hosts_startup_advice`），
+  缺失 / 被注释 / 指向旧 IP 都会在 `proxy.log` 打 `⚠` 并给出修复动作，不再让用户只看到游戏的
+  「与服务器通讯时出错」。
+- **修复 5（文档）**：新增 `docs/ACCELERATOR-COMPAT-2026-11-20.md`（三种模式实测对照 + 操作纪律），
+  README 增加「加速器 / 代理共存」说明：**切换模式 → 重写 hosts → 重启引擎 → 再开游戏**。
+- **验证**：单测 486 → **493 passed**（+7：虚拟默认路由跳过 / 枚举为空回退 / install 默认 profile /
+  hosts 前缀识别 / 启动建议 / 注释态报错文案 / 加速器网卡名识别）；`check_gate.py` **GATE=PASS**。
+- 规则：只修 bug（不改功能）⇒ 只动 alpha 位：`0.4.1-alpha.4` → **`0.4.1-alpha.5`**。
+
 ## v0.4.1-alpha.4（2026-11-19）— 战备命名收尾 + 全局效果 target 链补名（命名 2405 → 2441，效果 174 → 202）
 
 - **战备命名收尾（+36 行）**：

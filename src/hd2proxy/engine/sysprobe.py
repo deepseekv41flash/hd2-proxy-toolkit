@@ -50,6 +50,9 @@ _VIRTUAL_MARKS = (
     "tailscale", "zerotier", "radmin", "openvpn", "wireguard", "clash", "vpn",
     "npcap", "loopback", "teredo", "isatap", "6to4", "bluetooth", "pseudo-interface",
     "wi-fi direct", "virtual", "虚拟", "本地连接*", "local area connection*",
+    # TUN / 路由模式代理与加速器（实测：Clash TUN 网卡名 "Mihomo"、UU 路由模式 "UU Wintun"）
+    "mihomo", "meta tunnel", "wintun", "sing-box", "singbox", "v2ray", "xray",
+    "uu wintun", "uu tunnel", "uubooster", "uu加速", "加速器",
 )
 
 _PORT_CACHE: dict[int, tuple[float, list[dict]]] = {}
@@ -171,8 +174,12 @@ def validate_listen_ip(ip: str) -> str | None:
 
 def _is_virtual_interface(interface: str, ip: str) -> bool:
     """按网卡名判断是否虚拟网卡；APIPA（169.254.x.x）也算不可用出口。"""
-    name = (interface or "").lower()
+    name = (interface or "").lower().strip()
     if ip.startswith("169.254."):
+        return True
+    if name in ("uu", "uu加速器", "uu加速"):
+        return True
+    if name.startswith("uu ") and any(w in name for w in ("wintun", "tunnel", "加速")):
         return True
     return any(mark in name for mark in _VIRTUAL_MARKS)
 
@@ -312,10 +319,16 @@ def resolve_listen_ip(value: str | None) -> str:
     """
     raw = "" if value is None else str(value).strip()
     if raw == "" or raw.lower() == "auto":
-        route_ip = _default_route_ip()
-        if route_ip and validate_listen_ip(route_ip) is None:
-            return route_ip
         entries = local_ipv4_addresses()
+        by_ip = {entry.get("ip"): entry for entry in entries}
+        route_ip = _default_route_ip()
+        # 默认路由出口优先，但**必须是物理网卡**：TUN / 路由模式代理（Clash TUN、
+        # UU 路由模式等）会把默认路由接管到虚拟网卡，直接采信会绑到 198.18.x / 172.19.x，
+        # 而 hosts 指向的是 LAN IP —— 实测游戏因此完全连不上（见 RELEASE-v0.4.1-alpha.5）。
+        if route_ip and validate_listen_ip(route_ip) is None:
+            entry = by_ip.get(route_ip)
+            if entry is None or not entry.get("is_virtual"):
+                return str(ipaddress.IPv4Address(route_ip))
         for want_physical in (True, False):
             for entry in entries:
                 if entry.get("is_loopback"):

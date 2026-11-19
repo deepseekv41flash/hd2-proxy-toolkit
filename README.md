@@ -8,10 +8,10 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.4.1-alpha.4 已发布（2026-11-19，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.4.1-alpha.5 已发布（2026-11-20，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **486 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.4.1-alpha.4`（见下方「下载」）。
+> **493 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.4.1-alpha.5`（见下方「下载」）。
 > 0.3.0 起「启动引擎」会先做 **443/8080/17897 端口预检**（冲突列占用者、可换监听地址），总览页新增**系统自检**（端口 / hosts / 证书 / 游戏进程）；
 > alpha.2 修掉现场检查弹控制台窗 + 切总览卡顿（子进程隐藏窗口 / 一条 `netstat -ano` / 诊断节流）；
 > alpha.3 修掉「续期证书后游戏报 Error 60」：证书信任状态进自检/红字，GUI 新增「安装 / 修复（UAC）」，续期后自动引导导入信任；
@@ -21,6 +21,7 @@
 > alpha.2(0.4.1) 从客户端 `game.dll` 静态表补完物品名字：命名 2191 → **2383**（横幅/称号/胜利姿势/战团包/礼包等），未解 871 → 679。
 > alpha.3(0.4.1) 对照 wiki 已发布战备清单补齐最后 22 条战备名（目录命名 2383 → **2405**，战备 73 → **95** 有名）。
 > alpha.4(0.4.1) 战备命名收尾（cat11 再补 7、cat10 子行反推 29 ⇒ 命名 **2441**、战备 **102/108**），全局效果按 target 链补 28 条英文名（效果名 **174 → 202** / 312）。
+> alpha.5(0.4.1) 加速器共存修复：TUN/路由模式不再把监听地址选到虚拟网卡；hosts 被 `#uu_acc`/`#g_acc` 注释时自检与引擎日志直接报出；install 默认读 profile 的监听设置。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
 > [物品与战备](research/screenshots/gui-inventory.png) ｜ [目录总览（新）](research/screenshots/gui-inventory-catalog.png) ｜
 > [抓包与日志](research/screenshots/gui-capture.png) ｜
@@ -51,14 +52,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.4.1-alpha.2）
+## 下载（v0.4.1-alpha.5）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.4.1-alpha.2.md)。
+> [Release Notes](docs/RELEASE-v0.4.1-alpha.5.md)。
 
-- 下载：[GitHub Releases · v0.4.1-alpha.2](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.4.1-alpha.2)
-  （`hd2proxy-toolkit-v0.4.1-alpha.2-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.4.1-alpha.5](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.4.1-alpha.5)
+  （`hd2proxy-toolkit-v0.4.1-alpha.5-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，
@@ -88,7 +89,7 @@ hd2proxy.exe uninstall
 ```bash
 python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
 set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
-python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 486 单测 + 5 个离线自检
+python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 492 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
@@ -148,7 +149,7 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 src/hd2proxy/engine/                    引擎（server / 钩子 / 配置 / 证书 / 安装 / 控制面 / 离线预演 preview.py）
 src/hd2proxy/gui/                       Tk GUI：壳 + 5 页 + widgets + templates.py（能力模板）
 src/hd2proxy/versioning.py               版本规则与 PEP 440 映射（docs/VERSIONING.md 的实现）
-tests/unit/                             单元测试（486 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / 目录补全 / CLI）
+tests/unit/                             单元测试（493 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / 目录补全 / CLI）
 tests/selftest*.py                      5 个脚本式离线自检（迁自研究线，仅改路径）
 tools/run_selftests.py                  自检总入口（独立证书/数据目录，GATE 判定）
 tools/check_gate.py                     门禁：版本一致性 + 语法 + 绝对路径 + pytest + 5 自检
@@ -180,6 +181,20 @@ docs/                                   来源与哈希、架构说明
 - **默认不落请求/响应体**（抓包需显式开启，且会提示含账号 id）。
 - **一键还原**：停进程 → 删信任证书 → 删证书文件 → 删 hosts 行。
 - 不修改游戏文件、不注入进程 ⇒ 与 EAC 无关（EAC 只查游戏文件）。
+
+## 加速器 / 代理共存（TUN / 路由模式）
+
+Clash Verge、UU 等工具的系统代理模式对游戏无效（游戏是 Winsock 直连），本工具照常工作；
+但**TUN / 路由模式**会改变系统网络外观，需要遵守一条操作纪律：
+
+1. 切换代理/加速器模式后 → **重写 hosts**（GUI「安装 / 修复」或 `hd2proxy.exe install`）；
+2. 然后 → **重启引擎**（切换前就在跑的引擎，其上游连接可能被过滤驱动拒绝）；
+3. 最后 → 再启动游戏。
+
+工具侧已做的保护（v0.4.1-alpha.5）：TUN/路由模式下「自动监听地址」不会再绑到虚拟网卡；
+hosts 被加速器注释（`#uu_acc` / `#g_acc`）时，总览页红条、系统自检与引擎启动日志都会直接报出；
+`install` 未显式给 profile 时会读默认 profile 的监听设置。实测对照见
+[docs/ACCELERATOR-COMPAT-2026-11-20.md](docs/ACCELERATOR-COMPAT-2026-11-20.md)。
 
 ## 边界（研究线已定证，别把承诺说过头）
 

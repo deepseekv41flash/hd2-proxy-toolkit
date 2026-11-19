@@ -43,3 +43,40 @@ def test_no_args_opens_gui(monkeypatch):
     monkeypatch.setattr(cli, "cmd_gui", lambda a: calls.append(a.profile) or 0)
     assert cli.main([]) == 0
     assert calls == [""]
+
+# ---------------------------------------------------------------- install 上下文
+
+def test_install_context_falls_back_to_default_profile(tmp_path, monkeypatch):
+    """不传 --profile 时也要读默认 profile 的 listen_ip（否则 TUN/加速器下 auto 会选虚拟网卡）。"""
+    import argparse
+    import json
+
+    monkeypatch.setenv("HD2PROXY_STATE", str(tmp_path))
+    profiles = tmp_path / "profiles"
+    profiles.mkdir()
+    doc = {
+        "name": "默认",
+        "proxy": {"host": "api.live.prod.thehelldiversgame.com", "listen_ip": "192.168.1.77"},
+        "cert": {"days": 2},
+    }
+    (profiles / "default.json").write_text(json.dumps(doc), encoding="utf-8")
+    a = argparse.Namespace(profile="", listen_ip="", host="",
+                           cert_dir=str(tmp_path / "certs"), scope="")
+    ctx = cli._install_context(a)
+    assert ctx["listen_ip"] == "192.168.1.77"
+    assert ctx["host"] == "api.live.prod.thehelldiversgame.com"
+
+
+def test_install_context_explicit_listen_ip_wins(tmp_path, monkeypatch):
+    import argparse
+    import json
+
+    monkeypatch.setenv("HD2PROXY_STATE", str(tmp_path))
+    profiles = tmp_path / "profiles"
+    profiles.mkdir()
+    doc = {"name": "默认", "proxy": {"host": "h", "listen_ip": "192.168.1.77"},
+           "cert": {"days": 2}}
+    (profiles / "default.json").write_text(json.dumps(doc), encoding="utf-8")
+    a = argparse.Namespace(profile="", listen_ip="10.9.8.7", host="",
+                           cert_dir=str(tmp_path / "certs"), scope="")
+    assert cli._install_context(a)["listen_ip"] == "10.9.8.7"

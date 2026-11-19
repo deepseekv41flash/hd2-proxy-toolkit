@@ -816,6 +816,18 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
+### 15.9 v0.4.1-alpha.5（2026-11-20，加速器共存修复）
+
+- 现象：Clash Verge TUN / UU 路由模式下，注入链路故障（引擎绑到虚拟网卡 IP；hosts 被 UU `#uu_acc` 注释）。
+- 修复：`resolve_listen_ip` 默认路由 IP 仅采信物理网卡（+ 虚拟网卡关键词扩充）；`install` 未传
+  `--profile` 时读默认 profile 的 `listen_ip`；`hosts_diag` 增加 `comment_prefix` 并把加速器提示写进
+  报错；引擎启动时新增 hosts 自检（`hosts_startup_advice`，日志 `⚠` + 修复动作）。
+- 文档：新增 `docs/ACCELERATOR-COMPAT-2026-11-20.md`（三种模式实测）+ README 操作纪律：
+  切换模式 → 重写 hosts → 重启引擎。
+- 回归测试 486 → **493 passed**；门禁 PASS。规则：只修 bug ⇒ 只动 alpha 位（alpha.4 → alpha.5）。
+
+---
+
 ## 附：本轮不做
 
 - 星图可视化大画布、多人同步、服务端写入（幻影战局不落账，交接档 §6.1 已定证）

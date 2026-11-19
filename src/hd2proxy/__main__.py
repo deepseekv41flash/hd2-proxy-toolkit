@@ -93,9 +93,28 @@ def _load_profile(path):
     return cfgmod.load_profile_file(path)
 
 
+def _default_profile_doc():
+    """没有显式 ``--profile`` 时，尽量读**默认 profile**（GUI 用的那份）。
+
+    为什么：install 是独立进程，以前不传 --profile 就直接 ``listen_ip="auto"``；
+    而 TUN / 路由模式加速器会把默认路由转到虚拟网卡，auto 会解析成 198.18.x / 172.19.x，
+    hosts 被写成那个地址 → 游戏连不到引擎（实测见 RELEASE-v0.4.1-alpha.5）。
+    默认 profile 里通常已有显式 listen_ip（或至少是同一份配置口径），优先用它。
+    """
+    path = cfgmod.profile_path("default")
+    if not path.is_file():
+        return None
+    try:
+        return cfgmod.load_profile_file(path)
+    except Exception:                           # noqa: BLE001 - 坏 profile 不该拦住 install
+        return None
+
+
 def _install_context(a):
     """组装 install/uninstall 需要的 host / listenIp / cert_dir / days / scope。"""
     profile = _load_profile(getattr(a, "profile", ""))
+    if profile is None and not getattr(a, "profile", ""):
+        profile = _default_profile_doc()
     if profile:
         proxy = profile["proxy"]
         host = proxy["host"]

@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from . import certs, hosts as hosts_mod, paths, sysprobe
@@ -55,8 +56,15 @@ def own_engine_pids(state_file: Path | None = None) -> set[int]:
     return pids
 
 
+_COMMENT_PREFIX_RE = re.compile(r"^\s*#([A-Za-z_][A-Za-z0-9_]*?)(?=\d|\s|$)")
+
+
 def hosts_diag(text: str, listen_ip: str) -> dict:
-    """判定 hosts 里本工具那一行（纯函数）：ok / missing / commented / wrong-ip。"""
+    """判定 hosts 里本工具那一行（纯函数）：ok / missing / commented / wrong-ip。
+
+    被注释时额外给出 ``comment_prefix``（如加速器的 ``#uu_acc`` / ``#g_acc``）——
+    现场排障要能一眼看出是哪个软件注释的，而不是只说「被注释」。
+    """
     info = hosts_mod.find_marker(text or "")
     line = (info or {}).get("line") or ""
     ip = (info or {}).get("ip") or ""
@@ -69,13 +77,37 @@ def hosts_diag(text: str, listen_ip: str) -> dict:
         state = "wrong-ip"
     else:
         state = "ok"
+    prefix = ""
+    if commented:
+        marker_pos = line.find(hosts_mod.MARKER)
+        body = line[: marker_pos] if marker_pos >= 0 else line
+        matched = _COMMENT_PREFIX_RE.match(body)
+        if matched:
+            prefix = "#" + matched.group(1)
     return {
         "state": state,
         "line": line,
         "ip": ip,
         "commented": commented,
+        "comment_prefix": prefix,
         "expected_ip": str(listen_ip or ""),
     }
+
+
+def hosts_startup_advice(text: str, listen_ip: str) -> list[str]:
+    """引擎启动时的一句话建议（纯函数，便于单测）：hosts 与监听 IP 不一致就直说怎么修。"""
+    diag = hosts_diag(text, listen_ip)
+    state = diag["state"]
+    if state == "ok":
+        return []
+    if state == "missing":
+        return ["hosts 里没有本工具那一行 —— 游戏不会走代理；请执行 install / GUI「安装 / 修复」"]
+    if state == "commented":
+        prefix = diag.get("comment_prefix") or ""
+        who = ("（前缀 %s，多为加速器 hosts 保护）" % prefix) if prefix else "（多为加速器 hosts 保护）"
+        return ["hosts 那一行被注释掉了%s —— 游戏不会走代理；重写 hosts 后需重启引擎" % who]
+    return ["hosts 指向 %s，但当前监听 %s —— 游戏连不到本引擎；请重写 hosts 或改监听 IP"
+            % (diag.get("ip") or "?", listen_ip or "?")]
 
 
 def collect(profile: dict, cert_dir=None, own_pids=None, state_file=None) -> dict:
@@ -274,8 +306,11 @@ def evaluate(snapshot: dict) -> dict:
     if state == "missing":
         add("error", "hosts 里没有本工具那一行 —— 游戏不会走代理；先点「安装 / 修复（管理员）」")
     elif state == "commented":
-        add("error", "hosts 那一行被注释掉了（多为加速器「hosts 保护」）—— 关闭保护后重新安装/修复；"
-                     "当前行：%s" % (h.get("line") or "?"))
+        prefix = h.get("comment_prefix") or ""
+        who = ("（检测到 %s，多为加速器「hosts 保护」）" % prefix) if prefix else "（多为加速器「hosts 保护」）"
+        add("error", "hosts 那一行被注释掉了%s —— 关闭保护后重新安装/修复"
+                     "（TUN / 路由模式加速器切换后必须重写 hosts 并重启引擎）；"
+                     "当前行：%s" % (who, h.get("line") or "?"))
     elif state == "wrong-ip":
         add("error", "hosts 指向 %s，但要监听的是 %s —— 本机 IP 变了，需重新安装/修复重写 hosts"
             % (h.get("ip") or "?", listen_ip or "?"))

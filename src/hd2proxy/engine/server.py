@@ -24,7 +24,7 @@ import threading
 import time
 from pathlib import Path
 
-from . import certs, httpio, logutil, model, paths, upstream
+from . import certs, diagnostics, hosts as hosts_mod, httpio, logutil, model, paths, upstream
 from .hooks import capture, inventory, items, warinfo
 from .logutil import log, log_throttled, rotate_logs
 from .model import Mod, resolve_plan, rewrite_status
@@ -699,6 +699,14 @@ def main(argv=None):
     log("hd2proxy engine  host=%s  listen=%s:%d  passthrough=%s  mode=%s"
         % (host, listen_ip, port, mod.passthrough,
            "profile" if spec is not None else "legacy"), audit=True)
+    # 启动自检：hosts 与当前监听 IP 不一致（缺失/被加速器注释/指向旧 IP）时**当场说清楚**，
+    # 否则现场只会看到游戏报「与服务器通讯时出错」，看不出是 hosts 被注释了。
+    try:
+        advice = diagnostics.hosts_startup_advice(hosts_mod.read_hosts(), listen_ip)
+    except Exception as exc:                    # noqa: BLE001 - 只读检查失败不影响启动
+        advice = ["hosts 检查失败（%r）—— 请确认 hosts 指向 %s" % (exc, listen_ip)]
+    for line in advice:
+        log("⚠ " + line, audit=True)
     log("plan: %s" % json.dumps(mod.describe(), ensure_ascii=False), audit=True)
     if spec is not None and spec.status_plan is not None:
         log("profile plan: %s" % json.dumps(
