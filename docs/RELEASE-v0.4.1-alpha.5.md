@@ -67,6 +67,20 @@ doh cloudflare-dns.com failed: URLError(ConnectionRefusedError(10061, ...))
   hosts 前缀识别 / 启动建议 / 注释态报错文案 / 加速器网卡名识别）。
 - `tools/check_gate.py` **GATE=PASS**。
 
+## 打包版实测（本机，UU 路由模式运行中）
+
+- 构建：`HD2PROXY_SIGN=1 python tools/build_dist.py` → 双 exe 本机自签 Valid，zip 17.7 MB，
+  sha256 `7be71aa25ec22d8fe5094f36c15d976d530b8c3272c7bb7502cf1983e6908aa7`；
+  干净路径解压后 `hd2proxy.exe preview` 正常、两个 exe 窗口存活（build 脚本内自检）。
+- **修复 2 验证**：`hd2proxy.exe install --dry-run`（**不传** `--profile`）解析出
+  `listenIp=100.67.169.17`（读默认 profile，而不是 auto 选虚拟网卡），hosts 判定 `noop`。
+- **修复 1/4 验证**：打包版引擎启动日志
+  `listen=100.67.169.17:443`、无 `⚠`（hosts 正常时保持安静）。
+- **三连验收**：`hd2proxy.exe verify` → overall ok=True（TLS / CRL / Status 改写全 PASS）；
+  游戏视角 `GET /api/WarSeason/current/WarId` → 200 · 1.19 s。
+- **修复 3**：hosts 注释态（`#uu_acc` / `#g_acc`）由单测覆盖；现场用真实 `#uu_acc` 行确认
+  `hosts_diag` 能取出前缀并给出「重写 hosts 后需重启引擎」的提示。
+
 ## 安装
 
 同前：下载 `hd2proxy-toolkit-v0.4.1-alpha.5-windows-x64.zip` + `SHA256SUMS.txt`，
