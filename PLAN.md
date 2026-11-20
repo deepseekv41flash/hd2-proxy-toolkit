@@ -561,6 +561,14 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 5. `gh release create v<ver> --prerelease …`（GA 才去掉 `--prerelease`）→ 核对资产 digest
 6. `python tools/sync_release_area.py --area <测试区>` 更新 release 产物测试区
 
+**开发机网络坑（2026-11-20 实测，影响第 3/5 步）**：本机 DNS 对 `github.com` 返回 `20.6.7.17`
+（污染地址，TCP/TLS 直接超时），真实 IP `140.82.112.3` / `20.205.243.166` 可连；`api.github.com`
+（`20.205.243.168`）正常 ⇒ `gh` 不受影响。git 没有 `--resolve`，两种绕法：
+① Clash 开着就直接 `git -c http.proxy=http://127.0.0.1:7890 push`（更省事）；
+② Clash 未开时起本地钉 IP 的 CONNECT 代理：`python D:\mod\tmp\gh_connect_proxy.py 18080`，
+再 `git -c http.proxy=http://127.0.0.1:18080 -c https.proxy=http://127.0.0.1:18080 push`；
+偶发 TLS `unexpected eof`（中间盒重置）→ 原样重试 2–3 次即可成功。
+
 ### 14.5 alpha.5 修复（2026-11-17，「变种」里虫族少了 Caustic / Noxious）
 
 - 用户报：变种界面虫族只有 5 个，缺 **Caustic Strain** / **Noxious Strain**；要求顺手排查其他漏项。
