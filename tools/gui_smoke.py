@@ -23,7 +23,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-PAGES = ["overview", "status", "inventory", "capture", "settings"]
+PAGES = ["overview", "status", "live", "inventory", "capture", "settings"]
 
 STATUS_DOC = {
     "warId": 801, "time": 1700000000,

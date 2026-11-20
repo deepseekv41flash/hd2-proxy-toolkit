@@ -22,6 +22,7 @@ from .client import EngineClient, EngineError, REPO
 PAGE_DEFS = [
     ("overview", "◈", "总览"),
     ("status", "◍", "战况改写"),
+    ("live", "◉", "实时战况"),
     ("inventory", "▤", "物品与战备"),
     ("capture", "◫", "抓包与日志"),
     ("settings", "⚙", "设置"),
@@ -223,6 +224,9 @@ class App:
             if key == "status":
                 from .pages.status_page import StatusPage
                 return StatusPage(self.content, self)
+            if key == "live":
+                from .pages.live_page import LivePage
+                return LivePage(self.content, self)
             if key == "inventory":
                 from .pages.inventory import InventoryPage
                 return InventoryPage(self.content, self)

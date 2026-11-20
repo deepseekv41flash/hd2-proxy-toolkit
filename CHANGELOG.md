@@ -6,6 +6,23 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.4.3-alpha.1（2026-11-20）— GUI 新增「实时战况」页（免游戏拉取 + 排查视图）
+
+- **新页面**：侧栏新增 **实时战况**（第 3 项，`◉`），不启动游戏/引擎即可看到官方实时战况：
+  - 顶部：拉取战况 / 保存快照 / 打开快照目录 / **自动刷新**（默认关，15–600 s 可调）；
+  - 摘要卡：战局（warId · status time）、星球/战役、星球效果、GWE 目录条数 + 出口 IP；
+  - 左表「靶星（有战役=卡面可点）」：阵营 / 星球 / 索引 / 战役 id，前线优先；
+  - 右表「星球效果（planetActiveEffects）」：按星球聚合的 effect ids + 数量，支持
+    **按星球名/索引/effect id 过滤**；选中一行在下方列出该星球每个 effect 的 `id · 名称`。
+  - 每次拉取自动落盘 `%LOCALAPPDATA%\HD2ProxyStudio\live\last\`（status/gwe/meta.json），
+    「保存快照」另存带时间戳目录。
+- **排查价值**：卡面不显示时，先看左表确认目标星「有没有战役（是否可点）」，再看右表确认它
+  「到底挂了哪些 effect」——把之前靠猜的两步变成一屏可见。
+- 截图：[`research/screenshots/live-page-20261120.png`](research/screenshots/live-page-20261120.png)。
+- **测试**：单测 511 → **514 passed**（+3：页面注册 / 快照渲染与过滤 / 无快照保存告警）；
+  GUI 冒烟从 5 页扩到 **6 页**（新增 `gui-live.png`）。
+- 规则：**功能变更** ⇒ 动 `X.Y.Z`：`0.4.2-alpha.1` → **`0.4.3-alpha.1`**。
+
 ## v0.4.2-alpha.1（2026-11-20）— 无需游戏拉取当前战况（CLI `live` + GUI 推荐靶星）
 
 - **新能力**：不启动游戏也能拉官方战况。`GET /api/WarSeason/current/WarId`、

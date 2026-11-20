@@ -178,7 +178,7 @@ def test_client_engine_argv_and_cli():
 
 def test_app_importable():
     from hd2proxy.gui.app import PAGE_DEFS, App   # noqa: F401
-    assert [p[0] for p in PAGE_DEFS] == ["overview", "status", "inventory",
+    assert [p[0] for p in PAGE_DEFS] == ["overview", "status", "live", "inventory",
                                          "capture", "settings"]
 
 

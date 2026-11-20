@@ -23,6 +23,7 @@ from hd2proxy.gui.pages.capture import CapturePage     # noqa: E402
 from hd2proxy.gui.pages.overview import OverviewPage   # noqa: E402
 from hd2proxy.gui.pages.settings import SettingsPage   # noqa: E402
 from hd2proxy.gui.pages.inventory import InventoryPage  # noqa: E402
+from hd2proxy.gui.pages.live_page import LivePage        # noqa: E402
 from hd2proxy.gui.pages.status_page import StatusPage  # noqa: E402
 
 
@@ -989,3 +990,53 @@ def test_choose_listen_ip_dialog_builds(root, app, monkeypatch):
     root.after(300, close)
     assert listen_ip_ui.choose_listen_ip(root, app) is None
     assert app.profile["proxy"]["listen_ip"] == "auto"
+
+
+# ---------------------------------------------------------------- 实时战况页（0.4.3）
+
+def test_live_page_registered():
+    from hd2proxy.gui.app import PAGE_DEFS
+    rows = {key: (icon, label) for key, icon, label in PAGE_DEFS}
+    assert "live" in rows
+    assert rows["live"][1] == "实时战况"
+
+
+def _live_snapshot():
+    import json
+    from pathlib import Path
+    from hd2proxy.engine import live
+    sample = Path(__file__).resolve().parents[2] / "data" / "samples" / "status.json"
+    status = json.loads(sample.read_text(encoding="utf-8"))
+    gwe = [{"id": 1}]
+    return {
+        "schema": 1, "host": "api.example", "ip": "1.2.3.4", "war_id": 801,
+        "fetched_at": "2026-11-20T13:00:00+08:00", "elapsed": 0.1,
+        "status": status, "gwe": gwe,
+        "summary": live.summarize(status, gwe),
+        "targets": live.campaign_targets(status),
+    }
+
+
+def test_live_page_renders_snapshot(root, app):
+    page = _make(LivePage, root, app)
+    snap = _live_snapshot()
+    page._render(snap)
+    assert page.card_war[1].cget("text") == "war 801"
+    assert page.card_gwe[1].cget("text") == "1"
+    assert len(page.targets.get_children()) == len(snap["status"]["campaigns"])
+    # 星球效果表：sample 里有 planetActiveEffects，按星球聚合后至少 1 行
+    assert len(page.effects.get_children()) >= 1
+    assert page._effect_rows
+    # 过滤不命中 -> 空表，但重绘不抛异常
+    page.var_filter.set("no-such-planet-xyz")
+    page._render_effects()
+    assert page.effects.get_children() == ()
+    page.var_filter.set("")
+    page._render_effects()
+    assert len(page.effects.get_children()) >= 1
+
+
+def test_live_page_save_without_snapshot_warns(root, app):
+    page = _make(LivePage, root, app)
+    page.save_snapshot()
+    assert app.last_toast()[1] is True          # error=True
