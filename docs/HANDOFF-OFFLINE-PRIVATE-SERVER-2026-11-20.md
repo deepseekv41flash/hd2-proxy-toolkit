@@ -164,7 +164,8 @@ Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Select-Object InterfaceAlias,NextH
 ```
 
 - **信令层**：需要自建（登录、`lobby*`、`Operation/*`、`Mission/*`，其余回放/空）；
-- **传输层**：Steam 网络层负责打洞/中继（**不要试图替换**，需逆向会话协议，无证据支持）；
+- **传输层**：Steam 网络层负责打洞/中继——**已由二进制证据确认 HD2 用 `ISteamNetworkingSockets` + SDR**
+  （见 §12），**不要试图替换**，也不需要替换：传输本来就由 Steam 负责，我们只当「signaling service」；
 - **世界状态**：房主权威 + 引擎原生同步（§3.2 证据），后端不需要下发一致世界数据；
 - **身份**：`accountId` = SteamID64（§3.1）；登录请求体里应有 Steam 票据但**未抓过 body**，
   小规模私服可按「客户端 IP / 预配置表」映射到 SteamID64 规避解析票据。
@@ -209,7 +210,7 @@ Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Select-Object InterfaceAlias,NextH
 | 死路 | 为什么 |
 |---|---|
 | 虚拟局域网（ZeroTier / Radmin / 蒲公英）实现 LAN 联机 | 游戏没有 LAN/直连入口，传输走 Steam P2P 不经虚拟网卡；大厅发现还依赖官方后端 |
-| 自建 relay 替换 Steam 传输 | 需逆向游戏会话协议/Steam SDR，工程量极大且无任何证据支持 |
+| 自建 relay 替换 Steam 传输 | SDR 是 Valve 私有中继网络：服务端不开源，开源版 GameNetworkingSockets **也不含 SDR**；要换得改客户端 network config → EAC 拦。而且**不需要换**：传输沿用 Steam 即可（§12） |
 | 改 `game.dll` / `data/game/*.dl_bin` 实现离线 | EAC 判「未知的文件版本」，1 bit 差分也拦（见 `docs/RELEASE-v0.1.1-alpha.2.md`） |
 | 指望补出服务器领先客户端的内容（未发布世界/物品） | v4 已证：30 bundle `.strings` 全解、24,834 locid 与旧 build 相同，剩余 locid 两端都没有 |
 | 用 `hd2proxy.exe status` 看 hosts 状态 | 它读的是引擎运行状态，不含 hosts；hosts 看 GUI 总览/系统自检或 `install --dry-run` |
@@ -236,6 +237,8 @@ Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Select-Object InterfaceAlias,NextH
 - `D:\Downloads\variant_mod\README.md` —— 多人说明 + UU 兼容性 + 19411 后必须绑 LAN IP
 - `D:\QQ\1427814410\FileRecv\自定义多变种与局内多战备编辑器-主机装完客机自动同步（仅支持UU加速器）.zip`
   —— 上述 mod 的原始分发包（作者口径：仅支持 UU 加速器）
+
+**Steam 侧官方/开源资料**：见 §12（Steamworks 文档、GameNetworkingSockets 仓库、HD2 二进制证据与复验命令）。
 
 **抓包样本（可直接用于 replay 试验）**
 
@@ -293,6 +296,9 @@ Start-Process -FilePath $exe -ArgumentList @('engine','--profile',$cfg,'--cert-d
 - [ ] B4 自建信令下大厅列表/加入流程的完整性
 - [ ] B5 主机 mock 世界数据下客机同步稳定性（只使用客户端已定义 id）
 - [ ] B6 风险与边界确认（ToS；只在私域/离线使用）
+- [ ] B7 HD2 运行时是否真的走 `ISteamNetworkingSockets` + SDR 中继（静态证据已很强，见 §12.4）；
+      Steam 托管的大厅/组队（`ISteamMatchMaking*`/`SteamParties`）与游戏自有 `/api/lobby` 谁是主值——
+      这决定「官方 API 挂掉时 Steam 侧大厅还能不能用」，以及自建信令会不会与 Steam 大厅状态打架
 
 ## 11. 与 MITM 工具（本会话主线）的关系
 
@@ -302,3 +308,85 @@ Start-Process -FilePath $exe -ArgumentList @('engine','--profile',$cfg,'--cert-d
   `hd2-proxy-toolkit` 的 PLAN/CHANGELOG。
 - 若将来把 capture→replay 做成产品特性：属于**功能变更**（版本规则：动 `X.Y.Z` + alpha.1 重置），
   并需要单独评估 ToS 与用户风险提示。
+
+## 12. Steam 侧官方/开源资源 + 对 B 线的净影响（2026-11-20 补）
+
+> 一句话：**官方文档齐全、传输层有开源等价实现、但 Steam 匹配/大厅后端与 SDR 中继服务端都不开源。**
+> 对 B 线是**利好**——我们要自建的「信令/任务登记」正好是 Valve 文档里说的「P2P 需要的那一层」；
+> 我们不碰的「传输」直接沿用 Steam。缺的仍然只有**游戏自己的 app 层会话协议**。
+
+### 12.1 官方文档（公开可读，无需合作伙伴账号）
+
+| 文档 | 地址 | 与 B 线的关系 |
+|---|---|---|
+| Steam Datagram Relay（SDR） | https://partner.steamgames.com/doc/features/multiplayer/steamdatagramrelay | Valve 运营的中继网络：打洞、中继、隐藏 IP；**私有服务** |
+| Steam Networking | https://partner.steamgames.com/doc/features/multiplayer/networking | `ISteamNetworkingSockets` / `ISteamNetworkingMessages` |
+| Steam Matchmaking & Lobbies | https://partner.steamgames.com/doc/features/multiplayer/matchmaking | Steam 托管的大厅/匹配（对应我们自建的 `/api/lobby`） |
+| Game Servers | https://partner.steamgames.com/doc/features/multiplayer/game_servers | 专用服务器注册/托管 |
+| `ILobbyMatchmakingService`（Web API） | https://partner.steamgames.com/doc/webapi/ILobbyMatchmakingService | 服务端侧大厅 API |
+
+调用这些服务要 Steamworks 合作伙伴身份（免费注册），但**文档本身公开**，可据此判断 HD2 用了哪一层。
+
+### 12.2 开源的：GameNetworkingSockets（宽松许可）
+
+`https://github.com/ValveSoftware/GameNetworkingSockets` —— 与 Steamworks 版同源的精简传输层：
+
+- 面向连接 + 面向消息；可靠/不可靠；分片重组；基于 ack-vector 的可靠性层（比 TCP 滑动窗口强）；
+- **AES-GCM-256 每包加密 + Curve25519 密钥交换**；
+- P2P：NAT 穿透走 WebRTC ICE，**「Plug in your own signaling service」**（`README_P2P.md` 有信令插件范例，
+  `tests/test_p2p.cpp` 是完整例子）；
+- 明确**不做**：上层实体序列化/增量状态编码、压缩 ⇒ **游戏自己的会话协议仍要自己做**（= B 线工作量）；
+- 第三方绑定：C#（Facepunch.Steamworks / ValveSockets-CSharp）、Go、Rust。
+
+**开源版不含 SDR**（README 原文）：*"some features are only available on Steam, such as Steam's
+authentication service, signaling service, and the SDR relay service"*；SDR 是活服务，Valve 要控制安全与
+向后兼容负担，**不向所有平台/非 Steam 合作伙伴开放**。
+
+### 12.3 不开源的部分
+
+- **SDR 中继网络本身**（Valve 私有运营；OSS 不含；不可自建）；
+- **Steam 托管的大厅/匹配后端**（可用，不可自建）；
+- Game Coordinator / 服务器托管 / EAC 服务。
+
+### 12.4 HD2 的二进制证据（本轮补充，强静态证据）
+
+对 `D:\SteamLibrary\steamapps\common\Helldivers 2\bin\helldivers2.exe`（28,743,256 B）扫描：
+
+- Steamworks 接口版本串：`SteamNetworkingSockets012`(0x1739504)、`SteamNetworkingMessages002`(0x17394e9)、
+  `SteamNetworking006`、`SteamMatchMaking009`、`SteamMatchMakingServers002`、`SteamParties002`、
+  `SteamNetworkingUtils004`、`SteamUtils010`、`STEAMUSERSTATS_INTERFACE_VERSION013`；
+- **引擎自己的 Steam C API 包装源码路径**：`D:\Work\c0b269749c96c578\stingray\runtime\steam\c_api\c_api_steam.cpp`
+  ⇒ 不是「碰巧链接了 steam_api64.dll」，而是**引擎网络层就建在 Steam 网络上**；
+- **SDR 连接状态串**：`POP remote`、`POP relay`、`FindingRoute`、`Connecting`、
+  `Accepted session request from %llx`、`Session connect failed %llx, error: %i`、
+  `Steam connection status changed [%u, %s (%i)->%s (%i)] … Remote Identity: %s / Listen socket: %u /
+  Address remote: %s / POP remote: %u / POP relay: %u / End reason / End debug / Connection Description`，
+  以及连接状态枚举 `Dead`/`Linger`/`FinWait`/`ProblemDetectedLocally`/`ClosedByPeer`/`Connected`、
+  `VoIP-Room`、`Steam not setup (yet)`。
+  这些是 `ISteamNetworkingSockets` 连接信息/调试输出字段（POP = SDR point of presence）
+  ⇒ 引擎走的是 Steam 网络 API，并会读取 SDR 中继的 POP 信息；
+- `bin\steam_api64.dll` 在位（317,080 B）。
+
+⚠️ 以上是**静态证据**：能证明「链接并入调用了这套 API」，**运行时是否强制走 relay**（vs 纯直连打洞）
+仍要实测（= B7）。复验：
+
+```powershell
+cd 'D:\SteamLibrary\steamapps\common\Helldivers 2\bin'
+python -c "import mmap;f=open('helldivers2.exe','rb');m=mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ);print([hex(m.find(s)) for s in [b'SteamNetworkingSockets012',b'SteamNetworkingMessages002',b'POP relay',b'c_api_steam.cpp',b'SteamParties002']])"
+```
+
+### 12.5 对 B 线的净影响（结论）
+
+1. **传输层不用做、也不要换**：Steam 网络 API 已在二进制里确认被引擎调用（运行时是否强制经 relay 待 B7）；
+   替换它才需要改客户端（EAC 拦），沿用它是零成本。
+2. **信令层正是我们要做的那一层**：Valve 官方架构 = P2P 传输 + 可插拔 signaling；我们在自建信令里
+   **原样转发 `connectionString`**（§5.2），本质就是给玩家当 signaling service，传输仍交给 Steam。
+   这份文档反过来给 §5.1 的方案**加了权威支撑**（不是野路子）。
+3. **SDR / Steam 匹配后端不可自建、也无需自建**：只要 Steam 在线，打洞/中继照常工作；
+   我们的自建后端只替代 `api.live.prod.thehelldiversgame.com` 那套游戏自有 API。
+   推论：**单机离线（线 A）也不受 SDR 影响**，因为它只影响联机传输，而 Steam 本就在用户边界外照常运行。
+4. **真正要攻的还是 app 层**：大厅 body 语义、`connectionString` 格式、任务链 —— 即 §5.2 与 B1–B3。
+   GNS README 也明说它「不做上层序列化/状态增量」⇒ 这部分没有任何开源件可抄。
+5. **连带新问题（B7）**：HD2 同时链接了 `SteamMatchMaking*`/`SteamParties`。若它的大厅/组队也走 Steam
+   托管服务，那么「官方 API 挂了」时 Steam 侧大厅仍可用（利好）；但反过来**自建信令可能与 Steam 大厅
+   状态打架**（谁是真值、进游戏时以谁为准），需要实验区分主从。
