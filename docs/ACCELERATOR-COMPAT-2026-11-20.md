@@ -90,3 +90,42 @@ hd2proxy.exe verify
 > 现场状态看 GUI：**总览页**的问题红条 + **「系统自检」**弹窗（两者都走
 > `engine/diagnostics`），hosts 被注释时会直接给出检测到的加速器前缀（`#uu_acc` / `#g_acc`）。
 > 命令行没有等价的诊断子命令（`hd2proxy status` 读的是运行中引擎状态，不含 hosts 检查）。
+
+## 7. v0.4.1-alpha.5 在**真实 UU 路由模式**下的离线复验（2026-11-20 12:12–12:15）
+
+> 用户更正：上一轮 alpha.5 验收当时**并没有真的处于 UU 路由模式**。本节是补做的真实路由模式
+> 离线验收（未启动游戏），§5 表格中「UU 路由模式」那行以本节为准。
+
+**环境现场**（`Get-NetAdapter` / `Get-NetRoute` / hosts）：
+
+| 项 | 值 |
+|---|---|
+| UU 网卡 | `UU` = `UU Wintun Tunnel`，ifIndex 75，IP `172.19.84.237`（`is_virtual=true`） |
+| 默认路由 | UU `172.19.84.1`（metric 120 / 接口 5）**与**以太网 `100.67.0.1`（0 / 25）并存 |
+| hosts 初始状态 | 第 16 行 `#uu_acc100.67.169.17 api.live.prod.thehelldiversgame.com # hd2proxy`（被 UU 注释） |
+| 进程/证书 | 引擎未运行；会话证书剩余 36.5 h，`D4222FE6…` |
+
+**alpha.5 五条修复逐条复验**：
+
+| # | 修复点 | 现场结果 | 判定 |
+|---|---|---|---|
+| 1 | `listen_ip:auto` 不采信虚拟网卡 | `_default_route_ip()`=`100.67.169.17`；`resolve_listen_ip("auto")`=`100.67.169.17`；引擎实际监听 `100.67.169.17:443`（**不是** UU 的 `172.19.84.237`） | ✅ |
+| 2 | hosts 被注释的识别 | 引擎启动日志：`⚠ hosts 那一行被注释掉了（前缀 #uu_acc，多为加速器 hosts 保护）—— 游戏不会走代理；重写 hosts 后需重启引擎`；`hosts_diag` 返回 `state=commented, comment_prefix=#uu_acc`；`install --dry-run` 判定 `replace`（第 16 行注释行→有效映射） | ✅ |
+| 3 | `install` 未传 `--profile` 回退默认 profile | `install --dry-run`（无 `--profile`）：`listenIp=100.67.169.17`、`certDir=…\certs`、plan 第 2 步即 hosts replace | ✅ |
+| 4 | 路由模式下写 hosts | `install` 以 UAC 提权执行：`exit_code=0` → 回读 `hosts=OK 证书=OK`；hosts 第 16 行变为 `100.67.169.17 … # hd2proxy`；**6 s 后仍为有效行**（UU 未立即再次注释） | ✅ |
+| 5 | 重写 hosts 后重启引擎 | `shutdown`→重启（pid 26576→15656）后日志**不再有 ⚠**；`verify` 三连 PASS（WarId 801 / CRL 369 B / Status 56,911 B 改写回执） | ✅ |
+
+**其它现场确认**：
+
+- 控制面 `/status`：`listen_ip=100.67.169.17`、`mode=rewrite`、`stats={tls:2,req:2,rewrite:1}`、证书
+  `usable=true`（`trusted:null` 仍是已知假阴性——`install` 回读与系统根存储均为已信任）；
+- 抓包落盘正常：`captures\fbaad1b5_api_WarSeason_801_Status.json`（50,756 B）等 + `index.txt` 追加；
+- GUI（`hd2proxy-gui.exe`）启动正常，总览显示：运行状态=改写、监听 `100.67.169.17:443`·控制面 17897、
+  证书剩 36.5 小时、请求 2·改写 1·拒绝 0、抓包=开、最近改写事件 `status +2 entries`；
+- release-test 产物完整性：zip sha256 `7be71aa2…8aa7` 与 `artifacts\SHA256SUMS.txt`、`VERSION.txt` 一致；
+  `hd2proxy.exe` `4c6802…8568`、`hd2proxy-gui.exe` `04e60f…214a` 与 SHA256SUMS 一致；
+- 打包版 `selftest` 按设计**拒绝运行**（依赖源码树），打包验收仍走 `verify` 三连 + GUI 冒烟。
+
+**进实机前的注意点**：UU 可能在**游戏启动时**再次注释 hosts（其 hosts 保护机制）。若进游戏后 GUI
+总览「请求/改写」长时间为 0、且最近改写事件无新增，说明流量没进代理：退出游戏 → 重跑
+「安装/修复（UAC）」→ 重启引擎 → 再进游戏。
