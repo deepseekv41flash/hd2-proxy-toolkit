@@ -30,7 +30,8 @@
 - 用**独立 workspace / 独立会话**推进这条线，不要和产品自检、门禁、`selftest`、发布流程混跑；
 - 实验用独立状态目录：`set HD2PROXY_STATE=D:\mod\work\hd2-offline-research\state`
   （证书 / hosts 备份 / 日志 / `engine.json` 都会被隔离到那里）；
-- hosts / 证书 / 端口这类系统级改动仍遵循 §8 的环境坑与「改完还原」纪律（UAC、备份、`uninstall` 回读）。
+- hosts / 证书 / 端口这类系统级改动仍遵循 §8 的环境坑与「改完还原」纪律（UAC、备份、`uninstall` 回读）；
+  **端口冲突见 §8.1**（443 只能有一个主人：产品引擎或研究 mock）。
 
 ### 动手前 30 秒自检
 
@@ -315,10 +316,56 @@ Start-Process -FilePath $exe -ArgumentList @('engine','--profile',$cfg,'--cert-d
 # 控制面用 127.0.0.1:17897，token 在 %LOCALAPPDATA%\HD2ProxyStudio\engine.json
 ```
 
+### 8.1 ⚠️ 端口占用与共存纪律（研究线必读）
+
+**研究线会和产品抢同一批端口**，尤其是 443：mock/自建服务端要接住游戏的 TLS，必须绑在**非回环地址的 443**
+（新版客户端拒绝回环，见上一条），而产品 MITM 引擎绑的正是同一个 `100.67.169.17:443` —— **两者不能同时跑**。
+
+#### 产品会话占用的端口（研究实验前先确认它们是否该被占）
+
+| 端口 | 绑定地址 | 归属 | 说明 |
+|---|---|---|---|
+| **443** | `100.67.169.17`（LAN IP，非 0.0.0.0） | MITM 引擎 | 游戏 API 的 TLS 入口；hosts 指向这里 |
+| **8080** | `127.0.0.1` | MITM 引擎 | CRL 服务（游戏 Schannel 需要） |
+| **17897** | `127.0.0.1` | MITM 引擎 | 控制面（GUI/CLI 用，0.4.1-alpha.6 起**端口独占**，第二个实例抢不到） |
+
+> 产品引擎启动时会预检这 3 个端口；被占会重试 5 s 后 `BIND FAIL` 并在日志里打印占用者。
+> 反过来，研究 mock 先占住 443，产品引擎就起不来（报 `bind ... 失败` / `WinError 10048`）。
+
+#### 共存纪律（按顺序，缺一步就会互相坑）
+
+1. **同一时间只允许一个「443 服务端」**：要么产品引擎，要么研究线 mock —— 不要试图用 `SO_REUSEADDR`
+   抢端口（产品 443/控制面都是独占绑定），也不要 `taskkill` 对方的进程（用户的实机测试可能正在进行）。
+2. **切换前先查占用**（见下方命令）；要停对方时**先告知用户**（那是用户的运行态）。
+3. **切到研究 mock**：停产品引擎 → 改 hosts 指向 mock 的 IP（备份 hosts，产品侧 `hd2proxy.exe uninstall`
+   可还原它自己那行）→ 起 mock → 再开游戏。
+4. **切回产品**：停 mock → 重写 hosts 指回 `100.67.169.17`（`hd2proxy.exe install`）→ 启动产品引擎 → `verify` 三连。
+5. **实验结束必须收尾**：停掉自己起的监听 → 还原 hosts → 确认 443/8080/17897 空闲后再把机器交回产品会话。
+6. 研究线**不要**去改产品 profile 的 `proxy.port / crl_port / control_port` 来"绕开"冲突（那是用户的运行配置）；
+   自己的服务端端口自己定，但**游戏入口只能是 443**。
+
+#### 查占用（可复制）
+
+```powershell
+# 1) 谁在听 443 / 8080 / 17897（占用的 PID）
+Get-NetTCPConnection -State Listen -LocalPort 443,8080,17897 -ErrorAction SilentlyContinue |
+  Select-Object LocalAddress,LocalPort,OwningProcess
+# 2) 用 PID 看是什么进程（研究线/产品/加速器）
+Get-Process -Id <上一步的 OwningProcess> -ErrorAction SilentlyContinue |
+  Select-Object Id,ProcessName,Path
+# 3) 产品侧：引擎是否在跑（会读控制面；未运行也算正常，说明 443 可能空着）
+& 'D:\mod\release-test\current\hd2proxy\hd2proxy.exe' status
+# 4) 研究实验前期望：如果产品引擎不该跑，上面 1) 应该没有 443 的监听
+```
+
+> 判断口诀：**443 只能有一个主人**；8080/17897 是产品专属（mock 不需要它们，别去占）。
+> 研究线的 mock 端口、证书、状态目录都用独立位置（`HD2PROXY_STATE` 隔离），别复用产品证书。
+
 ## 9. 新会话开工 runbook（按顺序）
 
 0. **先读开头「⛔ 工作区与文件边界」并做 30 秒自检**：确认自己**不在** `hd2-proxy-toolkit` 产品仓库里写东西、
    用的是独立 `HD2PROXY_STATE`、产品仓库 `git status` 为空；研究产物写到独立目录（单独 git）。
+   再用 §8.1 的命令确认 **443 当前归谁**（产品引擎在跑就先停/先协调，否则你的 mock 起不来）。
 1. **读这份档 + §7 三份研究资料**（API-ENDPOINTS §8.3 / MISSION-CAPTURES / FINDING-零安装客机）；
 2. **环境自检**（§2 命令）：版本、hosts、引擎、网络模式；
 3. **先做「不需要用户操作」的部分**：
