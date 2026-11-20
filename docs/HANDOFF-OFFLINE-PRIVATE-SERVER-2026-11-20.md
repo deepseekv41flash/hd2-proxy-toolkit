@@ -3,6 +3,50 @@
 > **这份档给未来会话重启这条研究线用，不属于 MITM 工具（hd2-proxy-toolkit）的待办。**
 > 本会话（hd2-proxy-toolkit 开发会话）只记录结论与线索；实际攻关请在**新会话**里按 §9 的 runbook 开工。
 
+## ⛔ 工作区与文件边界（硬性限制 —— 先读再动手）
+
+这条研究线与 **MITM 工具（hd2-proxy-toolkit）的开发会话是分开的**。产品开发正在另一个会话/工作区里推进，
+**不要动那个工作区的任何文件**，否则会直接污染产品线（版本号、门禁、发布流程、产物测试区全会被带偏）。
+
+### 禁止写入（除非先得到用户明确批准）
+
+| 路径 | 说明 |
+|---|---|
+| `D:\mod\work\hd2-proxy-toolkit\**` | **MITM 产品仓库（本档所在仓库）**：只读参考；禁止写入、禁止 `git add/commit/push`、禁止改配置 |
+| `D:\mod\release-test\**` | 产品发布产物测试区（GUI/引擎从这里跑）：禁止替换 / 删除 / 重写 |
+| `%LOCALAPPDATA%\HD2ProxyStudio\**` | 用户正在用的运行态（profile / 证书 / 抓包 / 日志 / `engine.json`）：禁止改；研究实验请用独立 `HD2PROXY_STATE` 隔离 |
+| `%LOCALAPPDATA%\HD2ProxyStudio\profiles\default.json` | 用户默认 profile：**尤其不要改**（会直接影响实机注入行为） |
+
+### 允许的用法
+
+- **只读**：可以把产品仓库当资料读（`data/catalogs/*`、`src/hd2proxy/engine/*`、`docs/*`、抓包样本等）；
+- **产物另放**：研究线自己的代码 / 数据 / 结论写到独立目录（建议 `D:\mod\work\hd2-offline-research\`，或研究仓
+  `D:\mod\work\variant-net\` 下的新子目录），并**单独 git 管理**；不要写进产品仓库；
+- **需要产品侧改动时**：不要直接改。先把需求 / 补丁写成研究线文档，回到 MITM 会话由用户决定是否集成；
+  确需改产品代码时走「新建分支 + 用户批准 + 门禁 + 版本规则（功能改 `X.Y.Z`、只修 bug 动 `alpha.N`）」，不得直推 `master`。
+
+### 环境隔离建议（强烈推荐）
+
+- 用**独立 workspace / 独立会话**推进这条线，不要和产品自检、门禁、`selftest`、发布流程混跑；
+- 实验用独立状态目录：`set HD2PROXY_STATE=D:\mod\work\hd2-offline-research\state`
+  （证书 / hosts 备份 / 日志 / `engine.json` 都会被隔离到那里）；
+- hosts / 证书 / 端口这类系统级改动仍遵循 §8 的环境坑与「改完还原」纪律（UAC、备份、`uninstall` 回读）。
+
+### 动手前 30 秒自检
+
+```powershell
+# 1) 先确认自己在哪个目录、哪个仓库（应在研究线目录，不在产品仓库）
+Get-Location
+git rev-parse --show-toplevel 2>$null
+# 2) 研究实验的状态目录必须是独立目录（不是默认 HD2ProxyStudio）
+$env:HD2PROXY_STATE
+# 3) 产品仓库必须是干净的、且你没有任何待提交改动（期望：无输出）
+git -C D:\mod\work\hd2-proxy-toolkit status --short
+```
+
+> 一句话：**产品仓库只读、产物另行落盘、改产品先过用户。**
+> 产品当前版本以 `D:\mod\release-test\current\hd2proxy\hd2proxy.exe --version` 为准（本档 §2 的快照只代表 2026-11-20 11:17 那一刻）。
+
 ## 0. 一句话结论
 
 - **离线单机**：技术前提基本成立（游戏任务本体在客户端、任务链参数由客户端提交、登录响应只有一个 `sessionId`），
@@ -17,6 +61,8 @@
 - **Steam 与 EAC 不接管、照常运行**（即 Steam 正常在线、EAC 正常保护启动）；
 - 不修改游戏文件（EAC 会判「未知的文件版本」，连 1 bit 差分都拦）；
 - 目标场景：官方服务器不可达（网络故障/维护）时，仍能**离线进主界面 → 单人任务**；以及**小圈子自建联机**。
+- **工作区边界（硬性）**：本线在**独立工作区/会话**推进；**不得写入** `D:\mod\work\hd2-proxy-toolkit`（产品仓库）、
+  `D:\mod\release-test`（产物测试区）与 `%LOCALAPPDATA%\HD2ProxyStudio`（用户运行态）——详见开头「⛔ 工作区与文件边界」。
 
 ## 2. 现状快照（2026-11-20 11:17，供新会话对照）
 
@@ -271,6 +317,8 @@ Start-Process -FilePath $exe -ArgumentList @('engine','--profile',$cfg,'--cert-d
 
 ## 9. 新会话开工 runbook（按顺序）
 
+0. **先读开头「⛔ 工作区与文件边界」并做 30 秒自检**：确认自己**不在** `hd2-proxy-toolkit` 产品仓库里写东西、
+   用的是独立 `HD2PROXY_STATE`、产品仓库 `git status` 为空；研究产物写到独立目录（单独 git）。
 1. **读这份档 + §7 三份研究资料**（API-ENDPOINTS §8.3 / MISSION-CAPTURES / FINDING-零安装客机）；
 2. **环境自检**（§2 命令）：版本、hosts、引擎、网络模式；
 3. **先做「不需要用户操作」的部分**：
@@ -302,12 +350,14 @@ Start-Process -FilePath $exe -ArgumentList @('engine','--profile',$cfg,'--cert-d
 
 ## 11. 与 MITM 工具（本会话主线）的关系
 
+- **工作区隔离（硬性）**：本线是**只读**产品仓库的外部研究线——不得写入/提交 `hd2-proxy-toolkit`，
+  不得动 `release-test` 与用户 `HD2ProxyStudio` 运行态；详见开头「⛔ 工作区与文件边界」。
 - 本会话已交付的相关底座：MITM 引擎（capture/rewrite/hosts/证书/控制面）、
-  v0.4.1-alpha.5 的加速器共存修复、诊断与自检、发布与 release-test 同步流程。
+  加速器共存修复、诊断与自检、发布与 release-test 同步流程（含 0.4.2 起的 `live` 免游戏拉战况）。
 - **本线不属于工具待办**：除非用户明确要在产品里做「离线/私服」能力，否则不要把它塞进
-  `hd2-proxy-toolkit` 的 PLAN/CHANGELOG。
+  `hd2-proxy-toolkit` 的 PLAN/CHANGELOG；也不要为了研究实验去改产品代码或运行中的 profile。
 - 若将来把 capture→replay 做成产品特性：属于**功能变更**（版本规则：动 `X.Y.Z` + alpha.1 重置），
-  并需要单独评估 ToS 与用户风险提示。
+  并需要单独评估 ToS 与用户风险提示；由 MITM 会话在主线上实现，本线只提供需求与补丁文档。
 
 ## 12. Steam 侧官方/开源资源 + 对 B 线的净影响（2026-11-20 补）
 

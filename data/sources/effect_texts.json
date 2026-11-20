@@ -1,0 +1,1956 @@
+[
+ {
+  "effect_id": 5,
+  "name": "ENEMY FORCE INCREASE",
+  "fields": {
+   "name": "client-strings:locid=3228578710 (live-20261120:nameHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 12,
+  "name": "ADDITIONAL PAYOUT",
+  "fields": {
+   "name": "client-strings:locid=824899430 (live-20261120:nameHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 55,
+  "name": "INCREASED STARTING AMMO",
+  "long_desc": "Helldiver deploys with maximum number of magazines for their weapons.",
+  "fields": {
+   "name": "client-strings:locid=76488365 (live-20261120:nameHash)",
+   "long_desc": "client-strings:locid=1828599885 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 67,
+  "name": "EXPERIMENTAL SUPER SOLDIERS",
+  "long_desc": "The Helldiver has faster stamina regeneration and slowly regenerates health and injuries automatically.",
+  "fields": {
+   "name": "client-strings:locid=591927688 (live-20261120:nameHash)",
+   "long_desc": "client-strings:locid=665934661 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 70,
+  "name": "INTEL SCANNERS",
+  "long_desc": "The location of Intel is  indicated on the mini-map.",
+  "fields": {
+   "name": "client-strings:locid=23068690 (live-20261120:nameHash)",
+   "long_desc": "client-strings:locid=1598896052 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 71,
+  "name": "COMPROMISED INTEL PACKAGES",
+  "long_desc": "Intel Packages are compromised. Picking them up will notify the enemy of your whereabouts and cause an encounter.",
+  "fields": {
+   "name": "client-strings:locid=2131143183 (live-20261120:nameHash)",
+   "long_desc": "client-strings:locid=666686095 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 76,
+  "name": "IMPENETRABLE DEFENSE",
+  "long_desc": "The defenses of this planet are so strong that no enemy will be able to invade.",
+  "fields": {
+   "name": "client-strings:locid=4100145236 (live-20261120:nameHash)",
+   "long_desc": "client-strings:locid=3473453282 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 77,
+  "name": "CRIPPLED SUPPLY",
+  "long_desc": "The ability of this planet to attack is crippled.",
+  "fields": {
+   "name": "client-strings:locid=2880515217 (live-20261120:nameHash)",
+   "long_desc": "client-strings:locid=2359016228 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 80,
+  "name": "MINOR ATTACK INCREASE",
+  "fields": {
+   "name": "client-strings:locid=622724788 (live-20261120:nameHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 87,
+  "name": "MORE BATTLEFIELD AMMO",
+  "short_desc": "Battlefield pickups on all planets contain <i=1>#AMOUNT%</i> more ammo.",
+  "long_desc": "Ammo and Supply boxes contains #V_ONE more magazine and #V_TWO extra rounds each.",
+  "fields": {
+   "name": "client-strings:locid=3514565128 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=1122436356 (live-20261120:descriptionGamePlayShortHash)",
+   "long_desc": "client-strings:locid=1986762379 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 102,
+  "name": "LARGE ATTACK INCREASE",
+  "fields": {
+   "name": "client-strings:locid=3257067843 (live-20261120:nameHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 103,
+  "name": "ATTACK INCREASE",
+  "fields": {
+   "name": "client-strings:locid=1318718284 (live-20261120:nameHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 104,
+  "name": "SUBSTANTIAL ATTACK INCREASE",
+  "fields": {
+   "name": "client-strings:locid=2235202471 (live-20261120:nameHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 105,
+  "name": "MAJOR ATTACK INCREASE",
+  "fields": {
+   "name": "client-strings:locid=2178950272 (live-20261120:nameHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 106,
+  "name": "MASSIVE ATTACK INCREASE",
+  "fields": {
+   "name": "client-strings:locid=1176952649 (live-20261120:nameHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 113,
+  "name": "PLENTYFUL STIMS",
+  "long_desc": "Health Packs and Supply boxes contains #V_ONE more Stim Packs.",
+  "fields": {
+   "name": "client-strings:locid=1040794349 (live-20261120:nameHash)",
+   "long_desc": "client-strings:locid=4188302223 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 114,
+  "name": "LESS BATTLEFIELD AMMO",
+  "short_desc": "Battlefield pickups on all planets contain <i=1>#AMOUNT%</i> less ammo.",
+  "long_desc": "Ammo and Supply boxes contains #V_ONE less magazine and #V_TWO fewer rounds.",
+  "fields": {
+   "name": "client-strings:locid=3861654825 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2051090765 (live-20261120:descriptionGamePlayShortHash)",
+   "long_desc": "client-strings:locid=194209153 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 121,
+  "name": "MARKET CRASH",
+  "long_desc": "Due to the risk of Famine, the market is concerned and prices have gone up #V_ONE%.",
+  "fields": {
+   "name": "client-strings:locid=42255241 (live-20261120:nameHash)",
+   "long_desc": "client-strings:locid=2009011594 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1127,
+  "name": "Eagle 500kg Bomb",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1128,
+  "name": "Eagle 500kg Bomb",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1129,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1130,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1133,
+  "name": "EMS Mortar Sentry",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1135,
+  "name": "Railgun",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1137,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1139,
+  "name": "Eagle Napalm Airstrike",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1142,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The Eagle 500kg Bomb stratagem is temporarily available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=740677481 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=1740259294 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1143,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The MG-43 Machine Gun stratagem is temporarily available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=2969104525 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=3049338773 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1144,
+  "name": "AMMO SHORTAGE",
+  "short_desc": "Helldivers deploy with <i=1>#V_ONE%</i> less magazines.",
+  "fields": {
+   "name": "client-strings:locid=2784761516 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=761483845 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1145,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The Orbital Laser stratagem is temporarily available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=2718162576 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=3453882851 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1147,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The Orbital EMS Strike stratagem is temporarily available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=826900961 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2674681081 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1148,
+  "name": "Patriot Exosuit",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1149,
+  "name": "EQUIPMENT TESTING",
+  "short_desc": "The Jump Pack stratagem is temporarily available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=3820781527 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=1623115737 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1150,
+  "name": "EQUIPMENT TESTING",
+  "short_desc": "The Supply Backpack stratagem is temporarily available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=823091821 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=1753680151 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1152,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1153,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1154,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1155,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1156,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1159,
+  "name": "ACCOUNTING CORRECTIONS",
+  "short_desc": "Boosts <i=1>Requisition</i> and <i=1>XP</i> awards by <i=1>50%</i> to address accounting errors (responsible parties undergoing re-education).",
+  "long_desc": "<i=1>50%</i> bonus to <i=1>Requisition</i> and <i=1>XP</i> awarded per mission",
+  "fields": {
+   "name": "client-strings:locid=451059295 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=141615983 (live-20261120:descriptionGamePlayShortHash)",
+   "long_desc": "client-strings:locid=1472672983 (live-20261120:descriptionGamePlayLongHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1160,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1161,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1162,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1163,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1165,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1166,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1167,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1168,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1169,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1170,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1171,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1172,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1173,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1174,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1175,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1178,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1179,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1181,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1182,
+  "name": "AERIAL DOMINANCE",
+  "short_desc": "Extraction takes #V_TWO seconds less.",
+  "fields": {
+   "name": "client-strings:locid=23818252 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=989037070 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1194,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1195,
+  "name": "DSS CONSTRUCTION SITE - PHASE 1",
+  "short_desc": "Construction has begun on the Democracy Space Station. The local populace is honored to host thousands of construction crews for this historic event.",
+  "fields": {
+   "name": "client-strings:locid=1297500110 (presence:democracy_station_phase_1:name_id)",
+   "short_desc": "client-strings:locid=2075705502 (presence:democracy_station_phase_1:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1196,
+  "name": "DSS LOGISTICS HUB",
+  "short_desc": "Parts for the Democracy Space Station are prefabricated all over the Galaxy, then shipped here to await assembly.",
+  "fields": {
+   "name": "client-strings:locid=2657511835 (presence:civilian_cargo:name_id)",
+   "short_desc": "client-strings:locid=257295247 (presence:civilian_cargo:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1197,
+  "name": "XENOENTOMOLOGY CENTER",
+  "short_desc": "Those who study Terminid behavior, ecology and E-710 potential gather here for cross-disciplinary research.",
+  "fields": {
+   "name": "client-strings:locid=4101241081 (presence:research_bio_research:name_id)",
+   "short_desc": "client-strings:locid=3669186559 (presence:research_bio_research:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1198,
+  "name": "DEEP MANTLE FORGE COMPLEX",
+  "short_desc": "The smelters and refineries on this planet turn crude materials into usable hardware.",
+  "fields": {
+   "name": "client-strings:locid=2798682948 (presence:manufacturing_forge:name_id)",
+   "short_desc": "client-strings:locid=2792856870 (presence:manufacturing_forge:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1199,
+  "name": "DSS CONSTRUCTION SITE - PHASE 2",
+  "short_desc": "Democracy Space Station construction is well underway. The local economy is flourishing as the planet’s populace has centupled, and all the Galaxy can feel their democratic fervor.",
+  "fields": {
+   "name": "client-strings:locid=2464554102 (presence:democracy_station_phase_2:name_id)",
+   "short_desc": "client-strings:locid=295451118 (presence:democracy_station_phase_2:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1200,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1203,
+  "name": "THE JET BRIGADE",
+  "short_desc": "The Automatons have deployed a series of specialized models on this planet. Prepare to face bots upgraded with stolen Jump Pack technology.",
+  "fields": {
+   "name": "client-strings:locid=1760171012 (presence:elite_bot_jumpattack:name_id)",
+   "short_desc": "client-strings:locid=796165462 (presence:elite_bot_jumpattack:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1204,
+  "name": "LIBERTY DAY CELEBRATION",
+  "short_desc": "Super Earth, our home, is the center of Liberty Day Festivities. Together, all citizens can watch on television the annual Defense Parade, the Justice Executions, and of course, the Freedom Fireworks. \n\nOn this special day, Helldivers are encouraged to visit Super Earth and watch this year's fireworks from their Super Destroyers.",
+  "fields": {
+   "name": "client-strings:locid=3825744973 (presence:liberty_day:name_id)",
+   "short_desc": "client-strings:locid=3988232937 (presence:liberty_day:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1205,
+  "name": "DSS CONSTRUCTION SITE - PHASE 3",
+  "short_desc": "Construction of the Democracy Space Station is nearing completion. This project, which has employed millions, will soon take its place among the greatest achievements of Democracy.",
+  "fields": {
+   "name": "client-strings:locid=61811930 (presence:democracy_station_phase_3:name_id)",
+   "short_desc": "client-strings:locid=1114624260 (presence:democracy_station_phase_3:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1206,
+  "name": "TERMINID RESEARCH PRESERVE",
+  "short_desc": "Terminids are held safely within massive compounds on this planet for study and E-710 extraction.",
+  "fields": {
+   "name": "client-strings:locid=1561068448 (presence:military_tower:name_id)",
+   "short_desc": "client-strings:locid=1914367317 (presence:military_tower:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1207,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1208,
+  "name": "PLANETARY BOMBARDMENT",
+  "short_desc": "The DSS fires <i=1>Orbital Barrages</i> during missions.",
+  "fields": {
+   "name": "client-strings:locid=1333202479 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=1198664072 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1209,
+  "name": "EAGLE STORM",
+  "short_desc": "The DSS deploys <i=1>Eagle Strafing Runs</i> during missions.",
+  "fields": {
+   "name": "client-strings:locid=4089075400 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=588827542 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1210,
+  "name": "ORBITAL BLOCKADE",
+  "short_desc": "<i=1>#V_ONE</i> Booster is automatically active for all missions.",
+  "fields": {
+   "name": "client-strings:locid=848932066 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2912407889 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1211,
+  "name": "PLANETARY BOMBARDMENT",
+  "short_desc": "The DSS fires nonstop orbital bombardments from its suite of 77 PRESIDENTIAL-Class Cannons, providing planetwide artillery support and accelerating liberation efforts. Temporarily, also increases Reinforcement Budget by +1 per squad member and augments all loadouts with FX-12 Shield Generator Relay Stratagem.",
+  "fields": {
+   "name": "client-strings:locid=2921216438 (presence:tactical_action_planetary_bombardment:name_id)",
+   "short_desc": "client-strings:locid=3294946153 (presence:tactical_action_planetary_bombardment:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1212,
+  "name": "EAGLE STORM",
+  "short_desc": "DSS crews maintain deployment of a 24-hour rotating fleet of Eagle Fighters from the massive three-tiered Convocation Bay, supporting all Helldiver operations on the planet with close air support and halting enemy offensives for a short time.",
+  "fields": {
+   "name": "client-strings:locid=3326001771 (presence:tactical_action_eagle_storm:name_id)",
+   "short_desc": "client-strings:locid=901564350 (presence:tactical_action_eagle_storm:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1213,
+  "name": "ORBITAL BLOCKADE",
+  "short_desc": "The DSS activates its Zero G Anti-Ship Missile System, targeting all large enemy spacecraft attempting to exit the planet's atmosphere. In addition, diverts excess manpower to Super Destroyer logistical support.",
+  "fields": {
+   "name": "client-strings:locid=3075730854 (presence:tactical_action_defensive_lockdown:name_id)",
+   "short_desc": "client-strings:locid=1824396202 (presence:tactical_action_defensive_lockdown:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1214,
+  "name": "PLANETARY BOMBARDMENT",
+  "short_desc": "Progress in <i=1>Liberation Campaigns</i> is accelerated.",
+  "fields": {
+   "name": "client-strings:locid=2158877299 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=3798493358 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1215,
+  "name": "ORBITAL BLOCKADE",
+  "short_desc": "<i=1>Defense Campaigns</i> cannot originate from this planet.",
+  "fields": {
+   "name": "client-strings:locid=2149309645 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=3490555416 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1216,
+  "name": "EAGLE STORM",
+  "short_desc": "Enemy progress in <i=1>Defense Campaigns</i> is slowed.",
+  "fields": {
+   "name": "client-strings:locid=425147060 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=1212122769 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1217,
+  "name": "DEMOCRACY SPACE STATION",
+  "short_desc": "A Helldiver-operated weapon of mass liberation. Paid for with the blood of soldiers and the credits of taxpayers, this technological marvel is Democracy made manifest.",
+  "fields": {
+   "name": "client-strings:locid=319758935 (presence:democracy_station_final:name_id)",
+   "short_desc": "client-strings:locid=1674562767 (presence:democracy_station_final:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1226,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1227,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1228,
+  "name": "MERIDIAN BLACK HOLE",
+  "short_desc": "The prosperous Meridia was corrupted into a Terminid Supercolony, necessitating its destruction using the mysterious Dark Fluid. This galactic scar is all that remains.",
+  "fields": {
+   "name": "client-strings:locid=1741687388 (presence:black_hole:name_id)",
+   "short_desc": "client-strings:locid=2371709060 (presence:black_hole:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1229,
+  "name": "MERIDIAN BLACK HOLE",
+  "short_desc": "The prosperous Meridia was corrupted into a Terminid Supercolony, necessitating its destruction using the mysterious Dark Fluid. This galactic scar is all that remains.",
+  "fields": {
+   "name": "client-strings:locid=1741687388 (presence:black_hole_intensified:name_id)",
+   "short_desc": "client-strings:locid=2371709060 (presence:black_hole_intensified:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1230,
+  "name": "MERIDIAN BLACK HOLE",
+  "short_desc": "The prosperous Meridia was corrupted into a Terminid Supercolony, necessitating its destruction using the mysterious Dark Fluid. This galactic scar is all that remains. Advisory: volatile spacetime fluctuations currently prohibit FTL travel to the Meridian Black Hole.",
+  "fields": {
+   "name": "client-strings:locid=1741687388 (presence:black_hole_travel_blocked:name_id)",
+   "short_desc": "client-strings:locid=832453372 (presence:black_hole_travel_blocked:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1231,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1232,
+  "name": "FACTORY HUB",
+  "short_desc": "The hard workers on this planet produce goods vital to the war effort, as well as to the prosperity of Super Earth.",
+  "fields": {
+   "name": "client-strings:locid=2757673367 (presence:manufacturing_generic:name_id)",
+   "short_desc": "client-strings:locid=1716114649 (presence:manufacturing_generic:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1233,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1234,
+  "name": "CENTER OF SCIENCE",
+  "short_desc": "On this planet, the Ministry of Science’s best and brightest work on their next breakthrough.",
+  "fields": {
+   "name": "client-strings:locid=2750913230 (presence:research_generic:name_id)",
+   "short_desc": "client-strings:locid=3974317902 (presence:research_generic:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1235,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1236,
+  "name": "CENTER FOR CIVILIAN SURVEILLANCE AND SAFETY",
+  "short_desc": "The Ministry of Truth analyzes citizens' activity, speech, data, DNA, RNA, and neural topology here.",
+  "fields": {
+   "name": "client-strings:locid=4246407614 (presence:civilian_surveillance:name_id)",
+   "short_desc": "client-strings:locid=3595804220 (presence:civilian_surveillance:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1237,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1238,
+  "name": "OPERATIONAL SUPPORT",
+  "short_desc": "The presence of the DSS near this planet provides a slight boost to <i=1>Liberation Campaign</i> progress.",
+  "fields": {
+   "name": "client-strings:locid=3134031991 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=765324963 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1239,
+  "name": "JET BRIGADE FACTORIES",
+  "short_desc": "Vertically enhanced Jet Brigade soldiers are produced here.",
+  "fields": {
+   "name": "client-strings:locid=2384335881 (presence:bot_facility_jetbrigade:name_id)",
+   "short_desc": "client-strings:locid=3618005346 (presence:bot_facility_jetbrigade:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1241,
+  "name": "FRACTURED PLANET",
+  "short_desc": "All that remains of a planet torn apart by the Meridian singularity. A solemn reminder of the desolation Tyranny leaves in its wake.",
+  "fields": {
+   "name": "client-strings:locid=1048514854 (presence:destroyed_by_black_hole:name_id)",
+   "short_desc": "client-strings:locid=1942440765 (presence:destroyed_by_black_hole:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1245,
+  "name": "PREDATOR STRAIN",
+  "short_desc": "A mutated strain of Terminids has been reported on this planet. Expect to encounter cunning hunter bugs.",
+  "fields": {
+   "name": "client-strings:locid=853684841 (presence:bugs_super_predator:name_id)",
+   "short_desc": "client-strings:locid=276825548 (presence:bugs_super_predator:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1247,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1249,
+  "name": "THE INCINERATION CORPS",
+  "short_desc": "An Automaton unit equipped with flame throwers and incendiary ammunition is active on this planet. Prepare to face wanton arsonists who will not rest until they have razed all that humankind holds dear.",
+  "fields": {
+   "name": "client-strings:locid=2399209115 (presence:bots_ivory_legion:name_id)",
+   "short_desc": "client-strings:locid=2388346408 (presence:bots_ivory_legion:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1252,
+  "name": "FRACTURED PLANET",
+  "short_desc": "All that remains of a planet torn apart by the Meridian singularity. A solemn reminder of the desolation Tyranny leaves in its wake.",
+  "fields": {
+   "name": "client-strings:locid=1048514854 (presence:destroyed_by_black_hole:name_id)",
+   "short_desc": "client-strings:locid=1942440765 (presence:destroyed_by_black_hole:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1254,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1256,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1261,
+  "name": "EXOSUIT RESERVES",
+  "short_desc": "The presence of the DSS near this planet provides a -35% cooldown reduction to all Exosuit stratagems.",
+  "fields": {
+   "name": "client-strings:locid=2050925525 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=3205119654 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1262,
+  "name": "Emancipator Exosuit",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1263,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1265,
+  "name": "GUNNER FRV",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1267,
+  "name": "Orbital Gas Strike",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1268,
+  "name": "NEGATIVE ENERGY LABORATORY",
+  "short_desc": "Scientists without fear of implosion or spaghettification study negative energy here.",
+  "fields": {
+   "name": "client-strings:locid=3539223805 (presence:research_energy_lab:name_id)",
+   "short_desc": "client-strings:locid=37208441 (presence:research_energy_lab:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1269,
+  "name": "The Great Host",
+  "short_desc": "The Illuminate invasion fleet, constructed in secret behind the veil of the Meridian Wormhole. It is headed for Super Earth itself.",
+  "fields": {
+   "name": "client-strings:locid=1538538866 (presence:illuminate_fleet:name_id)",
+   "short_desc": "client-strings:locid=707866417 (presence:illuminate_fleet:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1274,
+  "name": "Stalwart",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1276,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1277,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1279,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1280,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1281,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1282,
+  "name": "HELLDIVER TRAINING FACILITIES",
+  "short_desc": "Here, the best of the best go through the rigorous Helldiver training that will earn them their capes.",
+  "fields": {
+   "name": "client-strings:locid=1067047599 (presence:military_helldiver_training:name_id)",
+   "short_desc": "client-strings:locid=2731914041 (presence:military_helldiver_training:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1284,
+  "name": "Recoilless Rifle",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1286,
+  "name": "NEW HOPE CONSTRUCTION SITE",
+  "short_desc": "On this planet, workers are constructing one of 3 Maximum Security Cities: impregnable bastions against Tyranny.",
+  "fields": {
+   "name": "client-strings:locid=2180191348 (presence:construction_hope:name_id)",
+   "short_desc": "client-strings:locid=4037455426 (presence:construction_hope:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1287,
+  "name": "NEW HOPE CITY",
+  "short_desc": "The flagship Maximum Security City. Impregnable to Tyranny; the future of the Federation.",
+  "fields": {
+   "name": "client-strings:locid=1150711238 (presence:completed_hope:name_id)",
+   "short_desc": "client-strings:locid=1147063964 (presence:completed_hope:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1289,
+  "name": "Orbital Railcannon Strike",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1291,
+  "name": "NEW ASPIRATION CITY",
+  "short_desc": "One of 3 Maximum Security Cities. Impregnable to Tyranny; the future of the Federation.",
+  "fields": {
+   "name": "client-strings:locid=762468820 (presence:completed_aspiration:name_id)",
+   "short_desc": "client-strings:locid=985262540 (presence:completed_aspiration:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1292,
+  "name": "NEW YEARNING CITY",
+  "short_desc": "One of 3 Maximum Security Cities. Impregnable to Tyranny; the future of the Federation.",
+  "fields": {
+   "name": "client-strings:locid=2906313102 (presence:completed_yearning:name_id)",
+   "short_desc": "client-strings:locid=985262540 (presence:completed_yearning:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1295,
+  "name": "TYRANNY PARK 2",
+  "short_desc": "The extensive Terminid enclosures here allow scientists to study Terminid behavior, and civilians to take pictures with Brood Commanders.",
+  "fields": {
+   "name": "client-strings:locid=862979628 (presence:civilian_bug_park:name_id)",
+   "short_desc": "client-strings:locid=1423642964 (presence:civilian_bug_park:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1298,
+  "name": "GUNNER FRV",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1301,
+  "name": "Gatling Sentry",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1302,
+  "name": "Rover",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1308,
+  "name": "HIVE LORDS",
+  "short_desc": "Terminid Hive Lords have been detected on this planet. Prepare to face massive burrowing enemies.",
+  "fields": {
+   "name": "client-strings:locid=3709494312 (presence:bugs_hive_lord:name_id)",
+   "short_desc": "client-strings:locid=4189958024 (presence:bugs_hive_lord:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1309,
+  "name": "DRAGONROACHES",
+  "short_desc": "Terminid Dragonroaches menace the skies of this planet. Prepare to encounter airborne enemies.",
+  "fields": {
+   "name": "client-strings:locid=3580449947 (presence:bugs_dragon:name_id)",
+   "short_desc": "client-strings:locid=1017745296 (presence:bugs_dragon:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1310,
+  "name": "RUPTURE STRAIN",
+  "short_desc": "A deadly strain of ground-bursting Terminids is present on this planet. Prepare to face burrowing enemies.",
+  "fields": {
+   "name": "client-strings:locid=510506755 (presence:bugs_burrower:name_id)",
+   "short_desc": "client-strings:locid=1541244759 (presence:bugs_burrower:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1312,
+  "name": "LIGHT GLOOM COVER",
+  "short_desc": "Gloom particles interfere with landing Pelicans, increasing extraction times by <i=1>20 seconds.</i>",
+  "fields": {
+   "name": "client-strings:locid=1362615920 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=3552972191 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1313,
+  "name": "MODERATE GLOOM BLANKET",
+  "short_desc": "The Gloom covers this planet completely, obstructing a variety of logistical operations.\nExtraction times are increased by <i=1>30 seconds</i> and Eagle Re-arm time is increased by <i=1>20%.</i>",
+  "fields": {
+   "name": "client-strings:locid=1628213888 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2158648524 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1315,
+  "name": "HEAVY GLOOM SHROUD",
+  "short_desc": "This planet is completely engulfed by the Gloom, severely impeding logistical support.\nExtraction times are increased by <i=1>40 seconds,</i> Eagle Re-arm time is increased by <i=1>30%</i> and Ammo from pickups is reduced by <i=1>50%.</i>",
+  "fields": {
+   "name": "client-strings:locid=3957075233 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=688744041 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1318,
+  "name": "GLOOM SOURCE",
+  "short_desc": "This planet continually produces a thick atmospheric Gloom cover, rendering logistical support extremely challenging.\nTotal Reinforcements are reduced by <i=1>20%,</i> Eagle Re-arm time is increased by <i=1>30%</i> and Ammo from pickups is reduced by <i=1>50%.</i>",
+  "fields": {
+   "name": "client-strings:locid=435602687 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=1427924894 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1324,
+  "name": "ULTRAMAFIC MINE",
+  "short_desc": "A mine extracting platinum from deep-seated deposits of igneous rock.",
+  "fields": {
+   "name": "client-strings:locid=3372702334 (presence:manufacturing_industry:name_id)",
+   "short_desc": "client-strings:locid=779490921 (presence:manufacturing_industry:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1328,
+  "name": "Airburst Rocket Launcher",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1329,
+  "name": "LIBERTY DAY CELEBRATION",
+  "short_desc": "Super Earth, our home, is the center of Liberty Day Festivities. Together, all citizens can watch on television the annual Defense Parade, the Justice Executions, and of course, the Freedom Fireworks. \n\nOn this special day, Helldivers are encouraged to visit Super Earth and watch this year's fireworks from their Super Destroyers.",
+  "fields": {
+   "name": "client-strings:locid=3825744973 (presence:liberty_day:name_id)",
+   "short_desc": "client-strings:locid=3988232937 (presence:liberty_day:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1331,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1332,
+  "name": "Warp Pack",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1334,
+  "name": "Laser Cannon",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1335,
+  "name": "Orbital Walking Barrage",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1337,
+  "name": "Orbital Smoke Strike",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1338,
+  "name": "GUNNER FRV",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1339,
+  "name": "Patriot Exosuit",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1340,
+  "name": "Emancipator Exosuit",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1342,
+  "name": "CENTER FOR THE CONFINEMENT OF DISSIDENCE (CECOD)",
+  "short_desc": "This planet-wide, ultra-high-security facility provides ample space for the secure confinement of terrorist dissidents until they are fully rehabilitated and re-educated.",
+  "fields": {
+   "name": "client-strings:locid=1999064883 (presence:dissident_prison:name_id)",
+   "short_desc": "client-strings:locid=2539971084 (presence:dissident_prison:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1343,
+  "name": "Eagle Napalm Airstrike",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1344,
+  "name": "PANDORA BASE",
+  "short_desc": "The top-secret site where augmentations to the DSS are constructed.",
+  "fields": {
+   "name": "client-strings:locid=944387173 (presence:dss_augmentation:name_id)",
+   "short_desc": "client-strings:locid=810343458 (presence:dss_augmentation:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1345,
+  "name": "ORBITAL 120MM HE/EMS BARRAGE",
+  "short_desc": "The <i=1>Orbital 120mm HE Barrage</i> is experimentally modified with additional HE rounds, EMS rounds, and a tighter radius.",
+  "fields": {
+   "name": "client-strings:locid=2042544950 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=3787865575 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1346,
+  "name": "INCENDIARY GATLING BARRAGE",
+  "short_desc": "The <i=1>Orbital Gatling Barrage</i> is experimentally modified to use incendiary rounds instead of HE rounds.",
+  "fields": {
+   "name": "client-strings:locid=2492608753 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=1203572315 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1347,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1348,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1349,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1350,
+  "name": "SMOKE-ENHANCED WALKING BARRAGE",
+  "short_desc": "The <i=1>Orbital Walking Barrage</i> is experimentally modified to have smoke rounds mixed into its salvos.",
+  "fields": {
+   "name": "client-strings:locid=2482482071 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=3387915863 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1351,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1352,
+  "name": "CONVENTIONAL BLACK HOLE",
+  "short_desc": "This former planet is now nothing but a normal, stable black hole.",
+  "fields": {
+   "name": "client-strings:locid=1892826563 (presence:destroyed_by_death_laser:name_id)",
+   "short_desc": "client-strings:locid=1661251297 (presence:destroyed_by_death_laser:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1353,
+  "name": "DATA CENTER",
+  "short_desc": "The Automatons store large amounts of encrypted information here.",
+  "fields": {
+   "name": "client-strings:locid=807737937 (presence:bot_facility_data:name_id)",
+   "short_desc": "client-strings:locid=510496601 (presence:bot_facility_data:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1355,
+  "name": "HEAVY ARMOR SURGE",
+  "short_desc": "The Automatons are deploying an abnormal amount of War Striders and Tanks to this planet. Prepare to encounter high numbers of heavily armored enemies",
+  "fields": {
+   "name": "client-strings:locid=383938306 (presence:bots_increased_warstriders:name_id)",
+   "short_desc": "client-strings:locid=1882925335 (presence:bots_increased_warstriders:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1357,
+  "name": "HULK SURGE",
+  "short_desc": "High numbers of enemy Hulks have been reported on this planet. Prepare to encounter heavily armored enemies.",
+  "fields": {
+   "name": "client-strings:locid=1483133390 (presence:bots_increased_hulks:name_id)",
+   "short_desc": "client-strings:locid=900034221 (presence:bots_increased_hulks:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1359,
+  "name": "DEVASTATOR SURGE",
+  "short_desc": "The Automatons have deployed high numbers of Devastators to this planet. Prepare to encounter heavily armored enemies.",
+  "fields": {
+   "name": "client-strings:locid=102745890 (presence:bots_increased_devastators:name_id)",
+   "short_desc": "client-strings:locid=219493118 (presence:bots_increased_devastators:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1361,
+  "name": "CYBORGS",
+  "short_desc": "Cyborgs are deployed to the battlefield of this planet, leading their Automaton armies. Expect to encounter vile propagandists trained in both ranged and melee combat.",
+  "fields": {
+   "name": "client-strings:locid=1098467888 (presence:bots_cyborgs:name_id)",
+   "short_desc": "client-strings:locid=3033038880 (presence:bots_cyborgs:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1363,
+  "name": "PILOT SHORTAGE",
+  "short_desc": "Extraction takes #V_TWO additional seconds.",
+  "fields": {
+   "name": "client-strings:locid=1762114919 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2116313662 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1364,
+  "name": "AERIAL DOMINANCE",
+  "short_desc": "Extraction takes #V_TWO seconds less.",
+  "fields": {
+   "name": "client-strings:locid=23818252 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=989037070 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1365,
+  "name": "ORBITAL FLUCTUATIONS",
+  "short_desc": "All <i=1>Orbital Stratagems</i> have an increased cooldown.",
+  "fields": {
+   "name": "client-strings:locid=3368107320 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2385967566 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1366,
+  "name": "LESS BATTLEFIELD AMMO",
+  "short_desc": "Battlefield pickups contain <i=1>#V_ONE%</i> less ammo.",
+  "fields": {
+   "name": "client-strings:locid=3373261145 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=28815540 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1367,
+  "name": "MEDICAL SUPPLY STRAIN",
+  "short_desc": "Number of stims each Helldiver deploys with decreased by #V_ONE.",
+  "fields": {
+   "name": "client-strings:locid=2870476391 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2914005300 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1370,
+  "name": "SLOWER EAGLE REARM",
+  "short_desc": "<i=1>Eagle Rearm</i> time is <i=1>#V_ONE%</i> slower.",
+  "fields": {
+   "name": "client-strings:locid=2646332237 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=3711039703 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1373,
+  "name": "CLASS 1 EXOSTORM",
+  "short_desc": "Isolated Exostorm pockets are materializing across the planet and rapidly gaining momentum.",
+  "fields": {
+   "name": "client-strings:locid=505181551 (presence:illuminate_ritual_storm_lvl1:name_id)",
+   "short_desc": "client-strings:locid=4210400742 (presence:illuminate_ritual_storm_lvl1:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1374,
+  "name": "CLASS 2 EXOSTORM",
+  "short_desc": "Exostorm fronts are coalescing into a dense system that threatens to engulf the entire planet.",
+  "fields": {
+   "name": "client-strings:locid=3058724709 (presence:illuminate_ritual_storm_lvl2:name_id)",
+   "short_desc": "client-strings:locid=3679110529 (presence:illuminate_ritual_storm_lvl2:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1375,
+  "name": "CLASS 3 EXOSTORM",
+  "short_desc": "The Exostorm has reached critical mass, enveloping the planet in an ominous tempest that defies atmospheric physics.",
+  "fields": {
+   "name": "client-strings:locid=2161677472 (presence:illuminate_ritual_storm_lvl3:name_id)",
+   "short_desc": "client-strings:locid=1662564892 (presence:illuminate_ritual_storm_lvl3:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1378,
+  "name": "MINDLESS MASSES",
+  "short_desc": "The Illuminate are converting large numbers of Super Earth citizens into Voteless-type enemies on this planet. Prepare to face a twisted, indoctrinated horde.",
+  "fields": {
+   "name": "client-strings:locid=1025296589 (presence:illuminate_harvester:name_id)",
+   "short_desc": "client-strings:locid=1683778021 (presence:illuminate_harvester:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1379,
+  "name": "APPROPRIATORS",
+  "short_desc": "The Illuminate are deploying only their own kind to this planet, a clear indication of the operation's importance and/or xenophobic nature. Prepare to face foot soldiers, drones, and piloted mechanical constructs.",
+  "fields": {
+   "name": "client-strings:locid=3264867080 (presence:illuminate_engineer:name_id)",
+   "short_desc": "client-strings:locid=3643666565 (presence:illuminate_engineer:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1383,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1384,
+  "name": "Lumberer Exosuit",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1385,
+  "name": "Breakthrough Exosuit",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1386,
+  "name": "SPORE BURST STRAIN",
+  "short_desc": "A mutation causes Terminids on this planet to generate excess hormonal spores, which drive other similarly mutated Terminids into a frenzy. Prepare to face enemies that bolster each others' speed.",
+  "fields": {
+   "name": "client-strings:locid=1147205144 (presence:bugs_gloom:name_id)",
+   "short_desc": "client-strings:locid=1134814559 (presence:bugs_gloom:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1387,
+  "name": "COMMUNICATIONS ARRAY",
+  "short_desc": "The relay towers on this planet are important to Automaton communications.",
+  "fields": {
+   "name": "client-strings:locid=554934911 (presence:bot_facility_comms:name_id)",
+   "short_desc": "client-strings:locid=1718818796 (presence:bot_facility_comms:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1388,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1389,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1390,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1392,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1393,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1394,
+  "name": "Orbital Gas Strike",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1395,
+  "name": "TERMINID CONTROL SYSTEM+",
+  "short_desc": "On this planet, a network of Termicide-dispensing towers repels Terminids emerging from the Gloom.",
+  "fields": {
+   "name": "client-strings:locid=41194867 (presence:tcs_wall:name_id)",
+   "short_desc": "client-strings:locid=3431457534 (presence:tcs_wall:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1397,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1398,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1399,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1400,
+  "name": "Heavy SEAF Presence",
+  "short_desc": "Conventional SEAF forces are heavily deployed across this planet, and may directly support Helldiver missions.",
+  "fields": {
+   "name": "client-strings:locid=1125879968 (presence:seaf:name_id)",
+   "short_desc": "client-strings:locid=1131505083 (presence:seaf:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1403,
+  "name": "VOTE SNATCHERS",
+  "short_desc": "The Illuminate have unleashed the next wave of their democratically voided thralls on this planet. Expect violent voter suppression tactics.",
+  "fields": {
+   "name": "client-strings:locid=1173246150 (presence:illuminate_bodyhorror:name_id)",
+   "short_desc": "client-strings:locid=1319973008 (presence:illuminate_bodyhorror:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1407,
+  "name": "VOID GATEWAY",
+  "short_desc": "This planet serves as a connective point between this galaxy and the Void, allowing travel between the two spaces.",
+  "fields": {
+   "name": "client-strings:locid=3702357685 (presence:illuminate_rift_sideboard_gate:name_id)",
+   "short_desc": "client-strings:locid=1946080706 (presence:illuminate_rift_sideboard_gate:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1414,
+  "name": "INVASION FLEET",
+  "short_desc": "The main invasion fleet of the Illuminate, from arrogant Overseers to throngs of brainwashed Super Earth civilians, are present on this planet. Exterminate on sight or else risk violent resistance, or worse, treasonous propaganda.",
+  "fields": {
+   "name": "client-strings:locid=810565547 (presence:illuminate_invading:name_id)",
+   "short_desc": "client-strings:locid=3533018389 (presence:illuminate_invading:desc_id)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1416,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1419,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1420,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1421,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1422,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1423,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1424,
+  "name": "Maelstrom",
+  "fields": {
+   "name": "existing-effects.json"
+  },
+  "confidence": "medium"
+ },
+ {
+  "effect_id": 1425,
+  "name": "EAGLE STORM",
+  "short_desc": "The DSS deploys <i=1>Eagle Strafing Runs</i> during missions.",
+  "fields": {
+   "name": "client-strings:locid=4089075400 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=588827542 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1426,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1427,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1428,
+  "name": "WEAPONS EXPERIMENTATION",
+  "short_desc": "The <i=1>#V_ONE</i> stratagem is available to all Helldivers.",
+  "fields": {
+   "name": "client-strings:locid=1181673243 (live-20261120:nameHash)",
+   "short_desc": "client-strings:locid=2151089975 (live-20261120:descriptionGamePlayShortHash)"
+  },
+  "confidence": "high"
+ },
+ {
+  "effect_id": 1431,
+  "name": "CAUSTIC STRAIN",
+  "short_desc": "A strain of Terminids with highly alkaline bile sacs have infested this planet. Prepare to face enemies that discharge corrosive fluids and burst violently upon death.",
+  "fields": {
+   "name": "client-strings:locid=461034013 (presence:bugs_acid:name_id)",
+   "short_desc": "client-strings:locid=3001998873 (presence:bugs_acid:desc_id)"
+  },
+  "confidence": "high"
+ }
+]

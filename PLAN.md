@@ -892,6 +892,8 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 > 交接档 `docs/HANDOFF-OFFLINE-PRIVATE-SERVER-2026-11-20.md`（含已证事实、可行性判断、实验 runbook、
 > 开放问题清单、死路与资料路径）。本会话（MITM 工具开发）不推进这两条线，避免与产品待办混在一起。
 > Steam 侧官方/开源资源与 HD2 二进制证据（`ISteamNetworkingSockets` + SDR）见该档 §12。
+> ⛔ 该档开头新增「工作区与文件边界」硬性限制：研究线**不得写入**本产品仓库、`release-test` 测试区
+> 与用户 `%LOCALAPPDATA%\HD2ProxyStudio` 运行态；研究产物放独立目录/独立 git，改产品先过用户。
 
 - 星图可视化大画布、多人同步、服务端写入（幻影战局不落账，交接档 §6.1 已定证）
 - L2 改装槽「真正生效」（已否证：只是 L0 回显）
