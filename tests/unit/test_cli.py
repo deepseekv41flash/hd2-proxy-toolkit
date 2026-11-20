@@ -80,3 +80,27 @@ def test_install_context_explicit_listen_ip_wins(tmp_path, monkeypatch):
     a = argparse.Namespace(profile="", listen_ip="10.9.8.7", host="",
                            cert_dir=str(tmp_path / "certs"), scope="")
     assert cli._install_context(a)["listen_ip"] == "10.9.8.7"
+
+
+# ---------------------------------------------------------------- certs status
+
+def test_certs_status_checks_trust(tmp_path, monkeypatch):
+    """`certs status` 是一次性诊断：要真的查一次根存储，别把 trusted 留成 null。
+
+    回归背景（2026-11-20 UU 路由模式实测）：CLI 输出 `trusted: null` 被误读成「信任状态不明」，
+    而 GUI/诊断路径（check_trust=True）与 install 回读都是已信任 —— 命令行的语义应保持一致。
+    """
+    import argparse
+
+    seen = {}
+
+    def fake_status(cert_dir, *, check_trust=False):
+        seen["cert_dir"] = str(cert_dir)
+        seen["check_trust"] = check_trust
+        return {"trusted": True, "usable": True}
+
+    monkeypatch.setattr(cli.certs, "cert_status", fake_status)
+    code = cli.cmd_certs(argparse.Namespace(action="status", cert_dir=str(tmp_path / "certs")))
+    assert code == 0
+    assert seen["check_trust"] is True
+    assert seen["cert_dir"] == str(tmp_path / "certs")

@@ -265,7 +265,9 @@ def cmd_migrate(a):
 def cmd_certs(a):
     cert_dir = Path(a.cert_dir) if a.cert_dir else (paths.state_dir() / "certs")
     if a.action == "status":
-        _out(certs.cert_status(cert_dir))
+        # 一次性命令：顺手查一次根存储（certutil 约 60–120ms），否则 ``trusted`` 恒为 null，
+        # 现场会误读成「信任状态不明」。控制面 /status 是 GUI 轮询热路径，仍保持默认不查。
+        _out(certs.cert_status(cert_dir, check_trust=True))
         return OK
     if a.action == "renew":
         try:
