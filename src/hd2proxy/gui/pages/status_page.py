@@ -13,8 +13,9 @@ M3 在顶部加「能力模板」条（一键写入研究线已验证的组合�
 
 import copy
 import tkinter as tk
-from tkinter import ttk
+from tkinter import simpledialog, ttk
 
+from ...engine import live as live_mod
 from ...engine import preview as preview_mod
 from .. import templates, theme
 from ..widgets import PickDropdown, PlanetPicker, RowEditor
@@ -425,8 +426,11 @@ class StatusPage(Page):
         self.pe_pick.pack(fill="x")
         self.pe_dd = PickDropdown(body, items=self.app.catalogs.effect_entries())
         self.pe_dd.pack(fill="x", pady=(6, 0))
-        theme.button(body, "添加词条", command=self._add_planet_effect).pack(
-            anchor="w", pady=(6, 0))
+        actions = tk.Frame(body, bg=theme.PANEL)
+        actions.pack(fill="x", pady=(6, 0))
+        theme.button(actions, "添加词条", command=self._add_planet_effect).pack(side="left")
+        theme.button(actions, "拉取战况·推荐靶星",
+                     command=self._live_suggest).pack(side="left", padx=(6, 0))
         self._hint(body, "先下拉选 effect（可输入关键词），再选星球；同星球合并去重（绕过阵营过滤）")
         self.pe_editor = RowEditor(
             body, [("星球", 90), ("effect ids", 160)], height=2,
@@ -461,6 +465,45 @@ class StatusPage(Page):
         self.app.mark_dirty()
         self._render_planet_effects()
         self.app.toast("已给星球 %d 加 effect %d" % (planet, effect))
+
+    def _live_suggest(self):
+        """拉当前战况（无需游戏/引擎），按「有战役的敌方星球」推荐靶星并填进选择器。"""
+
+        def work():
+            return live_mod.fetch()
+
+        def done(result):
+            if isinstance(result, Exception):
+                self.app.toast("拉取战况失败", error=True)
+                self.app.show_text("拉取当前战况失败（无需游戏）", repr(result))
+                return
+            s = result.get("summary") or {}
+            self.app.toast("战况已拉取：%s 星球 / %s 战役 / GWE %s 条"
+                           % (s.get("planets"), s.get("campaigns"), s.get("gwe_effects")))
+            rows = live_mod.annotate(live_mod.suggest_targets(result.get("status") or {}))
+            text = live_mod.format_text(result)
+            if not rows:
+                self.app.show_text("当前战况（无需游戏）", text)
+                return
+            first = rows[0]["index"]
+            listing = "\n".join(
+                "  %s %s  index=%s" % (r.get("faction"), r.get("name"), r.get("index"))
+                for r in rows[:20])
+            idx = simpledialog.askinteger(
+                "选择靶星",
+                "当前有战役的星球（可点卡面）如下，填游戏索引作为靶星：\n\n" + listing,
+                parent=self, initialvalue=first, minvalue=1)
+            if idx is None:
+                self.app.show_text("当前战况（无需游戏）",
+                                   text + "\n\n（未选择靶星）")
+                return
+            if self.pe_pick.set(int(idx)):
+                self.app.toast("已选中靶星 %d —— 点「添加词条」写入，再「应用配置」生效" % idx)
+            else:
+                self.app.toast("目录里没有 %d 号星球（仍可手填）" % idx, error=True)
+            self.app.show_text("当前战况（无需游戏）", text)
+
+        self.app.run_bg(work, done, busy="拉取当前战况（无需游戏）…")
 
     def _del_planet_effect(self, index):
         rows = self._status_lists("planet_effects", create=False)

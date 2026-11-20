@@ -13,6 +13,7 @@
   python -m hd2proxy install --profile <p> --dry-run   # 只打印将改动什么（安全）
   python -m hd2proxy install --profile <p>             # 真安装（需要一次 UAC）
   python -m hd2proxy preview --profile <p>             # 离线预演：不开游戏看会改什么
+  python -m hd2proxy live                              # 拉当前战况（无需游戏）+ 推荐可点靶星
   python -m hd2proxy engine --profile <p>              # 起引擎（前台）
   python -m hd2proxy status                            # 读运行中引擎状态
   python -m hd2proxy verify                            # 三连验收（TLS/CRL/Status）
@@ -38,7 +39,8 @@ ROOT = SRC.parent
 ENGINE = SRC / "hd2proxy" / "engine" / "legacy_proxy.py"
 TOOLS = ROOT / "tools"
 
-from hd2proxy.engine import (certs, config as cfgmod, installer, paths,  # noqa: E402
+from hd2proxy.engine import (certs, config as cfgmod, installer,  # noqa: E402
+                             live as live_mod, paths,
                              preview as preview_mod, sysprobe)
 
 OK, FAIL = 0, 2
@@ -419,6 +421,42 @@ def cmd_preview(a):
     return OK
 
 
+def cmd_live(a):
+    """拉取当前战况（无需游戏）：Status + GWE，并推荐可点靶星。
+
+    为什么能做：这三个端点在官方 API 上是免登录的公共只读接口（不需要 Steam 票据 / sessionId）；
+    直拉到的 GWE 与游戏内经引擎抓到的数据逐字节相同（2026-11-20 实测）。
+    host 会被 DoH 解析成真实 IP（绕 hosts），再 SNI 直连，正常校验证书。
+    """
+    faction = None if (a.faction or "all") == "all" else a.faction
+    try:
+        snap = live_mod.fetch(war_id=(a.war or None),
+                              host=(a.host or live_mod.DEFAULT_HOST),
+                              timeout=float(a.timeout or live_mod.DEFAULT_TIMEOUT))
+    except live_mod.LiveError as e:
+        print("拉取战况失败：%s" % e)
+        return FAIL
+    rows = live_mod.annotate(live_mod.suggest_targets(
+        snap["status"], faction=faction, limit=(a.limit or None)))
+    if a.json:
+        payload = {"ok": True,
+                   "snapshot": {k: snap.get(k) for k in ("schema", "host", "ip", "war_id",
+                                                         "fetched_at", "elapsed", "summary")},
+                   "targets": rows}
+        if a.out:
+            payload["saved"] = live_mod.save_snapshot(snap, a.out)
+        _out(payload)
+        return OK
+    print(live_mod.format_text(snap, faction=faction, limit=(a.limit or None)))
+    if a.out:
+        saved = live_mod.save_snapshot(snap, a.out)
+        print("")
+        print("已保存快照：%s" % saved["out_dir"])
+        for name, path in saved["files"].items():
+            print("  · %s  %s" % (name, path))
+    return OK
+
+
 def cmd_gui(a):
     """打开图形界面（Tk）。GUI 只是控制面客户端，关窗不会停引擎。"""
     import tkinter as tk
@@ -513,6 +551,18 @@ def build_parser():
     p.add_argument("--samples", default="", help="样本目录（默认 data/samples）")
     p.add_argument("--json", action="store_true", help="输出结构化 JSON（默认人读文本）")
 
+    p = sub.add_parser("live", help="拉取当前战况（无需游戏）：Status + GWE，并推荐可点靶星")
+    p.add_argument("--war", type=int, default=0, help="战局号（默认自动取 current/WarId）")
+    p.add_argument("--host", default="", help="API 主机（默认官方）")
+    p.add_argument("--faction", default="all",
+                   choices=["all", "terminid", "automaton", "illuminate", "human"],
+                   help="只看某个阵营的推荐靶星（默认全部）")
+    p.add_argument("--limit", type=int, default=0, help="最多推荐几个（0=不限）")
+    p.add_argument("--out", default="", help="保存快照目录（status.json/gwe.json/meta.json）")
+    p.add_argument("--timeout", type=float, default=live_mod.DEFAULT_TIMEOUT,
+                   help="单请求超时秒数（默认 %.0f）" % live_mod.DEFAULT_TIMEOUT)
+    p.add_argument("--json", action="store_true", help="输出结构化 JSON")
+
     for name, helptext in (("status", "读运行中引擎的状态"),
                            ("verify", "三连验收（TLS/CRL/Status）"),
                            ("shutdown", "让引擎优雅退出")):
@@ -554,7 +604,7 @@ def main(argv=None):
         "gate": cmd_gate, "profiles": cmd_profiles, "migrate": cmd_migrate,
         "certs": cmd_certs, "install": cmd_install, "uninstall": cmd_uninstall,
         "status": cmd_status, "verify": cmd_verify, "shutdown": cmd_shutdown,
-        "gui": cmd_gui, "preview": cmd_preview,
+        "gui": cmd_gui, "preview": cmd_preview, "live": cmd_live,
     }[a.cmd]
     return handler(a)
 

@@ -6,6 +6,23 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.4.2-alpha.1（2026-11-20）— 无需游戏拉取当前战况（CLI `live` + GUI 推荐靶星）
+
+- **新能力**：不启动游戏也能拉官方战况。`GET /api/WarSeason/current/WarId`、
+  `/api/WarSeason/{war}/Status`、`/api/WarSeason/GalacticWarEffects` 都是**免登录公共只读**端点；
+  实测直拉到的 GWE 与游戏内经过引擎抓包的那份 **sha256 完全一致**（2026-11-20）。
+- **CLI `hd2proxy live`**：`--war / --faction / --limit / --out / --json / --timeout`。
+  输出战况摘要（战局/星球/战役/效果/GWE 条数）+「可点靶星」推荐（有战役的星球，前线优先），
+  `--out` 落盘 `status.json / gwe.json / meta.json` 快照。
+- **引擎 `engine/live.py`**：DoH 解析真实 IP（绕 hosts 自环）→ SNI 直连 + **正常证书校验**；
+  只读 GET、8 MiB 上限、默认 15 s 超时、失败抛 `LiveError`；摘要/靶星/落盘/文本均为纯函数（离线可测）。
+- **GUI 战况改写页**：星球词条卡片新增「拉取战况·推荐靶星」按钮 —— 后台拉取后弹出候选靶星
+  （阵营 + 名字 + 游戏索引，前线优先），选定后直接填入星球选择器；配合 alpha.6 的「母星 0 拒绝」，
+  不会再踩 0 号 SUPER EARTH 的坑。
+- **测试**：单测 500 → **511 passed**（+11：摘要 / 战役靶星 / 阵营过滤 / 名称标注 / 落盘 /
+  DoH 失败 / WarId 解析 / CLI json·text·失败路径）。
+- 规则：**功能变更** ⇒ 动 `X.Y.Z`：`0.4.1-alpha.6` → **`0.4.2-alpha.1`**。
+
 ## v0.4.1-alpha.6（2026-11-20）— 实机复验暴露的三处缺陷修复（靶星陷阱 / 状态文件被覆盖 / 401 无提示）
 
 - **背景**：v0.4.1-alpha.5 在**真实 UU 路由模式**下做整链路实机复验。变种词条首轮看不到：

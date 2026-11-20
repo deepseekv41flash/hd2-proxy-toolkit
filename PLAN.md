@@ -854,6 +854,21 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 - 「变种词条显示条件」定论：`planet_effects` 原始通道不按 owner（阵营）过滤，但**靶星必须有战役、
   卡面可点**；母星 0 永远不显示（与 M4 §2.1 的 TERREK/PARTION 对照一致）。
 
+### 15.11 v0.4.2-alpha.1（2026-11-20，无需游戏拉取当前战况 + 推荐靶星）
+
+- **验证前提**：`WarSeason/current/WarId` / `{war}/Status` / `GalacticWarEffects` 三个端点免登录，
+  直拉 GWE 与游戏内经引擎抓包 **sha256 一致**（`b87f679b…`）⇒ 战况不必等游戏启动。
+- **新模块 `engine/live.py`**：DoH 解析真实 IP（绕 hosts 自环）→ SNI 直连 + 正常证书校验；
+  只读 GET / 8 MiB 上限 / 15 s 超时 / `LiveError`；纯函数：`summarize` / `campaign_targets` /
+  `suggest_targets` / `annotate` / `save_snapshot` / `format_text`。
+- **CLI `hd2proxy live`**：`--war/--faction/--limit/--out/--json/--timeout`；输出战况摘要 + 可点靶星。
+- **GUI 战况改写页**：星球词条卡片「拉取战况·推荐靶星」→ 后台拉取（不需引擎/游戏）→ 弹窗选靶星
+  → 填入星球选择器；与 alpha.6「母星 0 拒绝」配套，彻底避免 0 号坑。
+- **推荐规则**（实机结论）：只有有战役的星球卡面可点；前线（owner 2/3/4）排前面，但人类防守星球
+  也保留（都是可点卡面），不静默丢弃。
+- 单测 500 → **511 passed**；门禁 PASS。规则：功能变更 ⇒ 动 `X.Y.Z`（0.4.1-alpha.6 → 0.4.2-alpha.1）。
+- 已知边界：需要网络能访问官方 API（官方不可达时不可用，属离线/私服研究线）。
+
 ---
 
 ## 附：本轮不做
