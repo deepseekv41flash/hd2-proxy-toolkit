@@ -98,6 +98,12 @@ class Catalogs:
             except (TypeError, ValueError):
                 continue
             self._planet_by_game_index[game_index] = p
+            if game_index <= 0:
+                # 0 = SUPER EARTH（母星 / 星图 hub）：没有卡面、没有战役，任何「挂到星球」的
+                # 注入都不会显示。留在索引里供标签解析，但**不进选择器** —— 否则选择器默认
+                # 选中它，模板一应用就把效果注到母星上（2026-11-20 实机踩过：一直看不到
+                # PREDATOR STRAIN，日志却显示注入成功）。
+                continue
             self.game_planets.append(p)
         self.game_planets.sort(key=lambda p: int(p.get("game_index")))
         items_doc = self._load("items", default={})

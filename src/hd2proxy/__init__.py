@@ -4,4 +4,4 @@ M0 阶段：只做「代码迁移 + 离线自检可复现」。
 引擎入口见 `hd2proxy.engine.legacy_proxy`（逐字节迁移自研究线 war_proxy.py）。
 """
 
-__version__ = "0.4.1-alpha.5"
+__version__ = "0.4.1-alpha.6"

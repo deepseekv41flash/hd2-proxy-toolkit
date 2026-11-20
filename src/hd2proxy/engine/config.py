@@ -283,6 +283,11 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
         if idx is None or not _planet_ok(idx) or not ids:
             errors.append("status.planet_effects 需要 index(0..400) 与非空 ids：%r" % (row,))
             continue
+        if idx == 0:
+            # 0 = SUPER EARTH（星图 hub）：没有卡面/战役，注入能下发但游戏里不会显示。
+            # 不阻止保存（历史配置/实验可能有意为之），但必须让人看见这个坑。
+            warnings.append("status.planet_effects 指向 0 号 SUPER EARTH（母星没有卡面/战役，"
+                            "效果不会在游戏里显示）——请改选一颗有战役可点的星球")
         pe.append({"index": idx, "ids": ids})
     st["planet_effects"] = pe
     ge = {}

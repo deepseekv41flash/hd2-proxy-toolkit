@@ -8,10 +8,10 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.4.1-alpha.5 已发布（2026-11-20，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.4.1-alpha.6 已发布（2026-11-20，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 五页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **493 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.4.1-alpha.5`（见下方「下载」）。
+> **500 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.4.1-alpha.6`（见下方「下载」）。
 > 0.3.0 起「启动引擎」会先做 **443/8080/17897 端口预检**（冲突列占用者、可换监听地址），总览页新增**系统自检**（端口 / hosts / 证书 / 游戏进程）；
 > alpha.2 修掉现场检查弹控制台窗 + 切总览卡顿（子进程隐藏窗口 / 一条 `netstat -ano` / 诊断节流）；
 > alpha.3 修掉「续期证书后游戏报 Error 60」：证书信任状态进自检/红字，GUI 新增「安装 / 修复（UAC）」，续期后自动引导导入信任；
@@ -22,6 +22,7 @@
 > alpha.3(0.4.1) 对照 wiki 已发布战备清单补齐最后 22 条战备名（目录命名 2383 → **2405**，战备 73 → **95** 有名）。
 > alpha.4(0.4.1) 战备命名收尾（cat11 再补 7、cat10 子行反推 29 ⇒ 命名 **2441**、战备 **102/108**），全局效果按 target 链补 28 条英文名（效果名 **174 → 202** / 312）。
 > alpha.5(0.4.1) 加速器共存修复：TUN/路由模式不再把监听地址选到虚拟网卡；hosts 被 `#uu_acc`/`#g_acc` 注释时自检与引擎日志直接报出；install 默认读 profile 的监听设置。
+> alpha.6(0.4.1) 实机复验修复三处缺陷：星球选择器/模板不再允许选 0 号母星（无卡面，注入不可见）、控制面端口独占 + 状态文件覆盖前备份、GUI/CLI 遇 401 直接提示重启引擎；`certs status` 的 `trusted` 不再恒为 null。
 > 界面实拍：[总览](research/screenshots/gui-overview.png) ｜ [战况改写](research/screenshots/gui-status.png) ｜
 > [物品与战备](research/screenshots/gui-inventory.png) ｜ [目录总览（新）](research/screenshots/gui-inventory-catalog.png) ｜
 > [抓包与日志](research/screenshots/gui-capture.png) ｜
@@ -52,14 +53,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.4.1-alpha.5）
+## 下载（v0.4.1-alpha.6）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.4.1-alpha.5.md)。
+> [Release Notes](docs/RELEASE-v0.4.1-alpha.6.md)。
 
-- 下载：[GitHub Releases · v0.4.1-alpha.5](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.4.1-alpha.5)
-  （`hd2proxy-toolkit-v0.4.1-alpha.5-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.4.1-alpha.6](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.4.1-alpha.6)
+  （`hd2proxy-toolkit-v0.4.1-alpha.6-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，

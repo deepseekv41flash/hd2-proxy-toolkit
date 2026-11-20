@@ -43,6 +43,10 @@ def test_catalogs_load_and_query():
     names = dict(cat.planet_entries())
     assert 76 in names and "TERREK" in names[76]
     assert 100 in names and "TRANDOR" in names[100]
+    # 0 = SUPER EARTH（星图 hub，没有卡面/战役）：不能进选择器，否则默认选中它、
+    # 模板一应用就把效果注到母星上（2026-11-20 实机踩过：日志成功、游戏里永远看不到）。
+    assert 0 not in names
+    assert all(int(r["game_index"]) > 0 for r in cat.game_planets)
     hits = cat.search_items("everlasting")
     assert hits and "Everlasting" in hits[0][1]
     entries = cat.variant_entries()
@@ -151,6 +155,9 @@ def test_client_errors(tmp_path):
         state_file.write_text(json.dumps(state), encoding="utf-8")
         c = EngineClient(state_file)
         with pytest.raises(EngineError, match="401"):
+            c.status()
+        # 401 不能只报数字：要让用户知道是状态文件不匹配、去重启引擎
+        with pytest.raises(EngineError, match="状态文件"):
             c.status()
     finally:
         eng.stop()

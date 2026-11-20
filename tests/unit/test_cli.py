@@ -104,3 +104,23 @@ def test_certs_status_checks_trust(tmp_path, monkeypatch):
     assert code == 0
     assert seen["check_trust"] is True
     assert seen["cert_dir"] == str(tmp_path / "certs")
+
+
+# ---------------------------------------------------------------- 控制面鉴权
+
+def test_api_401_gives_actionable_hint(tmp_path, monkeypatch):
+    """控制面 401 不能只抛裸状态码：现场是 engine.json 被别的实例覆盖，要告诉用户重启引擎。"""
+    import json
+    import urllib.error
+
+    monkeypatch.setenv("HD2PROXY_STATE", str(tmp_path))
+    (tmp_path / "engine.json").write_text(
+        json.dumps({"url": "http://127.0.0.1:9", "token": "t"}), encoding="utf-8")
+
+    class _Opener:
+        def open(self, req, timeout=None):
+            raise urllib.error.HTTPError(req.full_url, 401, "Unauthorized", {}, None)
+
+    monkeypatch.setattr(cli.urllib.request, "build_opener", lambda *a, **k: _Opener())
+    with pytest.raises(RuntimeError, match="重启引擎"):
+        cli._api("/status")

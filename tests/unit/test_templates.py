@@ -56,6 +56,19 @@ def test_planet_required_templates_raise_without_planet():
             t.apply(_profile(), None)
 
 
+def test_planet_zero_is_rejected():
+    """0 = SUPER EARTH 母星：没有卡面/战役，挂上去的效果在游戏里不可见。
+
+    2026-11-20 实机：profile 靶星误存成 0，注入日志成功但卡面看不到。
+    """
+    with pytest.raises(ValueError, match="SUPER EARTH"):
+        templates._need_planet(0)
+    tpl = templates.get_template("variant_trial")
+    assert tpl is not None and tpl.needs_planet
+    with pytest.raises(ValueError, match="SUPER EARTH"):
+        tpl.apply(_profile(), 0)
+
+
 # ---------------------------------------------------------------- 6 项核心
 
 

@@ -128,6 +128,40 @@
 | 清理研究线遗留 hosts 行（`# variant-mod`） | ✅ 移除 1 行（本产品只认自己的 `# hd2proxy` marker，旧行不归它管） |
 | 最终回读 | hosts 里 `thehelldiversgame` 行数 **0**、证书存储匹配 **0**、无监听；主机名解析恢复正常 |
 | 备份 | `%LOCALAPPDATA%\HD2ProxyStudio\hosts-backups\` 保留安装/还原前各一份 |
+
+## 7. 2026-11-20 变种词条复验（v0.4.1-alpha.5 · 真实 UU 路由模式 · 实机 PASS）
+
+> 这轮是「加速器共存修复」后的实机复验，同时暴露并修掉一个产品坑：**靶星选 0 号（母星）**。
+
+**首轮失败（现象）**：profile 的 `status.planet_effects` 是 `[{"index": 0, "ids": [1243, 1245]}]`。
+引擎日志显示注入成功（`REWRITE-EXTRA 星球 0 += effect 1243/1245（raw，绕阵营过滤）`、
+`REWRITE +2 entries`），但游戏里什么都看不到。
+
+**根因**：`index 0 = SUPER EARTH`（星图 hub），**没有卡面、没有战役** —— 挂上去的效果客户端
+不会渲染。不是阵营过滤问题：`planet_effects` 是原始通道，本来就不按 owner 过滤；限制在于
+「星球必须有战役、卡面可点」（同 §2.1 的 M4 结论：TERREK(76) 无战役看不到，PARTION(215) 有战役
+就出现了）。
+
+**修正与实机结果**：把靶星改成当天**有战役的虫族星 269 BRILLIANCE**（campaign 51778，
+天然还挂着 `CAUSTIC STRAIN` 作对照），重启引擎后：
+
+- 引擎日志（12:38:38）：`REWRITE-EXTRA 星球 269 += effect 1243（raw，绕阵营过滤）` +
+  `… += effect 1245` + `REWRITE +2 entries`；
+- 用户实机截图确认卡面出现 **PREDATOR STRAIN** + 官方 fluff（"A mutated strain of Terminids
+  has been reported on this planet…"）+ `SELECT CAMPAIGN`：
+  [`research/screenshots/real-brilliance-predator-strain-20261120.png`](../research/screenshots/real-brilliance-predator-strain-20261120.png)
+
+**同轮实机确认的其它项**：
+- 库存注入：`INV REWRITE +103 -0 items`（121 个 profile mixId 中 103 个上游缺失，全部补齐）→
+  用户确认「解锁正常」；
+- 真实 UU 路由模式下：hosts 未被 UU 再次注释、引擎监听 `100.67.169.17:443`、三连 PASS、
+  主界面全链路（登录/战况/军械库/抓包）均正常。
+
+**产品侧修复（进 v0.4.1-alpha.6）**：
+1. GUI 星球选择器**排除 0 号**（SUPER EARTH 不进可选列表）——否则选择器默认选中它，
+   模板一应用就把效果注到母星（本轮就是这么踩的）；
+2. 星球系模板 `_need_planet` 拒绝 0，并提示「母星没有卡面/战役，请选有战役可点的星球」；
+3. `config.validate` 对 `planet_effects` 指向 0 号给 **warning**（不阻止保存，但要看得见）。
 | 证书文件 | 按契约 `uninstall` **不删**证书文件（`certs/` 仍在），过期 ≤2 天，可手工清理 |
 
 ## 7. 复现方式

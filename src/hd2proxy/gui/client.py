@@ -111,6 +111,12 @@ class EngineClient:
                 detail = json.loads(e.read().decode("utf-8"))
             except Exception:
                 detail = {}
+            if e.code == 401:
+                # 现场踩过（2026-11-20）：状态文件被另一个引擎实例覆盖 → 引擎在跑、token 不对。
+                # 不能只报 401 让用户对着「引擎未运行」猜，必须把修复动作写出来。
+                raise EngineError(
+                    "HTTP 401: 状态文件与运行中的引擎不匹配（engine.json 可能被另一个实例覆盖）"
+                    "—— 请重启引擎（「停止引擎」→「启动引擎」）；文件 %s" % self.state_file)
             raise EngineError("HTTP %d: %s" % (e.code, detail or e.reason))
         except urllib.error.URLError as e:
             raise EngineError("连不上引擎：%r" % (e.reason,))

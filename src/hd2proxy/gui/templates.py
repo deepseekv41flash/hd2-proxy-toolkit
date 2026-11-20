@@ -92,7 +92,13 @@ def _rows(container, key, dict_like=False):
 def _need_planet(planet):
     if planet is None:
         raise ValueError("该模板需要指定一颗星球")
-    return int(planet)
+    value = int(planet)
+    if value <= 0:
+        # 0 = SUPER EARTH：星图 hub，没有卡面/战役，挂上去的效果在游戏里永远不显示
+        # （2026-11-20 实机：注入日志成功但卡面看不到，就是靶星选了 0）。
+        raise ValueError("0 号是 SUPER EARTH 母星（星图 hub）：没有卡面、没有战役，"
+                         "效果不会显示；请选一颗有战役可点的星球")
+    return value
 
 
 def _replace_row(rows, entry, key="index"):

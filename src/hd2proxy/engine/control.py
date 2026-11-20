@@ -15,6 +15,7 @@ import hmac
 import json
 import os
 import secrets
+import socket
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -28,6 +29,29 @@ from .logutil import log
 MAX_BODY = 2 << 20      # 2MB：profile 不该这么大
 
 
+class _ControlHTTPServer(ThreadingHTTPServer):
+    """控制面 HTTP 服务：**端口独占**，防第二个引擎实例抢占。
+
+    为什么必须独占：Windows 上 ``SO_REUSEADDR`` 允许另一个进程「抢占」已监听的端口，
+    而 Python 的 ``HTTPServer.allow_reuse_address`` 默认就是 True。实测（2026-11-20）：
+    另一个引擎实例把 17897 抢走并覆盖了 engine.json，token 随之变成它的，GUI/CLI 全部
+    401、GUI 误显示「引擎未运行」，而真正服务游戏的旧引擎还在跑。
+    这里改 ``allow_reuse_address = False`` + ``SO_EXCLUSIVEADDRUSE``，第二个实例起控制面
+    直接失败，不会劫持状态文件。
+    """
+
+    allow_reuse_address = False
+    request_queue_size = 8
+
+    def server_bind(self):
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            try:
+                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            except OSError:
+                pass
+        super().server_bind()
+
+
 def _now():
     return time.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -38,7 +62,7 @@ class ControlServer:
     def __init__(self, ctx, port=0, token=None):
         self.ctx = ctx
         self.token = token or secrets.token_urlsafe(24)
-        self.httpd = ThreadingHTTPServer(("127.0.0.1", int(port)), _make_handler(self))
+        self.httpd = _ControlHTTPServer(("127.0.0.1", int(port)), _make_handler(self))
         self.port = int(self.httpd.server_address[1])
         self.thread = threading.Thread(target=self.httpd.serve_forever,
                                        name="hd2proxy-control", daemon=True)
@@ -80,12 +104,38 @@ class ControlServer:
         try:
             p = self.state_path()
             p.parent.mkdir(parents=True, exist_ok=True)
+            self._protect_existing_state(p)
             tmp = p.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(self.state(), ensure_ascii=False, indent=1),
                            encoding="utf-8")
             os.replace(tmp, p)
         except Exception as e:      # noqa: BLE001
             log("engine.json 写入失败: %r" % e)
+
+    def _protect_existing_state(self, p: Path):
+        """覆盖前看一眼旧状态文件：如果它指向**另一个仍然活着的引擎**，先备份再覆盖。
+
+        正常情况不会发生（443 与控制面都是独占绑定），但现场出现过一次「状态文件被另一个
+        实例覆盖，运行中引擎的随机 token 随之丢失、GUI/CLI 全部 401」——留个兜底：至少把
+        旧文件留成 ``engine.json.bak`` 并在日志里说清楚，不至于无声丢失。
+        """
+        try:
+            old = json.loads(p.read_text(encoding="utf-8"))
+            old_pid = int(old.get("pid") or 0)
+        except (OSError, ValueError, TypeError):
+            return
+        if not old_pid or old_pid == os.getpid():
+            return
+        from . import sysprobe
+        if not sysprobe.pid_alive(old_pid):
+            return
+        backup = p.with_suffix(".json.bak")
+        try:
+            p.replace(backup)
+            log("⚠ engine.json 原本指向仍在运行的引擎 pid=%d，已备份为 %s 后覆盖"
+                % (old_pid, backup.name))
+        except OSError as e:        # noqa: PERF203 - 备份失败不阻断启动
+            log("⚠ engine.json 覆盖前备份失败（继续写入）：%r" % e)
 
     def clear_state(self):
         try:

@@ -836,13 +836,23 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
-### 15.10 待发布（alpha.6 候选，2026-11-20）
+### 15.10 v0.4.1-alpha.6（2026-11-20，实机复验暴露的三处缺陷）
 
-- `certs status` 改为 `check_trust=True`：命令行一次性问一次根存储，修掉 `trusted: null` 被误读成
-  「信任状态不明」（控制面 `/status` 是 GUI 轮询热路径，仍保持默认不查）。单测 493 → **494 passed**。
-  commit `a527a39`。
-- 真实 UU 路由模式离线复验证据：`docs/ACCELERATOR-COMPAT-2026-11-20.md` §7（alpha.5 五条修复逐条 ✅）。
-- **未发版**：等用户实机测试结论，若有实机问题一并进 alpha.6。
+- 背景：alpha.5 在**真实 UU 路由模式**下整链路实机复验（库存注入一次通过；变种词条首轮看不到）。
+- **缺陷 1（靶星 0 陷阱）**：profile 靶星 `index 0` = SUPER EARTH 母星（无卡面/战役），注入日志成功
+  但客户端不渲染；根源是 GUI 星球选择器按 game_index 排序 → 默认选中 0 号。修复：选择器排除 0 号、
+  星球模板 `_need_planet` 拒绝 0、`config.validate` 对 planet_effects 指向 0 给 warning。
+  实机改用 269 BRILLIANCE（当天有战役的虫族星）→ **PREDATOR STRAIN 卡面 PASS**（截图存档）。
+- **缺陷 2（状态文件被覆盖→401）**：另一个引擎实例抢占控制面 17897（Windows `SO_REUSEADDR` 默认允许）
+  并覆盖 `engine.json`，运行中引擎随机 token 丢失 → GUI 误显示「未运行」、CLI 全部 unauthorized。
+  修复：控制面端口独占（`allow_reuse_address=False` + `SO_EXCLUSIVEADDRUSE`）、覆盖前备份
+  `engine.json.bak` + 告警、CLI/GUI 401 直接给「重启引擎」提示（GUI pill 显示「状态文件不匹配」）。
+- **缺陷 3（`certs status` trusted 恒 null）**：命令行改为实际查询一次根存储（控制面热路径仍不查）。
+- 证据：`docs/ACCEPTANCE-M4.md` §7、`docs/ACCELERATOR-COMPAT-2026-11-20.md` §7、
+  `research/screenshots/real-brilliance-predator-strain-20261120.png`。
+- 单测 494 → **500 passed**；门禁 PASS。规则：只修 bug ⇒ 只动 alpha 位（alpha.5 → alpha.6）。
+- 「变种词条显示条件」定论：`planet_effects` 原始通道不按 owner（阵营）过滤，但**靶星必须有战役、
+  卡面可点**；母星 0 永远不显示（与 M4 §2.1 的 TERREK/PARTION 对照一致）。
 
 ---
 

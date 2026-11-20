@@ -6,6 +6,30 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.4.1-alpha.6（2026-11-20）— 实机复验暴露的三处缺陷修复（靶星陷阱 / 状态文件被覆盖 / 401 无提示）
+
+- **背景**：v0.4.1-alpha.5 在**真实 UU 路由模式**下做整链路实机复验。变种词条首轮看不到：
+  profile 靶星写成了 `index 0`（SUPER EARTH 母星，没有卡面/战役），注入日志成功但游戏不渲染；
+  排查期间又遇到「另一个引擎实例覆盖 `engine.json` → GUI/CLI 全部 401，GUI 误显示『引擎未运行』」。
+- **修复 1（靶星 0 陷阱）**：GUI 星球选择器**排除 0 号**（SUPER EARTH 不进可选列表，默认值不再落在
+  母星）；星球类模板 `_need_planet` 拒绝 0，并提示「母星没有卡面/战役，请选有战役可点的星球」；
+  `config.validate` 对 `status.planet_effects` 指向 0 号给 warning（不阻止保存，但要看得见）。
+  实机改用 269 BRILLIANCE（当天有战役的虫族星）后 **PREDATOR STRAIN 卡面显示 PASS**（截图存档）。
+- **修复 2（控制面端口 / 状态文件被抢占）**：控制面 HTTP 服务改为**端口独占**
+  （`allow_reuse_address=False` + `SO_EXCLUSIVEADDRUSE`）。Windows 上 `SO_REUSEADDR` 默认允许
+  第二个引擎实例抢占 17897，覆盖 `engine.json` 后运行中引擎的随机 token 随之丢失；另外覆盖状态
+  文件前若旧文件指向**仍活着**的引擎，先备份成 `engine.json.bak` 并在日志里告警。
+- **修复 3（401 不再是裸状态码）**：CLI `status / verify / shutdown` 与 GUI 客户端遇到 401 时直接给出
+  「状态文件与运行中引擎不匹配 → 重启引擎（停止 → 启动）」的可执行提示；GUI 顶部状态不再把这种情况
+  显示成「引擎未运行」（否则用户会再点「启动引擎」起第二个实例），改为「状态文件不匹配（请重启）」。
+- **修复 4（`certs status` 的 `trusted` 恒为 null）**：命令行 `certs status` 改为实际查询一次根存储
+  （`check_trust=True`）；控制面 `/status` 是 GUI 轮询热路径，保持不查（省 certutil 子进程）。
+- **实机验证（2026-11-20，build 26568081 / war 801 / UU 路由模式）**：变种词条 PREDATOR STRAIN
+  卡面 PASS；库存注入 `INV REWRITE +103 -0` 用户确认解锁正常；三连 PASS；hosts 未被 UU 再次注释。
+  证据：`docs/ACCEPTANCE-M4.md` §7 + `research/screenshots/real-brilliance-predator-strain-20261120.png`。
+- **测试**：单测 494 → **500 passed**；`check_gate.py` GATE=PASS（5/5 离线自检）。
+- 规则：只修 bug（无功能变更）⇒ 只动 alpha 位：`0.4.1-alpha.5` → **`0.4.1-alpha.6`**。
+
 ## v0.4.1-alpha.5（2026-11-20）— 加速器共存修复（TUN/路由模式监听 IP、hosts 注释识别、启动自检）
 
 - **背景**：现场开启 Clash Verge TUN 与 UU 路由模式后，注入链路出现故障；实测定位到 3 个真实问题。

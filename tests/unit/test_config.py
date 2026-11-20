@@ -224,3 +224,16 @@ def test_planet_infos_position_keeps_float():
     assert errors == []
     pos = doc["warinfo"]["planet_infos"][0]["position"]
     assert abs(pos["x"] - 0.3) < 1e-9 and abs(pos["y"] + 0.55) < 1e-9
+
+
+def test_planet_effects_on_super_earth_warns():
+    """靶星 0 = SUPER EARTH（母星无卡面/战役）：不阻止保存，但必须给 warning。
+
+    2026-11-20 实机：profile 里靶星存成 0，注入下发成功但卡面永远看不到。
+    """
+    prof = config.default_profile()
+    prof["status"]["planet_effects"] = [{"index": 0, "ids": [1243, 1245]}]
+    doc, errors, warnings = config.validate(prof)
+    assert errors == []
+    assert doc["status"]["planet_effects"] == [{"index": 0, "ids": [1243, 1245]}]
+    assert any("SUPER EARTH" in w for w in warnings)

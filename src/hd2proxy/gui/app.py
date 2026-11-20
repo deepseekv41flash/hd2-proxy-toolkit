@@ -242,13 +242,18 @@ class App:
     def _start_poll(self):
         def loop():
             while not self._stop_poll.is_set():
-                status = None
+                status, auth_failed = None, False
                 if self.client.state() is not None:
                     try:
                         status = self.client.status()
+                    except EngineError as e:
+                        # 401 = 引擎在跑但状态文件 token 不对（常见于另一个实例覆盖过 engine.json）。
+                        # 这种情况**不能**显示成「未运行」，否则用户会去点「启动引擎」再起一个实例。
+                        auth_failed = "401" in str(e)
+                        status = None
                     except Exception:
                         status = None
-                self._queue.put((status, list(self.client.log_lines)[-40:]))
+                self._queue.put((status, list(self.client.log_lines)[-40:], auth_failed))
                 time.sleep(0.6)
 
         threading.Thread(target=loop, daemon=True).start()
@@ -262,30 +267,38 @@ class App:
             except queue.Empty:
                 break
         if latest is not None:
-            status, logs = latest
+            status, logs, auth_failed = latest
             self.last_status = status
-            self._apply_status(status)
+            self._apply_status(status, auth_failed)
             page = self.pages.get(self.current_page)
             if page is not None and hasattr(page, "on_status"):
                 page.on_status(status)
             cap = self.pages.get("capture")
             if cap is not None and hasattr(cap, "on_logs"):
                 cap.on_logs(logs)
-            self.status_engine.configure(
-                text="引擎 运行中 · %s" % (self.client.state() or {}).get("url", ""),
-                fg=theme.GREEN if status else theme.MUTED)
+            if status:
+                footer, footer_fg = ("引擎 运行中 · %s"
+                                     % (self.client.state() or {}).get("url", ""), theme.GREEN)
+            elif auth_failed:
+                footer, footer_fg = "引擎在运行但状态文件不匹配 —— 请重启引擎", theme.RED
+            else:
+                footer, footer_fg = "引擎 未运行", theme.MUTED
+            self.status_engine.configure(text=footer, fg=footer_fg)
         if not self._stop_poll.is_set():
             try:
                 self.root.after(150, self._drain)
             except tk.TclError:
                 self._stop_poll.set()
 
-    def _apply_status(self, status):
+    def _apply_status(self, status, auth_failed=False):
         running = status is not None
-        self.pills["engine"].configure(
-            text="● 引擎 运行中" if running else "● 引擎 未运行",
-            fg=theme.GREEN if running else theme.DIM,
-            bg="#1a2b20" if running else theme.PANEL2)
+        if running:
+            pill_text, pill_fg, pill_bg = "● 引擎 运行中", theme.GREEN, "#1a2b20"
+        elif auth_failed:
+            pill_text, pill_fg, pill_bg = "● 引擎 状态文件不匹配（请重启）", theme.RED, "#3a1f22"
+        else:
+            pill_text, pill_fg, pill_bg = "● 引擎 未运行", theme.DIM, theme.PANEL2
+        self.pills["engine"].configure(text=pill_text, fg=pill_fg, bg=pill_bg)
         if running:
             cert = status.get("cert") or {}
             hours = cert.get("remaining_hours")

@@ -75,8 +75,24 @@ def _api(path, method="GET", body=None, token=None, url=None, timeout=90):
     req = urllib.request.Request(base + path, data=data, headers=headers, method=method)
     # 本机控制面必须绕过系统代理（Windows 上 urllib 会读注册表里的代理设置）
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    with opener.open(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8"))
+    try:
+        with opener.open(req, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            # 现场踩过（2026-11-20）：另一个引擎实例覆盖了 engine.json，运行中引擎的随机 token
+            # 随之丢失 —— GUI/CLI 全部 401，但引擎其实还在正常服务游戏。把「怎么办」写清楚。
+            raise RuntimeError(
+                "控制面拒绝鉴权（HTTP 401）：状态文件里的 token 与运行中的引擎不匹配。"
+                "常见原因是另一个引擎实例覆盖了 %s。请重启引擎（GUI「停止引擎」→「启动引擎」），"
+                "或删除该文件后重启引擎。" % paths.engine_state_file()) from None
+        detail = ""
+        try:
+            detail = e.read().decode("utf-8", "replace")
+        except Exception:                       # noqa: BLE001 - 读错误体失败不影响报错
+            pass
+        raise RuntimeError("控制面请求失败（HTTP %d）：%s"
+                           % (e.code, detail.strip() or e.reason)) from None
 
 
 def _run_script(path, extra):
