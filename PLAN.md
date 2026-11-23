@@ -897,16 +897,23 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 - **合并顺序（已定）**：`base ⊕ config ⊕ earned` —— earned 是事实底账；config 只做并集、不撤销。
 - **其它已定**：基线默认「空号档」、可配置 `players.template=main`；单文件 `runtime/saves/<saveId>.json`
   + `schema` + 原子写 + `.bak` + 损坏回退；`saveId` 参数化（默认 `local`），UI 预留不做。
+- **回滚粒度（2026-11-23 研究线反馈后定，G2 落地）**：`.bak` 只作「写坏兜底」，**回滚源是会话基准快照**
+  `runtime/saves/_session-start/<saveId>.json`（`.bak` 是单槽，同局写 3 次只能退 1 次 → 部分写入留在
+  错误身份的档里）；`_last.json.pending` 让快照跨引擎重启存活（24 h 新鲜度上限，过期重新取基准）；
+  身份校验一致 → 基准重建为「最后一次已验证点」；本局没写过 → 不动档；孤儿脏档全文 + 回滚前后 hash +
+  被丢弃条目摘要另存 `runtime/saves/_orphan/`。
+- **身份审计**：每份档的 `identity` 带 `source`（getmotd / getmessages / adopted）与 `identified_at`
+  —— 排查「这份档是怎么认到身份的」最省时间（研究线建议，G2 落地）。
 - **阶段进度**：
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| G1 | `engine/saves.py`：存档读写（原子写/`.bak`/损坏隔离）+ 合并纯函数（Progression / inventory） + 身份选档（**SteamID64 主键**；HD2 20 位作别名，`find_save_by_hd2` 扫档反查）+ `adopt_identity` 合并迁移 + `catalog_build`（items sha8/行数/clientVersion）+ **`_last.json` 乐观预绑定**（G2 首屏时序）+ 合并语义按字段分型（单调量 max / 可消耗量较新为准 / 集合并集） | ✅ 2026-11-23（27 单测；总 **541 passed**；schema v2） |
-| G2 | `hooks/progression.py`：`GET /api/Progression` 根钩子（experience/achievements/packageProgress/onboarding/shipName/location） | ⏳ 下一步 |
+| G1 | `engine/saves.py`：存档读写（原子写/`.bak`/损坏隔离）+ 合并纯函数（Progression / inventory） + 身份选档（**SteamID64 主键**；HD2 20 位作别名，`find_save_by_hd2` 扫档反查）+ `adopt_identity` 合并迁移 + `catalog_build`（items sha8/行数/clientVersion）+ **`_last.json` 乐观预绑定**（G2 首屏时序）+ 合并语义按字段分型（单调量 max / 可消耗量较新为准 / 集合并集） | ✅ 2026-11-23（27 单测；总 **546 passed**；schema v2） |
+| G2 | 首屏时序 + **`GET /api/Progression` 根钩子**：`engine/active_save.py`（`_last.json` 乐观预绑定；无历史档时首屏最多等 `saves.wait_seconds`；GetMotd 校验分流 local 合并 / 已识别档不混档）+ `engine/hooks/progression.py`（**精确根路径**，merge earned）+ 响应路径记录（GetMotd→SteamID64 主键、GetMessages→HD2 别名、items **注入前**→`catalog_build`、Login 请求体→`clientVersion`）+ **会话基准快照回滚**（`_session-start/`）+ `identity.source/identified_at` + `_orphan` 全文/hash/丢弃摘要 + `data/fixtures/saves/{main,fresh}`（6 端点 ×2 账号）+ GUI 战况页顶部存档状态行 + README「首屏可能已按旧档渲染」限制 + `/status.save` | ✅ 2026-11-23（+34 单测；总 **591 passed**；`test_engine_flow` 端到端覆盖） |
 | G3 | `hooks/mission_end.py`：结算奖励累加进 earned（经验/物品/包进度），响应反映存档 | ⏳ 需先采 `Mission/end` 请求体 |
 | G4 | `Stats` / `SeasonPass` / `Assignment` 子集 | ⏳ |
 | G5 | `inventory/consume` 扣减、`Achievements` PUT 合并 | ⏳ |
-| G6 | `preview.py` 扩展：预演"这一局结算会加多少" | ⏳ |
+| G6 | `preview.py` 扩展：预演"这一局结算会加多少"（含存档夹具预演） | ⏳ |
 
 ---
 

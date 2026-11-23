@@ -8,10 +8,13 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.4.3-alpha.1 已发布（2026-11-20，M0–M5 完成）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.5.0-alpha.1 已发布（2026-11-23，存档层 G2 接上首屏）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 六页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **514 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.4.3-alpha.1`（见下方「下载」）。
+> **591 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.5.0-alpha.1`（见下方「下载」）。
+> 0.5.0 起加入**本机存档层**（`base ⊕ config ⊕ earned`）：启动按 `_last.json` 乐观预绑定上次的档渲染首屏、
+> `Pes/GetMotd` 到达校验、同机换号**整档回滚**到会话基准快照 + 孤儿审计（研究线 2026-11-23 反馈的粒度修正）；
+> 存档只在本机生效、不回传服务器。
 > 0.3.0 起「启动引擎」会先做 **443/8080/17897 端口预检**（冲突列占用者、可换监听地址），总览页新增**系统自检**（端口 / hosts / 证书 / 游戏进程）；
 > alpha.2 修掉现场检查弹控制台窗 + 切总览卡顿（子进程隐藏窗口 / 一条 `netstat -ano` / 诊断节流）；
 > alpha.3 修掉「续期证书后游戏报 Error 60」：证书信任状态进自检/红字，GUI 新增「安装 / 修复（UAC）」，续期后自动引导导入信任；
@@ -55,14 +58,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.4.3-alpha.1）
+## 下载（v0.5.0-alpha.1）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.4.3-alpha.1.md)。
+> [Release Notes](docs/RELEASE-v0.5.0-alpha.1.md)。
 
-- 下载：[GitHub Releases · v0.4.3-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.4.3-alpha.1)
-  （`hd2proxy-toolkit-v0.4.3-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.5.0-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.5.0-alpha.1)
+  （`hd2proxy-toolkit-v0.5.0-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，
@@ -93,7 +96,7 @@ hd2proxy.exe uninstall
 ```bash
 python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
 set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
-python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 492 单测 + 5 个离线自检
+python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 591 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
@@ -101,7 +104,7 @@ python tools/check_gate.py                  # 门禁：版本一致性 + 语法 
 M1 起也可以用 CLI 走完整流程（详细见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)）：
 
 ```bash
-python -m hd2proxy gui                            # 打开图形界面（5 页）
+python -m hd2proxy gui                            # 打开图形界面（6 页）
 python -m hd2proxy preview --profile <profile>    # 离线预演：不开游戏看会改什么（M3）
 python -m hd2proxy info                        # 版本 / 路径 / 引擎是否在跑
 python -m hd2proxy certs renew --days 1        # 签发会话证书（ca 模式，≤2 天）
@@ -147,13 +150,42 @@ python -m hd2proxy preview --profile <p> --fixture status --json
 
 GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；结果进只读窗口。
 
+### 存档（本机账本，仅本机视图 · v0.5.0-alpha.1）
+
+服务端的进度响应只是「这一局能拿到的底子」，本工具在它之上叠一层**本机 earned 账本**：
+
+```
+响应 = base（服务端） ⊕ config（GUI 里勾的注入） ⊕ earned（本机已获得）
+```
+
+- 落盘：`<状态目录>/runtime/saves/<saveId>.json`（冻结版在 `%LOCALAPPDATA%\HD2ProxyStudio\`），
+  `saveId = steam_<SteamID64>`（`Pes/GetMotd` 响应里的 `accountId`）。HD2 20 位账号 id 只作**别名**：
+  它不保证每会话出现（主号整份抓包都没有），拿它当主键会让同一玩家分裂成两份档。
+- **config 不落盘**：GUI 勾选每次响应现读、取消即撤销；`earned` 才是本机事实底账。
+- 合并按字段分型：单调量（经验/成就/包等级）取大；可消耗量（货币/道具）以 `updated_at` 较新为准；
+  覆盖量（飞船名/位置）以较新为准；集合类（解锁 id/已购）取并集。
+- 换号保护：旧档是 `local`（未识别）→ 合并进正确档；旧档是**另一个已识别档**（同机换 Steam 号）→
+  **绝不合并** —— 本局写入整档回滚到「会话基准快照」，脏档全文另存 `runtime/saves/_orphan/`
+  （附回滚前后 hash 与被丢弃条目摘要），日志里打 WARN。身份校验一致时把基准重建为「最后一次已验证点」。
+- 排障/调试：`saves.identity_strict`（默认 `false`）严格模式下身份未校验时**拒绝写盘**；
+  `saves.wait_seconds`（默认 1.2）没有历史档时首屏最多等身份多久；战况页顶部一行显示
+  「存档 `<saveId>` · 预绑定待校验 / 已校验 · 本局有写入」。
+
+**已知限制（务必知道）**：客户端**一次会话只拉一次** `/api/Progression`，而引擎启动时先按
+`runtime/saves/_last.json` 里「上次的档」渲染首屏，`Pes/GetMotd`（登录后 +24~42 s）才校验身份。
+所以同机换号的那一刻，**首屏可能已按旧档渲染，本局客户端不会重取** —— 重启游戏后才会换成新档。
+这不是 bug，是客户端请求时序决定的：我们选择「宁可首屏有内容，也不让老玩家整局看空档」。
+
+离线验证样本：`data/fixtures/saves/{main,fresh}/`（两套真实抓包的 6 个存档端点，无身份/票据字段，
+见该目录 README）；合并语义由 `tests/unit/test_saves*.py` 与 `test_active_save.py` 钉住。
+
 ## 目录结构
 
 ```
 src/hd2proxy/engine/                    引擎（server / 钩子 / 配置 / 证书 / 安装 / 控制面 / 离线预演 preview.py）
 src/hd2proxy/gui/                       Tk GUI：壳 + 6 页 + widgets + templates.py（能力模板）
 src/hd2proxy/versioning.py               版本规则与 PEP 440 映射（docs/VERSIONING.md 的实现）
-tests/unit/                             单元测试（493 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / 目录补全 / CLI）
+tests/unit/                             单元测试（591 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / 目录补全 / 存档 / CLI）
 tests/selftest*.py                      5 个脚本式离线自检（迁自研究线，仅改路径）
 tools/run_selftests.py                  自检总入口（独立证书/数据目录，GATE 判定）
 tools/check_gate.py                     门禁：版本一致性 + 语法 + 绝对路径 + pytest + 5 自检
@@ -172,6 +204,7 @@ tools/win_integrity.py                  把目录树完整性标签标回 Medium
 data/legacy/                            引擎读的变种目录（由 tools/gen_catalogs.py 生成，与 GUI 目录同源不漂移）
 data/catalogs/                          规范化目录（变种/战备/效果/星球/物品/build 指纹）
 data/samples/                           离线预演的样本响应（真实抓包裁剪、无账号字段）
+data/fixtures/saves/                    存档系统离线样本（两账号 × 6 个存档端点，无身份/票据字段）
 data/acceptance/                        M4 实机验收配置（m4-a 五项 / m4-b 六项，可复现）
 research/                               技术选型实测脚本与结论（可复现）
 docs/                                   来源与哈希、架构说明
@@ -203,6 +236,8 @@ hosts 被加速器注释（`#uu_acc` / `#g_acc`）时，总览页红条、系统
 ## 边界（研究线已定证，别把承诺说过头）
 
 - 只改**客户端收到的**数据；服务端不落账（伪造星球/战役是"客户端侧真实、战局侧幻影"）。
+- **存档只在本机生效、不回传服务器**：它改的是"已获得"在本机的显示与保留，不是退款/反作弊绕过，
+  也不会让未购买的商店物品在服务端真正属于你；服务端进度仍是事实源。
 - `Mission/Session` 类会话恢复端点有校验（`errorCode 8012016`），不要承诺重连可用。
 
 

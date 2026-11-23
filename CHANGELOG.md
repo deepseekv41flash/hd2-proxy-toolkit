@@ -6,6 +6,41 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.5.0-alpha.1（2026-11-23）— 存档层 G2：本机 earned 账本接上 `/api/Progression` 首屏
+
+- **新能力（G1+G2）**：把「配置驱动的解锁注入」扩成「每玩家可持久化的本机账本」：
+  `响应 = base（服务端） ⊕ config（GUI 注入） ⊕ earned（本机已获得）`。存档落
+  `runtime/saves/<saveId>.json`，`saveId = steam_<SteamID64>`（`Pes/GetMotd` 的 `accountId`）；
+  HD2 20 位账号 id 只作**别名**（它不保证每会话出现，拿它当主键会让同玩家分裂成两份档）。
+- **首屏时序（G2 核心）**：实测 items +13/+15 s → **Progression +16/+19 s** → inventory +18 s → … →
+  GetMotd +24/+42 s，且客户端**一次会话只拉一次** Progression。引擎启动按 `_last.json`
+  **乐观预绑定**上次的档渲染首屏；无历史档时首次 Progression 最多等 `saves.wait_seconds`
+  （默认 1.2 s，等不到退回 local，不挂起）；GetMotd 到达后校验，不一致按口径分流。
+- **`/api/Progression` 根钩子**（`engine/hooks/progression.py`）：**精确匹配根路径**（`/inventory`、
+  `/items`、`/levelspec`、`/ProgressionPackages` 等不受影响），合并 experience / onboarding /
+  shipName / location / purchasedSeasonPassItems / achievements / packageProgress；
+  无改动时响应体原样返回（引用不变）。
+- **⚠ 回滚粒度修正（研究线 2026-11-23 反馈）**：`.bak` 是单槽「上一版」，同局连续写 3 次只能退到第 2 次
+  ⇒ 残留"部分写入"。现在回滚源改为**会话基准快照** `runtime/saves/_session-start/<saveId>.json`：
+  首次写入前留基准 → 同机换号（旧档已识别）时**整档回滚**，脏档全文 + 回滚前后 hash + 被丢弃条目摘要
+  另存 `runtime/saves/_orphan/`；身份校验一致 → 基准**重建**为「最后一次已验证点」；
+  本局没写过 → **不动档**。`_last.json.pending` 让基准跨引擎重启存活（24 h 新鲜度上限）。
+- **身份审计 + 排障**：档内 `identity` 增 `source`（getmotd / getmessages / adopted）与 `identified_at`；
+  `/status` 新增 `save` 块；GUI 战况页顶部一行显示「存档 `<id>` · 预绑定待校验 / 已校验 · 本局有写入」。
+- **响应路径记录**：`Pes/GetMotd`→SteamID64 主键；`Pes/GetMessages`→HD2 别名；`Progression/items`
+  （**注入前**原始响应）→ `catalog_build = <items_sha8>/<rows>/<clientVersion>`；
+  `Account/Login` 请求体 → `clientVersion`。
+- **配置**：`saves.enabled`（默认开）、`saves.wait_seconds`、`saves.identity_strict`
+  （严格模式：身份未校验时**拒绝写盘**，默认宽松）。
+- **离线样本**：`data/fixtures/saves/{main,fresh}/` —— 两账号 × 6 个存档端点（真实抓包，**无**身份/票据字段；
+  `items` 只记签名：main `93e7575a`/3021 行、fresh `d71655e6`/3020 行）。
+- **已知限制（写进 README）**：同机换号那一刻，首屏可能已按旧档渲染，本局客户端不重取 Progression ——
+  重启游戏后生效。这是客户端请求时序决定的，不是 bug（宁可首屏有内容，也不让老玩家整局看空档）。
+- **测试**：单测 546 → **591 passed**（+45：会话快照/pending 15、activeSave 19、存档夹具 9、
+  GUI 存档行 1、引擎端到端 1）；`test_engine_flow` 新增端到端：预置存档 → 引擎 →
+  `/api/Progression` 返回 earned 合并后的值 + `/status.save` + 基准快照/pending 落盘。
+- 规则：**功能变更** ⇒ 动 `X.Y.Z`：`0.4.3-alpha.1` → **`0.5.0-alpha.1`**。
+
 ## v0.4.3-alpha.1（2026-11-20）— GUI 新增「实时战况」页（免游戏拉取 + 排查视图）
 
 - **新页面**：侧栏新增 **实时战况**（第 3 项，`◉`），不启动游戏/引擎即可看到官方实时战况：
