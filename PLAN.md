@@ -886,6 +886,30 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 ---
 
+## 16. 存档系统（2026-11-23 移交自研究线）
+
+> 交接档：`D:\mod\work\hd2-offline-research\docs\HANDOFF-SAVE-SYSTEM-TO-MITM-2026-11-23.md`
+> （含存档边界 9 族、写回路径、客户端刷新行为、红线、缺口 G1–G7）；早期取证：
+> `SAVE-SYSTEM-EARLY-PLAN-2026-11-23.md`。研究线已停止实现，产品仓由本线写。
+
+- **一句话目标**：把「配置驱动的解锁注入」扩成「每玩家可持久化、可成长的存档」；
+  验收点 = **重启后经验/货币/解锁仍在**（客户端结算后不重取 `/api/Progression`）。
+- **合并顺序（已定）**：`base ⊕ config ⊕ earned` —— earned 是事实底账；config 只做并集、不撤销。
+- **其它已定**：基线默认「空号档」、可配置 `players.template=main`；单文件 `runtime/saves/<saveId>.json`
+  + `schema` + 原子写 + `.bak` + 损坏回退；`saveId` 参数化（默认 `local`），UI 预留不做。
+- **阶段进度**：
+
+| 阶段 | 内容 | 状态 |
+|---|---|---|
+| G1 | `engine/saves.py`：存档读写（原子写/`.bak`/损坏隔离）+ 合并纯函数（Progression / inventory） | ✅ 2026-11-23（15 单测；总 514→529） |
+| G2 | `hooks/progression.py`：`GET /api/Progression` 根钩子（experience/achievements/packageProgress/onboarding/shipName/location） | ⏳ 下一步 |
+| G3 | `hooks/mission_end.py`：结算奖励累加进 earned（经验/物品/包进度），响应反映存档 | ⏳ 需先采 `Mission/end` 请求体 |
+| G4 | `Stats` / `SeasonPass` / `Assignment` 子集 | ⏳ |
+| G5 | `inventory/consume` 扣减、`Achievements` PUT 合并 | ⏳ |
+| G6 | `preview.py` 扩展：预演"这一局结算会加多少" | ⏳ |
+
+---
+
 ## 附：本轮不做
 
 > **研究线不在本会话范围**：官方服务器不可达时的「离线单机」与「自建联机服务器」两条研究线已整理成

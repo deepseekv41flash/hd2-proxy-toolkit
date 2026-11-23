@@ -98,6 +98,9 @@ ITEMS_STATE = RUNTIME / "items_inject.json"
 #   slots[i] = 附件 optionId（与 L0 同一 id 空间）；槽下标 = 槽号-1，实测 0=下挂 1=光学 4=弹匣/散热。
 CUSTOMIZE_STATE = RUNTIME / "customize_inject.json"
 
+# 存档层（G1）：每玩家一份 earned 账本；单文件 JSON + .bak，saveId 参数化
+SAVES_DIR = RUNTIME / "saves"
+
 
 # ---- 本机状态目录（M1 新增：profile / engine.json / 抓包默认目录） ----------
 def state_dir() -> Path:
