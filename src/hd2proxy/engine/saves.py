@@ -34,6 +34,7 @@ from .logutil import log
 
 SAVE_SCHEMA = 2                  # 2: + catalog_build / identity（2026-11-23 研究线反馈）
 DEFAULT_SAVE_ID = "local"
+LAST_FILE = "_last.json"          # 上次使用的档指针：启动时乐观预绑定，规避"首屏空档"
 _SAVE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _HD2_ID_RE = re.compile(r"^\d{17,20}$")      # HD2 accountId：20 位数字（GetMessages）
 _STEAM_ID_RE = re.compile(r"^7656119\d{10}$")  # SteamID64：17 位（GetMotd）
@@ -89,6 +90,16 @@ def save_id_for(steam_id=None, hd2_account=None) -> str:
     return DEFAULT_SAVE_ID
 
 
+def save_id_for_identity(steam_id=None, hd2_account=None, root=None) -> str:
+    """身份 → 档 id，带 **HD2 反查**：只有 HD2 20 位时先扫存档 identity 块复用已有档。"""
+    sid = save_id_for(steam_id, hd2_account)
+    if sid.startswith("hd2_"):
+        found = find_save_by_hd2(hd2_account, root=root)
+        if found:
+            return found
+    return sid
+
+
 def catalog_build_id(items_body, client_version=None) -> dict:
     """计算目录版本标识：``{"sha8", "rows", "client_version", "value"}``。
 
@@ -112,7 +123,7 @@ def catalog_build_id(items_body, client_version=None) -> dict:
         rows = None
     sha8 = hashlib.sha256(raw).hexdigest()[:8] if raw is not None else ""
     ver = "" if client_version is None else str(client_version).strip()
-    value = "%s/%s/%s" % (sha8, "" if rows is None else rows, ver)
+    value = "%s/%s/%s" % (sha8, "" if rows is None else rows, ver or "-")
     return {"sha8": sha8, "rows": rows, "client_version": ver or None, "value": value}
 
 
@@ -171,22 +182,35 @@ def _normalize_earned(doc: dict) -> dict:
 # 持久化
 # --------------------------------------------------------------------------- #
 def _merge_earned_into(dst: dict, src: dict) -> dict:
-    """把 ``src.earned`` 合并进 ``dst.earned``（迁移/换主键时用，**只增不减**）。
+    """把 ``src`` 合并进 ``dst``（迁移/换主键时用），按研究线 2026-11-23 定的字段类型分语义：
 
-    语义（研究线 2026-11-23 定）：earned 取并 / 金额取大 / 集合取并；绝不因为换档丢进度。
+      * **单调量**（experience / onboarding / 成就计数 / 包 level·progress / 终身统计）→ ``max``（防倒退）；
+      * **可消耗量**（货币/消耗品 ``inventory_amounts``）→ **``updated_at`` 较新的档为准**
+        （取 max 会把"已经花掉的钱"复活）；
+      * **覆盖量**（ship_name / location）→ 较新的档为准；
+      * **集合类**（已解锁 id / purchased / claimedLevels）→ 并集。
+
+    绝不因为换档丢「已获得」；返回合并后的 earned（就地改 ``dst``）。
     """
     de = _normalize_earned(dst)
     se = _normalize_earned(src)
-    # 标量：取大
+    # 时间戳只到秒：相等时以「正在迁入的 src」为准（adopt 刚写完的档就是 src）
+    src_newer = str(src.get("updated_at") or "") >= str(dst.get("updated_at") or "")
+
+    # 单调量：取大（与新旧无关）
     for key in ("experience", "onboarding_flags", "onboarding_state"):
         if _as_int(se.get(key)) > _as_int(de.get(key)):
             de[key] = _as_int(se[key])
-    # 覆盖型：目标为空才用来源
+
+    # 覆盖量：较新的档为准
     for key in ("ship_name", "location"):
-        if not de.get(key) and se.get(key):
+        if src_newer and se.get(key):
             de[key] = se[key]
-    # 字典：逐键取大（成就 / 包进度用 dict 形式表示）
-    for key in ("achievements", "package_progress", "inventory_amounts"):
+        elif not de.get(key) and se.get(key):
+            de[key] = se[key]
+
+    # 单调字典：成就计数（取大）、包进度（level/progress 取大 + claimedLevels 并集）
+    for key in ("achievements", "package_progress"):
         cur = de.setdefault(key, {})
         for k2, v2 in (se.get(key) or {}).items():
             if isinstance(v2, dict):
@@ -200,19 +224,38 @@ def _merge_earned_into(dst: dict, src: dict) -> dict:
                         got[k3] = v3
             elif _as_int(v2) > _as_int(cur.get(k2, 0)) or k2 not in cur:
                 cur[k2] = v2
-    # 列表：取并
+
+    # 可消耗量：较新的档为准（键仍取并，避免丢解锁条目）
+    cur_amounts = de.setdefault("inventory_amounts", {})
+    new_amounts = se.get("inventory_amounts") or {}
+    if src_newer:
+        cur_amounts.update(new_amounts)
+    else:
+        for k2, v2 in new_amounts.items():
+            cur_amounts.setdefault(k2, v2)
+
+    # 集合类：取并
     for key in ("purchased_season_pass_items", "inventory_ids"):
         cur = de.setdefault(key, [])
         for item in _as_list(se.get(key)):
             if item not in cur:
                 cur.append(item)
-    # 预留复杂结构：目标缺键才补齐（不覆盖已有）
+
+    # 预留复杂结构：较新的档为准，缺键补齐
     for key in ("stats", "season_pass", "assignments"):
+        got = se.get(key) or {}
+        if not isinstance(got, dict) or not got:
+            continue
         cur = de.setdefault(key, {})
-        if isinstance(cur, dict):
-            for k2, v2 in (se.get(key) or {}).items():
+        if not isinstance(cur, dict):
+            cur = de[key] = {}
+        if src_newer:
+            cur.update(got)
+        else:
+            for k2, v2 in got.items():
                 cur.setdefault(k2, v2)
     return de
+
 
 
 def _archive_save(store: "SaveStore", reason: str = "merged") -> None:
@@ -227,6 +270,74 @@ def _archive_save(store: "SaveStore", reason: str = "merged") -> None:
         log("存档 %s 已归档为 %s" % (store.save_id, target.name))
     except OSError as e:
         log("存档归档失败（%s）：%r" % (store.save_id, e))
+
+
+def _saves_root(root=None) -> Path:
+    return Path(root) if root else Path(paths.SAVES_DIR)
+
+
+def read_last(root=None) -> dict:
+    """读 ``_last.json``（上次使用的档指针）。不存在/损坏 → 空 dict。
+
+    用途（研究线 2026-11-23 实测的时序问题）：客户端 **一次会话只拉一次** `/api/Progression`，
+    且它比身份端点 `Pes/GetMotd` 早 ~0.5–26 s。所以引擎启动时先按上次档渲染首屏，
+    等身份到达再校验/切换，避免老玩家整局看到空档。
+    """
+    p = _saves_root(root) / LAST_FILE
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def write_last(save_id, steam_id=None, hd2_account=None, root=None) -> dict:
+    """原子更新 ``_last.json``；返回写入内容。"""
+    base = _saves_root(root)
+    base.mkdir(parents=True, exist_ok=True)
+    doc = {
+        "last_save_id": normal_save_id(save_id),
+        "last_steam_id": str(steam_id) if steam_id else None,
+        "last_hd2_account_id": str(hd2_account) if hd2_account else None,
+        "updated_at": _now(),
+    }
+    p = base / LAST_FILE
+    tmp = base / (LAST_FILE + ".tmp")
+    try:
+        tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+        os.replace(tmp, p)
+    except OSError as e:
+        log("_last.json 写入失败：%r" % e)
+    return doc
+
+
+def find_save_by_hd2(hd2_account, root=None) -> str:
+    """已知 HD2 20 位 id、但没有 SteamID64 时，**扫描存档文件的 identity 块**反查档 id。
+
+    不为身份新造状态源：存档文件本身就是事实源（研究线建议）。找不到返回空串。
+    """
+    want = "" if hd2_account is None else str(hd2_account).strip()
+    if not want:
+        return ""
+    base = _saves_root(root)
+    try:
+        paths_iter = sorted(base.glob("*.json"))
+    except OSError:
+        return ""
+    for p in paths_iter:
+        name = p.name
+        if name == LAST_FILE or name.endswith((".bak", ".tmp")) or ".merged-" in name                 or ".corrupt-" in name or ".archived-" in name:
+            continue
+        try:
+            doc = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(doc, dict):
+            continue
+        ident = doc.get("identity") or {}
+        if str(ident.get("hd2_account_id") or "") == want:
+            return str(doc.get("save_id") or p.stem)
+    return ""
 
 
 class SaveStore:
@@ -291,6 +402,9 @@ class SaveStore:
             tmp = p.with_name(self.save_id + ".json.tmp")
             tmp.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
             os.replace(tmp, p)
+            ident = out.get("identity") or {}
+            write_last(self.save_id, ident.get("steam_id"), ident.get("hd2_account_id"),
+                       root=self.root)
         except OSError as e:
             log("存档写入失败（%s）：%r" % (p, e))
         return out
@@ -344,7 +458,7 @@ class SaveStore:
           * 合并后把本档文件归档成 ``<id>.merged-<ts>.json``（保留审计）；
           * 身份别名（HD2 id / SteamID64）写进目标档的 ``identity``。
         """
-        target_id = save_id_for(steam_id, hd2_account)
+        target_id = save_id_for_identity(steam_id, hd2_account, root=root or self.root)
         target = SaveStore(target_id, root=root or self.root)
         mine = self.load()
         has_content = any(bool(v) for v in (mine.get("earned") or {}).values())

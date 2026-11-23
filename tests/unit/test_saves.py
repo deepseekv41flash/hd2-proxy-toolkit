@@ -216,7 +216,7 @@ def test_catalog_build_id_matches_handoff_evidence():
     assert info["value"] == "%s/3/1007203" % info["sha8"]
     # list 形态也支持；没有 clientVersion 时末段留空
     info2 = saves.catalog_build_id([{"a": 1}])
-    assert info2["rows"] == 1 and info2["value"].endswith("/1/")
+    assert info2["rows"] == 1 and info2["value"].endswith("/1/-")   # 缺 clientVersion 写 "-"
 
 
 def test_store_record_catalog_and_identity(tmp_path):
@@ -263,3 +263,59 @@ def test_adopt_identity_skips_empty_local(tmp_path):
     assert migrated.save_id == "steam_76561199881579811"
     assert migrated.load()["earned"]["experience"] == 0
     assert not list(tmp_path.glob("local.merged-*.json"))
+
+
+# ---------------------------------------------------------------- 时序：_last 指针 / HD2 反查 / 合并语义
+
+def test_save_updates_last_pointer(tmp_path):
+    st = saves.SaveStore(root=tmp_path)
+    st.add_experience(10)
+    last = saves.read_last(root=tmp_path)
+    assert last["last_save_id"] == saves.DEFAULT_SAVE_ID
+    assert last["updated_at"]
+
+
+def test_write_read_last_roundtrip(tmp_path):
+    saves.write_last("steam_76561199881579811", "76561199881579811",
+                     "13887067702231565058", root=tmp_path)
+    last = saves.read_last(root=tmp_path)
+    assert last["last_save_id"] == "steam_76561199881579811"
+    assert last["last_hd2_account_id"] == "13887067702231565058"
+    (tmp_path / saves.LAST_FILE).write_text("{ bad", encoding="utf-8")
+    assert saves.read_last(root=tmp_path) == {}
+
+
+def test_find_save_by_hd2_scans_save_files(tmp_path):
+    st = saves.SaveStore("steam_76561199881579811", root=tmp_path)
+    st.set_identity("13887067702231565058", "76561199881579811")
+    assert saves.find_save_by_hd2("13887067702231565058", root=tmp_path) ==         "steam_76561199881579811"
+    assert saves.find_save_by_hd2("999", root=tmp_path) == ""
+    # 归档/备份文件不参与反查
+    (tmp_path / "steam_76561199881579811.merged-20260101-000000.json").write_text(
+        json.dumps({"save_id": "old", "identity": {"hd2_account_id": "111"}}), encoding="utf-8")
+    assert saves.find_save_by_hd2("111", root=tmp_path) == ""
+
+
+def test_save_id_for_identity_uses_hd2_reverse_lookup(tmp_path):
+    st = saves.SaveStore("steam_76561199881579811", root=tmp_path)
+    st.set_identity("13887067702231565058")
+    assert saves.save_id_for_identity(None, "13887067702231565058", root=tmp_path) ==         "steam_76561199881579811"
+    assert saves.save_id_for_identity(None, "12345678901234567890", root=tmp_path) ==         "hd2_12345678901234567890"
+
+
+def test_merge_consumables_newer_wins_and_scalars_max(tmp_path):
+    """可消耗量按 updated_at 较新档为准（不能取 max 复活花掉的钱）；单调量取大。"""
+    older = {"save_id": "a", "updated_at": "2026-11-01T00:00:00",
+             "earned": {"experience": 500, "inventory_amounts": {"1": 999},
+                        "achievements": {"6": 10}}}
+    newer = {"save_id": "b", "updated_at": "2026-11-02T00:00:00",
+             "earned": {"experience": 100, "inventory_amounts": {"1": 50},
+                        "achievements": {"6": 5}}}
+    merged = saves._merge_earned_into(dict(older), newer)
+    assert merged["experience"] == 500          # 单调量取大
+    assert merged["achievements"]["6"] == 10    # 单调量取大
+    assert merged["inventory_amounts"]["1"] == 50   # 较新档为准（未被 max 复活）
+    # 反向：dst 较新时保留 dst 的金额
+    merged2 = saves._merge_earned_into(dict(newer), older)
+    assert merged2["inventory_amounts"]["1"] == 50
+    assert merged2["achievements"]["6"] == 10
