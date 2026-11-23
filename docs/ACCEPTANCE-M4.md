@@ -195,6 +195,43 @@ python -m hd2proxy uninstall --cert-dir <certs>                                 
 
 **已知限制（已在 README 写清）**：客户端一次会话只拉一次 `/api/Progression`；同机换号那一刻首屏可能已按旧档渲染，重启后生效。
 
+### ④ 的 B 方案离线预检（2026-11-23 晚，无实机）
+
+> 目的：在拿不到第二账号实机前，先用**研究线给的期望值 + 我们已有夹具**做"渲染对照"，
+> 把 ④ 的判据从"感觉没混"变成具体数字。工具：`hd2proxy save-preview --json`（离线，不开游戏）。
+
+- 期望值来源（研究线 19:0x）：主号 experience `2759938`、achievements `[1679,386201,4290,2924]`、
+  assignments `24`、packageProgress `52`、purchasedSeasonPassItems `426`、inventory items `970` 行、
+  catalog_build `93e7575a/3021/1007203`；空号 experience `1`、achievements `0`、inventory `55` 行、
+  catalog_build `d71655e6/3020/-`。
+- **与我们夹具逐项一致**：`data/fixtures/saves/main/progression.json` 的 experience=`2759938`、
+  achievements 4 条、assignments 24、packageProgress 52、purchasedSeasonPassItems 426；
+  `main/items.json` sha8=`93e7575a`、`fresh` = `d71655e6/3020` ⇒ 双方基线同源，可直接对照。
+
+**预检结果（本机主号账本 vs 主号基线）** —— 期望「只抬不降、不丢项」：
+
+| 字段 | 服务端（主号基线） | 合并后 | 判定 |
+|---|---|---|---|
+| experience | 2759938 | **2759938**（不变） | 账本只有增量 210 < 基线 ⇒ 听服务端 ✅ |
+| achievements | `[1679,386201,4290,2924]` | `[1680,386242,4290,2925]` | 抬到本机实机最新值（+1/+41/0/+1）✅ |
+| totalEnemyKills 等 13 项统计 | 356065 等 | 356105 等 | 逐项只抬 ✅ |
+| inventory（`main/inventory.json`，970 行） | 如 `3608481516=1000` | `3608481516=1000` 保持；`897894480` 补行 amount=1 | 只抬不降 + 缺行补行 ✅ |
+| catalog_build | `93e7575a/3021/1007203` | 同 | 不漂移 ✅ |
+
+**预检结果（若把主号账本误套到空号基线）** —— 即"两边混"最坏形态，量化后便于实机识别：
+
+| 字段 | 空号基线 | 误套主号账本后 | 说明 |
+|---|---|---|---|
+| experience | 1 | **210** | 主号账本的增量被抬上去 ⇒ 空号首屏会"像主号" |
+| achievements | `[]` | 4 条（主号） | 同上 |
+| inventory | 55 行（含 `3608481516=1000`） | 补 `897894480×1` | 主号独有行出现 |
+
+⇒ **④ 实机判据（据此细化）**：切到空号后，若首屏出现 `experience=210 / 成就 4 条 / 897894480 行`，
+说明 `_last.json` 预绑定还没被 `GetMotd` 纠正（**已知窗口，非写盘混档**）；等 `getmotd 身份校验一致`
+或重启后必须回到空号基线（`1 / 0 / 55 行`），且 `_orphan` 里出现主号本局脏档、`runtime/saves/` 两份文件互不影响。
+四条红线：**experience / inventory items 行数 / achievements 条数 / purchasedSeasonPassItems**。
+
+
 **现场处置记录**：首次实机报 **Error 60** → 根因是引擎 auto-renew 换发 CA 后信任库未更新；
 `hd2proxy.exe install --cert-dir <state>\certs` 重导当前 CA 后恢复（`trusted=true`，`LocalMachine`）。
 后续版本已加 `certs/ca-history.json` 留痕 + 日志告警。
