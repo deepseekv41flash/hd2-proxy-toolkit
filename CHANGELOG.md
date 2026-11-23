@@ -6,6 +6,31 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.5.2-alpha.1（2026-11-23）— 存档层 G4 终身统计 + G5 成就上报合并
+
+- **G4：Stats/profile 终身统计**（`engine/hooks/stats.py` + `ActiveSave.apply_stats()`/`record_stats()`）：
+  - 只认 `/api/Stats/profile/summary` 与 `/api/Stats/profile/801/summary`（战局统计
+    `/api/Stats/war/801/summary` 语义未证，**不碰**）；
+  - 27 项 `totalXxx` 单调计数器：**逐 key 取 max**（只抬不降），换号/新号返回 0 时不会把本地
+    已记录的战绩抹掉；不往响应里凭空加字段，bool/非数值一律跳过；
+  - 全 0 响应（新号首局）**不写盘**（没信息量，不刷 `.bak`）；adopt 迁移时统计也按 key max 合并。
+- **G5（上半）：`PUT /api/Progression/Achievements` 成就上报合并**（`engine/hooks/achievements.py`）：
+  - 研究线实测：上报的是**完整小列表**（请求体 141 B ≈ 5–6 条，而主号 GET 只有 4 条），响应恒 `{}`；
+  - 语义倾向累计覆盖 ⇒ 落成 **per-key max**（等价覆盖 + 幂等防双计 + 防旧快照把值改小）；
+  - 请求体真实形状**未采样**，解析**防御式**：认 `{"achievements":[…]}` / `[…]` / `{"items":[…]}`，
+    行内认 `{id,value}`；解析不出就**不写档**并记一次可操作日志（宁可不记，也不猜错写脏）；
+  - 闭环：上报 → `earned.achievements` → 下次启动 `/api/Progression`（G2 钩子）合并回响应。
+- **G5（下半）`inventory/consume` 扣减暂缓**：该端点响应恒 `{}`（2 B），扣减量只在**请求体**里，
+  而现有抓包未采样请求体 ⇒ 没有形状就不猜着扣（钱扣错比不扣更糟）。已请研究线用 `body_shapes`
+  补采 `consume` 与 `Achievements` 两个请求体，拿到后单独一版实现。
+- **G4 另外两项的结论（证据）**：`SeasonPass` 元数据两账号**逐字节相同**（`039ff10e` / 14 589 B）⇒
+  账号无关，不能当"买了什么"的证据；季票货币/已购在 `Progression.purchasedSeasonPassItems`（G2 已合并）
+  与 inventory（G5 覆盖）里，**无需单独落账**。`Assignment` 两轮真实会话只有 GET、无写路径
+  （进度由服务端推进）⇒ 按研究线建议降到最低优先级，暂只读不落账（rotation/expiry 语义未证）。
+- **测试**：单测 613 → **631 passed**（+18：统计合并/记录/兼容形状/迁移 max、成就解析形状/per-key max/
+  未识别不写档/闭环）；引擎端到端新增「Stats 合并 → PUT 成就入账」。
+- 规则：**功能变更** ⇒ 动 `X.Y.Z`：`0.5.1-alpha.1` → **`0.5.2-alpha.1`**。
+
 ## v0.5.1-alpha.1（2026-11-23）— 存档层 G3：结算奖励入账（只读响应，不碰请求体）
 
 - **新能力（G3）**：`POST /api/Operation/Mission/end` 的**响应**里已经带服务端算好的本局增量，

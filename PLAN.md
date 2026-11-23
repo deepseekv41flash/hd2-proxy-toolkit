@@ -911,8 +911,8 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 | G1 | `engine/saves.py`：存档读写（原子写/`.bak`/损坏隔离）+ 合并纯函数（Progression / inventory） + 身份选档（**SteamID64 主键**；HD2 20 位作别名，`find_save_by_hd2` 扫档反查）+ `adopt_identity` 合并迁移 + `catalog_build`（items sha8/行数/clientVersion）+ **`_last.json` 乐观预绑定**（G2 首屏时序）+ 合并语义按字段分型（单调量 max / 可消耗量较新为准 / 集合并集） | ✅ 2026-11-23（27 单测；总 **546 passed**；schema v2） |
 | G2 | 首屏时序 + **`GET /api/Progression` 根钩子**：`engine/active_save.py`（`_last.json` 乐观预绑定；无历史档时首屏最多等 `saves.wait_seconds`；GetMotd 校验分流 local 合并 / 已识别档不混档）+ `engine/hooks/progression.py`（**精确根路径**，merge earned）+ 响应路径记录（GetMotd→SteamID64 主键、GetMessages→HD2 别名、items **注入前**→`catalog_build`、Login 请求体→`clientVersion`）+ **会话基准快照回滚**（`_session-start/`）+ `identity.source/identified_at` + `_orphan` 全文/hash/丢弃摘要 + `data/fixtures/saves/{main,fresh}`（6 端点 ×2 账号）+ GUI 战况页顶部存档状态行 + README「首屏可能已按旧档渲染」限制 + `/status.save` | ✅ 2026-11-23（+34 单测；总 **591 passed**；`test_engine_flow` 端到端覆盖） |
 | G3 | **结算奖励入账**：`hooks/mission_end.py`（读 `Mission/end` **响应**，不需要请求体）+ `ActiveSave.record_mission_end()` —— `experience` 累加 / `rewards` 按 mixId 累加（口径实据：rewards=明细×multipliers，开关一处）/ `progressionPackageUpdates` 按 max / `missionId` 近 20 局去重防双计；`data/fixtures/saves/mission_end/` 5 份真实样本；端到端「POST 结算→存档累加→再拉 Progression」 | ✅ 2026-11-23（+22 单测；总 **613 passed**） |
-| G4 | `Stats` / `SeasonPass` / `Assignment` 子集 | ⏳ |
-| G5 | `inventory/consume` 扣减、`Achievements` PUT 合并 | ⏳ |
+| G4 | **Stats/profile 终身统计**（`hooks/stats.py` + `ActiveSave.apply_stats/record_stats`：逐 key max、全 0 不写盘、迁移按 max；战局统计不碰）+ 证据结论：**SeasonPass 账号无关**（两账号逐字节相同，货币/已购在 Progression/inventory 里已覆盖）· **Assignment 无写路径**（只读、低优先） | ✅ 2026-11-23（+10 单测） |
+| G5 | `Achievements` PUT **per-key max 合并**（`hooks/achievements.py`，防御式解析：形状未采样）**✅**；`inventory/consume` 扣减 **⏳ 待请求体样本**（响应恒 `{}`，扣减量只在请求体；已请研究线补采） |
 | G6 | `preview.py` 扩展：预演"这一局结算会加多少"（含存档夹具预演） | ⏳ |
 
 ---
