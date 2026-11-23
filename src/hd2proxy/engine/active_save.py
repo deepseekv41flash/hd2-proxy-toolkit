@@ -336,6 +336,59 @@ class ActiveSave:
         self._event("achievements", "上报 %d 条（%d 条更新）" % (len(values), changed))
         return {"ok": True, "recorded": changed, "keys": len(values)}
 
+    def record_consume(self, body):
+        """G5：``POST /api/Progression/inventory/consume`` 请求体 → 库存扣减（下限 0、保留行）。
+
+        研究线 2026-11-23 口径：
+          * 扣减量只在请求体（响应恒 `{}`）；`inventory_amounts[mixId] -= amount`，**下限 0**；
+          * **保留行、amount=0，不删行** —— 库存行同时承担「是否拥有」语义（目录行+库存行成对才显示），
+            删行可能让物品从军械库消失；
+          * 只扣本机账本里**已跟踪**的行：没基线说明账本里没有它的数量，宁可不扣也不凭空造；
+          * 每次扣减打 INFO（带本局 missionId），供实机对账。
+        """
+        from .hooks import consume as _consume
+        rows = _consume.extract_consumes(body)
+        if not rows:
+            log_throttled("consume-unparsed",
+                          "消耗请求体形状未识别（本次不扣）；拿到样本后补解析", every=300)
+            return {"ok": False, "reason": "unparsed"}
+        with self._lock:
+            earned = self._store.load().get("earned") or {}
+            amounts = dict(earned.get("inventory_amounts") or {})
+            mission = ((earned.get("missions") or {}).get("last") or {}).get("mission") or {}
+            mission_id = str(mission.get("mission_id") or "")
+            applied, untracked = [], []
+            changed = 0
+            for row in rows:
+                key = str(row["mixId"])
+                amount = _int(row["amount"])
+                if key not in amounts:
+                    untracked.append({"mixId": key, "amount": amount})
+                    continue
+                before = _int(amounts.get(key))
+                after = max(0, before - amount)
+                applied.append({"mixId": key, "amount": amount,
+                                "before": before, "after": after})
+                if after != before:
+                    amounts[key] = after
+                    changed += 1
+            if changed:
+                def _mut(earned_doc, doc):
+                    earned_doc["inventory_amounts"] = amounts
+                self.update_earned(_mut, reason="consume")
+        for row in applied:
+            log("CONSUME mixId=%s amount=%d：存档 %d → %d%s"
+                % (row["mixId"], row["amount"], row["before"], row["after"],
+                   "（mission %s）" % mission_id if mission_id else ""), audit=True)
+        for row in untracked:
+            log_throttled("consume-untracked-%s" % row["mixId"],
+                          "CONSUME mixId=%s amount=%d：存档无该行基线，本次不扣"
+                          % (row["mixId"], row["amount"]), every=300)
+        if applied or untracked:
+            self._event("consume", "扣减 %d 行（%d 行有变化）/ 未跟踪 %d 行"
+                        % (len(applied), changed, len(untracked)))
+        return {"ok": True, "applied": applied, "untracked": untracked, "written": changed}
+
     def note_login(self, body):
         """``/api/Account/Login`` **请求体**里的 clientVersion（catalog_build 辅字段）。"""
         doc = None

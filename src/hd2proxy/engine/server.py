@@ -28,6 +28,7 @@ from . import certs, diagnostics, hosts as hosts_mod, httpio, logutil, model, pa
 from .active_save import ActiveSave
 from .hooks import achievements as achievements_hook
 from .hooks import capture, inventory, items, progression, stats as stats_hook, warinfo
+from .hooks import consume as consume_hook
 from .logutil import log, log_throttled, rotate_logs
 from .model import Mod, resolve_plan, rewrite_status
 
@@ -195,6 +196,13 @@ class Proxy:
                         self.save.note_login(body)
                     except Exception as e:        # noqa: BLE001
                         log("clientVersion 记录失败：%r" % e)
+                # G5：局内消耗（请求体）→ inventory_amounts 扣减（下限 0、保留行）
+                if (self.save is not None and not self.mod.passthrough and body
+                        and consume_hook.is_path(path)):
+                    try:
+                        self.save.record_consume(body)
+                    except Exception as e:        # noqa: BLE001
+                        log("消耗扣减记录失败：%r" % e)
                 # G5：成就上报（请求体）→ earned.achievements（per-key max）
                 if (self.save is not None and not self.mod.passthrough and body
                         and achievements_hook.is_path(path)):

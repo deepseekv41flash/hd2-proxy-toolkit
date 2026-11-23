@@ -426,6 +426,14 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
             after_ach = saves.SaveStore(sid, root=saves_root).load()
             assert after_ach["earned"]["achievements"] == {"6": 1679}
 
+            # 7) G5 下半：局内消耗（请求体）→ 库存扣减（下限 0、保留行）
+            head, body = tls_post(port, "/api/Progression/inventory/consume",
+                                  {"items": [{"mixId": 3901895556, "amount": 99}]}, cert_dir)
+            # 真实服务端回 200 {}；假上游默认 202 —— 扣减只看请求体，与响应码无关
+            assert " 20" in (" " + (head.splitlines()[0] if head else "") + " "), head[:80]
+            after_consume = saves.SaveStore(sid, root=saves_root).load()
+            assert after_consume["earned"]["inventory_amounts"]["3901895556"] == 699 - 99
+
             api(state_file, "/shutdown", method="POST", body={})
             assert proc.wait(15) == 0
         finally:

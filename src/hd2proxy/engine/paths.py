@@ -90,6 +90,8 @@ STATS_PROFILE_MARKS = ("/api/Stats/profile/summary",
                        "/api/Stats/profile/801/summary")
 # G5：客户端结算后主动上报成就累计值（响应恒为空 `{}`，值在**请求体**里）
 ACHIEVEMENTS_PATH = "/api/Progression/Achievements"
+# G5：局内消耗（响应恒为空 `{}`，扣减量只在**请求体**里）
+CONSUME_PATH = "/api/Progression/inventory/consume"
 
 # ---- 运行期状态文件（热重载：每个响应到达时现读） ---------------------------
 INV_STATE = RUNTIME / "inventory_inject.json"
