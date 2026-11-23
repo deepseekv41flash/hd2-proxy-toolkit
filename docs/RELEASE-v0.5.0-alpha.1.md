@@ -61,7 +61,9 @@ experience / onboarding / shipName / location / purchasedSeasonPassItems / achie
 - 档内 `identity` 增 `source`（`getmotd` / `getmessages` / `adopted`）与 `identified_at`
   —— 排查「这份档怎么认到身份的」最省时间；
 - `/status` 新增 `save` 块（save_id / origin / verified / session_dirty / catalog_build / 最近事件 / 警告）；
-- GUI **战况页顶部**一行：`存档 <saveId> · 预绑定待校验 / 已校验 · 本局有写入`；
+- GUI **战况页顶部**一行：`存档 <saveId> · 预绑定待校验 / 已校验 · 本局有写入`（截图：
+  [`research/screenshots/gui-status.png`](../research/screenshots/gui-status.png)，
+  演示 profile 下显示 `存档 local · 待校验`）；
 - 配置：`saves.enabled`（默认开）、`saves.wait_seconds`（默认 1.2）、
   `saves.identity_strict`（严格模式：身份未校验拒绝写盘，默认关）。
 
