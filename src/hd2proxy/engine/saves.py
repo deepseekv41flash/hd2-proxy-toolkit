@@ -1136,7 +1136,10 @@ def apply_to_inventory(body, save: dict):
     if not isinstance(doc, dict):
         return body, 0
     items = doc.get("items")
-    if not isinstance(items, list):
+    if items is None:
+        items = []                       # 上游整份没给 items：视为空库存，账本兜底补行
+        doc["items"] = items
+    elif not isinstance(items, list):
         return body, 0
     earned = _normalize_earned(save or {})
     by_mix = {}

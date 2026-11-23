@@ -8,10 +8,10 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.6.0-alpha.1 已发布（2026-11-23，GUI「本地账号」页）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.6.0-alpha.2 已发布（2026-11-23，含 GUI「本地账号」页 + 库存合并修复）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 六页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **688 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.6.0-alpha.1`（见下方「下载」）。
+> **689 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.6.0-alpha.2`（见下方「下载」）。
 > 0.5.0 起加入**本机存档层**（`base ⊕ config ⊕ earned`）：启动按 `_last.json` 乐观预绑定上次的档渲染首屏、
 > `Pes/GetMotd` 到达校验、同机换号**整档回滚**到会话基准快照 + 孤儿审计（研究线 2026-11-23 反馈的粒度修正）；
 > 0.5.1 起**结算奖励入账**（`Mission/end` 响应 → 经验/货币/物品/包进度累加进本机账本，按 missionId 防双计）；
@@ -65,14 +65,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.6.0-alpha.1）
+## 下载（v0.6.0-alpha.2）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.6.0-alpha.1.md)。
+> [Release Notes](docs/RELEASE-v0.6.0-alpha.2.md)。
 
-- 下载：[GitHub Releases · v0.6.0-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.6.0-alpha.1)
-  （`hd2proxy-toolkit-v0.6.0-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.6.0-alpha.2](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.6.0-alpha.2)
+  （`hd2proxy-toolkit-v0.6.0-alpha.2-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，

@@ -280,6 +280,27 @@ class ActiveSave:
                 self._event("stats", "终身统计合并 +%d 字段" % changed)
             return new_body, changed
 
+    def apply_inventory(self, body):
+        """G5：``/api/Progression/inventory`` 响应合并账本数量（**只抬不降**）。
+
+        为什么必须接进 live 链路（v0.6.0-alpha.2）：早期只有 `save-preview` 用
+        ``saves.apply_to_inventory``，引擎响应链漏了这一处 —— 一旦上游给得少
+        （离线 / 私服 / 回滚），玩家在游戏里会看不到本机账本里已有的货币/物品行。
+        语义与 experience/成就/统计一致：服务端给得更多就听服务端的，账本只在更少时兜底。
+        """
+        if body is None:
+            return body, 0
+        with self._lock:
+            try:
+                doc = self._store.load()
+            except Exception as e:            # noqa: BLE001 - 不能打断库存页
+                log("存档读取失败（库存合并跳过）：%r" % e)
+                return body, 0
+            new_body, changed = saves.apply_to_inventory(body, doc)
+            if changed:
+                self._event("inventory", "库存数量合并 +%d 行（只抬不降）" % changed)
+            return new_body, changed
+
     def record_stats(self, body):
         """G4：``Stats/profile`` 响应 → 记录终身统计（逐 key 单调 max，不降级）。
 

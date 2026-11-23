@@ -6,6 +6,19 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.6.0-alpha.2（2026-11-23）— 修复：`/api/Progression/inventory` 响应没套账本（服务端给得少时看不到本机库存）
+
+- **问题**：`0.5.4-alpha.3` 只修了 `saves.apply_to_inventory` 的**语义**（只抬不降），
+  但引擎响应链**从没接上**这一处 —— 只有 `save-preview` 在用。官方服给全量所以没暴露；
+  离线/私服/回滚/mock 验收（上游 `items` 很少或为空）时，游戏里看不到本机账本已有的货币/物品行。
+- **修复**：新增 `ActiveSave.apply_inventory()`，引擎存档层接 `INV_PATH` 分支：
+  上游 ≥ 账本 → 听服务端；上游 < 账本 → 账本兜底；上游整份没给 `items` → 视为空库存补行；
+  与「本地账号」四类库存注入叠加时在**注入后的视图**上合并。日志 `SAVE INV +N 行`、事件 `kind=inventory`。
+- **测试**：688 → **689 passed**（active_save 单测 + engine_flow 端到端：上游 999999 保留 / 账本 1 补行 / `/status` 事件）。
+- **发现方式**：离线 mock dry-run（`profile` + legacy `--config upstreamTest` 指明文上游）验证
+  「服务端给得少 → 存档层兜底」时暴露；手法写进 Release Notes。
+- 规则：bug 修复只动 `alpha.N`：`0.6.0-alpha.1` → **`0.6.0-alpha.2`**。
+
 ## v0.6.0-alpha.1（2026-11-23）— GUI「本地账号（仅本机视图）」：改名 + 存档 tab + 三条边界
 
 - **页面改名**：「物品与战备」→ **「本地账号」（仅本机视图）**，侧栏同名；页头固定三条边界：

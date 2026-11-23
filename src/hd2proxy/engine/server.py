@@ -445,6 +445,22 @@ class Proxy:
                                     % (stats_n, self.save.save_id,
                                        " [from gzip]" if was_gz else ""), audit=True)
                                 self._note("save-stats", "+%d field(s)" % stats_n)
+                        elif paths.INV_PATH in path:
+                            # G5：库存数量只抬不降 —— 上游给得少（离线/私服/回滚）时用本机账本兜底。
+                            # 若上面的配置注入已经改过 body，就在**注入后的视图**上合并，避免互相覆盖。
+                            _src = out_body if rewrite_added else rbody
+                            plain, was_gz = httpio.maybe_gunzip(_src, rhdrs)
+                            new_body, inv_n = self.save.apply_inventory(plain)
+                            if inv_n:
+                                out_body = new_body
+                                rewrite_added += inv_n
+                                if _src is rbody:
+                                    dropped_encoding = was_gz
+                                self.stats["rewrite"] += 1
+                                log("SAVE INV +%d 行（存档 %s，只抬不降）%s"
+                                    % (inv_n, self.save.save_id,
+                                       " [from gzip]" if was_gz else ""), audit=True)
+                                self._note("save-inv", "+%d rows" % inv_n)
                     except Exception as e:    # noqa: BLE001 - 存档层异常绝不打断游戏
                         log("存档层处理失败（本次跳过）：%r" % e)
 

@@ -81,6 +81,18 @@ class _Upstream:
                     self.end_headers()
                     self.wfile.write(body)
                     return
+                if "/api/Progression/inventory" in self.path:
+                    # G5 live 合并：服务端给得**更多**的行必须保留（服务端是事实源）
+                    body = json.dumps({"id": 801, "items": [
+                        {"mixId": 3901895556, "amount": 999999, "isDiscovered": True},
+                    ]}).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Connection", "close")
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 if "/api/WarSeason/801/Status" in self.path:
                     body = gzip.compress(json.dumps(doc).encode())
                     self.send_response(200)
@@ -457,6 +469,18 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
             assert after_buy["inventory_amounts"]["3901895556"] == 699 - 99 - 99
             assert after_buy["inventory_amounts"]["718265621"] == 1
             assert after_buy["purchases"]["count"] == 1
+
+            # 9) G5 live 合并：`/api/Progression/inventory` 响应也要套账本（只抬不降）
+            #    上游给 3901895556=999999（更大）→ 保留上游；账本里的 718265621 上游没有 → 补行。
+            head, body = tls_get(port, "/api/Progression/inventory", cert_dir)
+            assert " 200 " in (" " + (head.splitlines()[0] if head else "") + " "), head[:80]
+            inv_doc = json.loads(body.decode("utf-8"))
+            amounts = {int(r["mixId"]): int(r.get("amount") or 0)
+                       for r in inv_doc["items"] if isinstance(r, dict) and r.get("mixId")}
+            assert amounts[3901895556] == 999999          # 服务端更大：服务端仍是事实源
+            assert amounts[718265621] == 1                # 上游没有：账本兜底补行
+            save_state = api(state_file, "/status")["save"]
+            assert any(e["kind"] == "inventory" for e in save_state["events"])
 
             api(state_file, "/shutdown", method="POST", body={})
             assert proc.wait(15) == 0

@@ -99,6 +99,37 @@ def test_no_last_zero_wait_skips_waiting(tmp_path):
     mgr.close()
 
 
+# ---------------------------------------------------------------- G5 live 库存合并
+
+
+def test_apply_inventory_raises_and_fills_rows(tmp_path):
+    """`/api/Progression/inventory` 响应合并账本：只抬不降 + 缺行补行（不缩小服务端值）。"""
+    sid = make_save(tmp_path, experience=10)
+    st = saves.SaveStore(sid, root=tmp_path)
+    doc = st.load()
+    doc["earned"]["inventory_amounts"] = {"3901895556": 699, "718265621": 1}
+    st.save(doc)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    body = json.dumps({"items": [{"mixId": 3901895556, "amount": 999999,
+                                  "isDiscovered": True}]}).encode("utf-8")
+    out, changed = mgr.apply_inventory(body)
+    rows = {int(r["mixId"]): r for r in json.loads(out)["items"]}
+    assert rows[3901895556]["amount"] == 999999        # 服务端更大 → 听服务端
+    assert rows[718265621]["amount"] == 1              # 上游没有 → 账本补行
+    assert changed == 1 and mgr.status()["events"][-1]["kind"] == "inventory"
+    # 无改动时引用不变（上层判等用）
+    body2 = json.dumps({"items": [{"mixId": 3901895556, "amount": 999999},
+                                  {"mixId": 718265621, "amount": 1}]}).encode("utf-8")
+    out2, changed2 = mgr.apply_inventory(body2)
+    assert changed2 == 0 and out2 is body2
+    # 上游连 items 都不给（私服/极简 mock）→ 视为空库存，账本补行
+    out3, changed3 = mgr.apply_inventory(b'{"id":801}')
+    rows3 = {int(r["mixId"]): r["amount"] for r in json.loads(out3)["items"]}
+    assert rows3 == {3901895556: 699, 718265621: 1} and changed3 == 2
+    mgr.close()
+
+
 # ---------------------------------------------------------------- 身份校验
 
 
