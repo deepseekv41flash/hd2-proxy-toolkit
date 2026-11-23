@@ -205,7 +205,8 @@ def test_save_id_for_steam_primary():
 def test_save_schema_has_catalog_build_and_identity():
     doc = saves.empty_save()
     assert doc["catalog_build"] is None
-    assert doc["identity"] == {"hd2_account_id": None, "steam_id": None}
+    assert doc["identity"] == {"hd2_account_id": None, "steam_id": None,
+                               "source": None, "identified_at": None}
 
 
 def test_catalog_build_id_matches_handoff_evidence():
@@ -361,9 +362,15 @@ def test_rollback_from_backup_restores_and_archives(tmp_path):
 
 
 def test_write_orphan_under_orphan_dir(tmp_path):
-    p = saves.write_orphan("local", {"earned": {"experience": 5}}, root=tmp_path)
+    p = saves.write_orphan("local", {"earned": {"experience": 5}}, root=tmp_path,
+                           extra={"dirty_sha": "abc", "restored_sha": "def"})
     assert p and "_orphan" in p
     import json as _json
-    assert _json.loads(open(p, encoding="utf-8").read())["earned"]["experience"] == 5
+    doc = _json.loads(open(p, encoding="utf-8").read())
+    # G2：orphan 存**整份脏档** + 审计字段（hash / 回滚后 hash）
+    assert doc["doc"]["earned"]["experience"] == 5
+    assert doc["reason"] == "dirty"
+    assert doc["dirty_sha"] == "abc" and doc["restored_sha"] == "def"
+    assert doc["doc_sha"] and doc["created_at"]
     # _orphan 目录不参与 HD2 反查
     assert saves.find_save_by_hd2("123", root=tmp_path) == ""

@@ -10,6 +10,13 @@
 
 本模块只负责 **earned 的持久化与合并语义**；把「哪种响应怎么改」留给 hooks（G2/G3）。
 
+G2 追加的**回滚粒度**（研究线 2026-11-23 反馈：``.bak`` 只有「上一版」单槽，回滚不到「会话前」）：
+
+  * 每个引擎会话在**首次写入前**留一份基准快照 ``runtime/saves/_session-start/<saveId>.json``；
+  * 身份不一致时整档回滚到这份基准（而不是 ``.bak``），**无快照 = 本局没写过 = 不动档**；
+  * 身份校验通过后把基准**重建**为当前状态（= 最后一次已验证点），并清 ``_last.json.pending``；
+  * ``pending`` 让快照跨引擎重启存活：上局没校验完就崩/关，本局沿用最早基准（有 24 h 上限）。
+
 设计约束（与研究线现有设施保持一致）：
 
   * **单文件存档**：``runtime/saves/<saveId>.json``（含 ``schema`` 版本），默认 ``saveId=local``；
@@ -35,6 +42,9 @@ from .logutil import log
 SAVE_SCHEMA = 2                  # 2: + catalog_build / identity（2026-11-23 研究线反馈）
 DEFAULT_SAVE_ID = "local"
 LAST_FILE = "_last.json"          # 上次使用的档指针：启动时乐观预绑定，规避"首屏空档"
+SESSION_DIR = "_session-start"    # 会话基准快照（G2 回滚粒度）：<saveId>.json，不进档扫描
+SESSION_SCHEMA = 1
+PENDING_MAX_AGE_HOURS = 24.0      # pending 快照的复用上限：超过就当过期，重新取基准
 _SAVE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _HD2_ID_RE = re.compile(r"^\d{17,20}$")      # HD2 accountId：20 位数字（GetMessages）
 _STEAM_ID_RE = re.compile(r"^7656119\d{10}$")  # SteamID64：17 位（GetMotd）
@@ -139,7 +149,9 @@ def empty_save(save_id=None) -> dict:
         # 目录漂移追溯（Progression/items 会随 build 变；11-16→11-18 多 1 行）
         "catalog_build": None,
         # 身份别名（只用于选档/排障，不做鉴权）：HD2 20 位账号 id / SteamID64
-        "identity": {"hd2_account_id": None, "steam_id": None},
+        # source / identified_at 只作**审计**：将来排查「这份档是怎么认到身份的」能省很多时间
+        "identity": {"hd2_account_id": None, "steam_id": None,
+                     "source": None, "identified_at": None},
         "earned": {
             # /api/Progression 根
             "experience": 0,
@@ -159,6 +171,21 @@ def empty_save(save_id=None) -> dict:
             "assignments": {},
         },
     }
+
+
+def _normalize_identity(doc: dict) -> dict:
+    """把 identity 补齐成完整形状（老档没有 source/identified_at 也能读）。"""
+    got = (doc or {}).get("identity")
+    if not isinstance(got, dict):
+        got = {}
+    out = {"hd2_account_id": got.get("hd2_account_id"),
+           "steam_id": got.get("steam_id"),
+           "source": got.get("source"),
+           "identified_at": got.get("identified_at")}
+    for key, value in got.items():          # 保留将来新增的字段，不丢信息
+        out.setdefault(key, value)
+    doc["identity"] = out
+    return out
 
 
 def _normalize_earned(doc: dict) -> dict:
@@ -291,24 +318,252 @@ def read_last(root=None) -> dict:
     return doc if isinstance(doc, dict) else {}
 
 
+def _write_json_atomic(path: Path, doc) -> bool:
+    """原子写 JSON（tmp + os.replace）。失败只记日志，绝不抛到代理主流程。"""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+        os.replace(tmp, path)
+        return True
+    except OSError as e:
+        log("JSON 写入失败（%s）：%r" % (path, e))
+        return False
+
+
 def write_last(save_id, steam_id=None, hd2_account=None, root=None) -> dict:
-    """原子更新 ``_last.json``；返回写入内容。"""
-    base = _saves_root(root)
-    base.mkdir(parents=True, exist_ok=True)
+    """原子更新 ``_last.json``；返回写入内容。
+
+    **保留 pending**：只要 pending 属于同一个 saveId 就原样带过去 —— 它的语义是
+    「该档身份尚未校验」，与「上次用了哪个档」是两件事，不能被普通写入清掉
+    （清了就等于宣布"已校验"，下次启动会拿脏档当基准）。
+    """
+    sid = normal_save_id(save_id)
     doc = {
-        "last_save_id": normal_save_id(save_id),
+        "last_save_id": sid,
         "last_steam_id": str(steam_id) if steam_id else None,
         "last_hd2_account_id": str(hd2_account) if hd2_account else None,
         "updated_at": _now(),
     }
-    p = base / LAST_FILE
-    tmp = base / (LAST_FILE + ".tmp")
-    try:
-        tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
-        os.replace(tmp, p)
-    except OSError as e:
-        log("_last.json 写入失败：%r" % e)
+    old = read_last(root)
+    pending = old.get("pending")
+    if isinstance(pending, dict) and str(pending.get("save_id") or "") == sid:
+        doc["pending"] = pending
+    _write_json_atomic(_saves_root(root) / LAST_FILE, doc)
     return doc
+
+
+def mark_pending(save_id, *, run_id=None, root=None, since=None) -> dict:
+    """标记「该档身份尚未校验」（配合 `_session-start` 快照跨引擎重启存活）。
+
+    ``since``：沿用上一局的起始时间（跨重启复用基准时必须保留原值，否则每次启动都刷新
+    新鲜度，pending 永不过期 —— 几周后一复用就会把合法进度一起回滚掉）。
+    """
+    sid = normal_save_id(save_id)
+    doc = read_last(root)
+    doc["last_save_id"] = sid
+    doc.setdefault("last_steam_id", None)
+    doc.setdefault("last_hd2_account_id", None)
+    doc["pending"] = {"save_id": sid, "run_id": str(run_id or ""),
+                      "since": str(since or "") or _now()}
+    doc["updated_at"] = doc.get("updated_at") or _now()
+    _write_json_atomic(_saves_root(root) / LAST_FILE, doc)
+    return doc
+
+
+def read_pending(root=None) -> dict:
+    """读 pending 块（没有则空 dict）。"""
+    pending = (read_last(root) or {}).get("pending")
+    return pending if isinstance(pending, dict) else {}
+
+
+def clear_pending(root=None) -> dict:
+    """清掉 pending（身份校验通过 / 已切档完成）。"""
+    doc = read_last(root)
+    if doc.pop("pending", None) is not None:
+        _write_json_atomic(_saves_root(root) / LAST_FILE, doc)
+    return doc
+
+
+def pending_age_hours(pending: dict) -> float | None:
+    """pending 距今多少小时；时间戳不可解析返回 None（= 当作过期，不冒险复用）。"""
+    since = "" if not isinstance(pending, dict) else str(pending.get("since") or "")
+    if not since:
+        return None
+    try:
+        started = time.mktime(time.strptime(since, "%Y-%m-%dT%H:%M:%S"))
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return max(0.0, (time.time() - started) / 3600.0)
+
+
+def pending_reusable(pending: dict, max_age_hours: float = PENDING_MAX_AGE_HOURS) -> bool:
+    """上局留下的 pending 是否还能当「同一个未校验窗口」继续沿用基准快照。
+
+    为什么要新鲜度上限：崩溃/关机留下的 pending 如果几周后才复用，会把这段时间里
+    的合法进度一起回滚掉 —— 宁可重新取基准（丢的只是崩溃前未校验的窗口）。
+    """
+    if not isinstance(pending, dict) or not pending.get("save_id"):
+        return False
+    age = pending_age_hours(pending)
+    return age is not None and age <= float(max_age_hours)
+
+
+# --------------------------------------------------------------------------- #
+# 会话基准快照（G2）：回滚粒度 = 「本次引擎会话第一次写入之前」
+#
+# 研究线 2026-11-23 反馈：`.bak` 只是「上一版」单槽，同局连续写 3 次后再回滚只会退到第 2 次，
+# 前两次的写入仍留在错误身份的档里（部分写入比整档污染更难排查）。所以回滚源改成会话基准快照。
+# --------------------------------------------------------------------------- #
+def doc_sha(doc) -> str:
+    """文档内容指纹（排序键紧凑 JSON 的 sha256 前 16 位）；用于日志 / orphan 审计。"""
+    if doc is None:
+        return ""
+    try:
+        raw = json.dumps(doc, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    except (TypeError, ValueError):
+        return ""
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _value_shape(value):
+    """给差异摘要用的形状描述：标量原值，容器只列规模与变化键（不撑爆日志）。"""
+    if isinstance(value, dict):
+        return {"kind": "dict", "size": len(value)}
+    if isinstance(value, list):
+        return {"kind": "list", "size": len(value)}
+    return value
+
+
+def earned_diff(before, after, *, max_keys: int = 12, max_detail: int = 8) -> dict:
+    """对比两份 earned，列出差异摘要（orphan 里回答「到底哪些条被丢弃」）。
+
+    容器类给出「规模 + 变化键名」（不复制整个容器 —— 全文另存在 orphan 的 dirty/restored doc 里）。
+    """
+    b = before if isinstance(before, dict) else {}
+    a = after if isinstance(after, dict) else {}
+    out = {}
+    for key in sorted(set(b) | set(a)):
+        bv, av = b.get(key), a.get(key)
+        if bv == av:
+            continue
+        item = {"before": _value_shape(bv), "after": _value_shape(av)}
+        if isinstance(bv, dict) and isinstance(av, dict):
+            added = sorted(str(k) for k in set(av) - set(bv))
+            removed = sorted(str(k) for k in set(bv) - set(av))
+            changed = sorted(str(k) for k in set(bv) & set(av) if bv[k] != av[k])
+            item["added"] = added[:max_detail]
+            item["removed"] = removed[:max_detail]
+            item["changed"] = changed[:max_detail]
+        elif isinstance(bv, list) and isinstance(av, list):
+            added = [x for x in av if x not in bv]
+            removed = [x for x in bv if x not in av]
+            item["added"] = added[:max_detail]
+            item["removed"] = removed[:max_detail]
+        out[key] = item
+        if len(out) >= max_keys:
+            out["..."] = {"note": "差异项超过上限，详见 orphan 全文"}
+            break
+    return out
+
+
+def session_snapshot_path(save_id, root=None) -> Path:
+    """会话基准快照路径：``runtime/saves/_session-start/<saveId>.json``（目录不进档扫描）。"""
+    return _saves_root(root) / SESSION_DIR / (normal_save_id(save_id) + ".json")
+
+
+def read_session_snapshot(save_id, root=None) -> dict | None:
+    """读会话基准快照；不存在/损坏 → None。"""
+    p = session_snapshot_path(save_id, root)
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def begin_session(store: "SaveStore", *, run_id=None, reuse=False) -> dict:
+    """取「会话基准」：把当前档原样快照到 `_session-start/<saveId>.json`。
+
+      * ``reuse=True``：上一个引擎会话没校验完（`_last.json.pending` 且新鲜）→ 沿用**最早**基准，
+        崩溃/关窗跨重启也能回滚到整个未校验窗口之前；
+      * 否则（含身份已校验）→ 用当前状态重建基准。
+
+    返回 ``{"path", "action": created|reused|rebased, "existed", "sha", "started_at"}``。
+    """
+    p = session_snapshot_path(store.save_id, store.root)
+    existing = read_session_snapshot(store.save_id, store.root)
+    if reuse and existing is not None:
+        return {"path": str(p), "action": "reused",
+                "existed": bool(existing.get("existed")),
+                "sha": str(existing.get("sha") or ""),
+                "started_at": str(existing.get("started_at") or "")}
+    existed = store.path().exists()
+    doc = store.load() if existed else None      # load() 顺带处理损坏档（隔离 + 空档）
+    payload = {"schema": SESSION_SCHEMA, "save_id": store.save_id,
+               "run_id": str(run_id or ""), "started_at": _now(),
+               "existed": bool(existed), "sha": doc_sha(doc), "doc": doc}
+    _write_json_atomic(p, payload)
+    return {"path": str(p), "action": "rebased" if existing is not None else "created",
+            "existed": bool(existed), "sha": payload["sha"],
+            "started_at": payload["started_at"]}
+
+
+def rebase_session(store: "SaveStore", *, run_id=None) -> dict:
+    """身份校验通过后把基准重建为**当前状态**（= 最后一次已验证点）。"""
+    return begin_session(store, run_id=run_id, reuse=False)
+
+
+def restore_session_snapshot(store: "SaveStore") -> dict:
+    """把档整档回滚到会话基准快照（**不经过 `.bak`**，也不产生新 `.bak`）。
+
+    返回 ``{"ok","mode","snapshot_sha","path"}``，``mode``：
+      * ``restored`` —— 恢复成快照内容；
+      * ``deleted``  —— 会话前没有这份档（本局新建的脏档整份删除）；
+      * ``none``     —— 没有快照（= 本局没写过），**不动档**；
+      * ``failed``   —— 磁盘错误（调用方保留脏档 + 打 WARN，绝不假装回滚成功）。
+    """
+    snap = read_session_snapshot(store.save_id, store.root)
+    snap_path = session_snapshot_path(store.save_id, store.root)
+    if not snap:
+        return {"ok": False, "mode": "none", "snapshot_sha": "", "path": str(snap_path)}
+    p = store.path()
+    if not snap.get("existed"):
+        try:
+            if p.exists():
+                p.unlink()
+        except OSError as e:
+            log("会话回滚失败（删除本局新建档 %s）：%r" % (p, e))
+            return {"ok": False, "mode": "failed", "snapshot_sha": "", "path": str(snap_path)}
+        mode = "deleted"
+    else:
+        doc = snap.get("doc")
+        if not isinstance(doc, dict):
+            return {"ok": False, "mode": "none", "snapshot_sha": "", "path": str(snap_path)}
+        tmp = p.with_name(store.save_id + ".json.restore.tmp")
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+            os.replace(tmp, p)
+        except OSError as e:
+            log("会话回滚失败（恢复 %s）：%r" % (p, e))
+            return {"ok": False, "mode": "failed", "snapshot_sha": "", "path": str(snap_path)}
+        mode = "restored"
+    return {"ok": True, "mode": mode, "snapshot_sha": str(snap.get("sha") or ""),
+            "path": str(snap_path)}
+
+
+def clear_session_snapshot(save_id, root=None) -> bool:
+    """删掉会话基准快照（身份已校验的收摊 / 测试清理）。"""
+    p = session_snapshot_path(save_id, root)
+    try:
+        p.unlink()
+        return True
+    except FileNotFoundError:
+        return False
+    except OSError as e:
+        log("会话快照清理失败（%s）：%r" % (p, e))
+        return False
 
 
 def find_save_by_hd2(hd2_account, root=None) -> str:
@@ -326,7 +581,9 @@ def find_save_by_hd2(hd2_account, root=None) -> str:
         return ""
     for p in paths_iter:
         name = p.name
-        if name == LAST_FILE or name.endswith((".bak", ".tmp")) or ".merged-" in name                 or ".corrupt-" in name or ".archived-" in name:
+        if (name == LAST_FILE or name.endswith((".bak", ".tmp"))
+                or ".merged-" in name or ".corrupt-" in name
+                or ".archived-" in name or ".rollback-" in name):
             continue
         try:
             doc = json.loads(p.read_text(encoding="utf-8"))
@@ -352,9 +609,12 @@ def is_identified(doc: dict) -> bool:
 
 
 def rollback_from_backup(store: "SaveStore") -> bool:
-    """把当前档回滚成 ``.bak``（会话前状态）；坏档先挪成 ``.rollback-<ts>.json`` 留审计。
+    """把当前档回滚成 ``.bak``（**旧口径，粒度不足**，G2 起不再作为回滚源）。
 
-    用于「同机换号」场景：本局对旧档的写入必须撤回，宁可丢窗口内少量写入也不混档。
+    问题（研究线 2026-11-23 反馈）：``.bak`` 只是「上一次保存的上一版」单槽 ——
+    同局连续写 3 次后回滚只会退到第 2 次，前两次写入仍留在档里（部分写入）。
+    现在由 `restore_session_snapshot()`（会话基准快照）承担回滚；本函数只保留给
+    手工作业/旧测试，别再接到引擎主流程上。
     """
     p = store.path()
     bak = p.with_name(store.save_id + ".json.bak")
@@ -371,15 +631,24 @@ def rollback_from_backup(store: "SaveStore") -> bool:
         return False
 
 
-def write_orphan(save_id, doc, root=None, reason: str = "dirty") -> str:
-    """把「不属于任何现有玩家」的增量写入 ``_orphan/<ts>-<src>.json``，供人工处理。"""
+def write_orphan(save_id, doc, root=None, reason: str = "dirty", extra=None) -> str:
+    """把「不属于任何现有玩家」的整份脏档写入 ``_orphan/<ts>-<src>.json``，供人工处理。
+
+    存的是**回滚前的脏档全文**（研究线要求）+ ``extra`` 里的审计信息：
+    脏档/回滚后 hash、被丢弃条目摘要、回滚方式 —— 事后能核对「到底哪些条被丢弃」。
+    """
     base = _saves_root(root) / "_orphan"
-    base.mkdir(parents=True, exist_ok=True)
     name = "%s-%s-%s.json" % (time.strftime("%Y%m%d-%H%M%S"), normal_save_id(save_id), reason)
     p = base / name
+    payload = {"created_at": _now(), "save_id": normal_save_id(save_id),
+               "reason": str(reason), "doc_sha": doc_sha(doc), "doc": doc or {}}
+    if isinstance(extra, dict):
+        payload.update(extra)
     try:
-        p.write_text(json.dumps(doc or {}, ensure_ascii=False, indent=1), encoding="utf-8")
-        log("⚠ 存档增量已另存 orphan：%s（来源档 %s）" % (p, save_id))
+        base.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+        log("⚠ 存档增量已另存 orphan：%s（来源档 %s，hash %s）"
+            % (p, save_id, payload["doc_sha"]))
         return str(p)
     except OSError as e:
         log("orphan 写入失败（%s）：%r" % (p, e))
@@ -392,8 +661,9 @@ def switch_identity(store: "SaveStore", *, hd2_account=None, steam_id=None,
 
       * 旧档 ``local``/未识别 → **合并**进目标档（等价 adopt_identity）；
       * 旧档是另一个**已识别**档（同机换 Steam 号）→ **不合并**，只返回目标档；
-        本局对旧档的写入由调用方（引擎）用 ``rollback_from_backup`` 撤回，
-        并把增量 ``write_orphan`` 另存（引擎侧有 session_dirty 时才做）。
+        本局对旧档的写入由调用方（引擎）先用 `restore_session_snapshot()` 整档回滚
+        （回滚粒度见模块头注释），再把脏档 `write_orphan()` 另存 —— 引擎侧只看
+        ``session_dirty``（本局有没有写过）决定要不要回滚。
 
     返回 ``{"action": "same"|"merged"|"switched", "store": SaveStore,
              "old_identified": bool, "target_id": str}``。
@@ -404,7 +674,7 @@ def switch_identity(store: "SaveStore", *, hd2_account=None, steam_id=None,
     old_identified = is_identified(current)
     if target_id == store.save_id:
         target = store
-        target.set_identity(hd2_account, steam_id)
+        target.set_identity(hd2_account, steam_id, source="getmotd")
         action = "same"
     elif not old_identified:
         target = store.adopt_identity(hd2_account=hd2_account, steam_id=steam_id,
@@ -412,7 +682,7 @@ def switch_identity(store: "SaveStore", *, hd2_account=None, steam_id=None,
         action = "merged"
     else:
         target = SaveStore(target_id, root=base_root)
-        target.set_identity(hd2_account, steam_id)
+        target.set_identity(hd2_account, steam_id, source="getmotd")
         write_last(target_id, steam_id, hd2_account, root=base_root)
         log("⚠ 身份切换：旧档 %s（已识别）→ 新档 %s；不合并（避免跨玩家混档）"
             % (store.save_id, target_id))
@@ -452,6 +722,7 @@ class SaveStore:
             return empty_save(self.save_id)
         doc.setdefault("save_id", self.save_id)
         doc["earned"] = _normalize_earned(doc)
+        _normalize_identity(doc)
         return doc
 
     def _quarantine(self, p: Path, why: str) -> None:
@@ -516,18 +787,26 @@ class SaveStore:
             self.set_catalog_build(info["value"])
         return info
 
-    def bind_identity(self, hd2_account=None, steam_id=None) -> dict:
+    def bind_identity(self, hd2_account=None, steam_id=None, source=None) -> dict:
         """把后观测到的身份别名写进当前档（主键不变；20 位 HD2 id 只是别名）。"""
-        return self.set_identity(hd2_account, steam_id)
+        return self.set_identity(hd2_account, steam_id, source=source)
 
-    def set_identity(self, hd2_account=None, steam_id=None) -> dict:
-        """记录身份别名（不影响 save_id；换档见 adopt_identity）。"""
+    def set_identity(self, hd2_account=None, steam_id=None, source=None) -> dict:
+        """记录身份别名 + **识别来源审计**（``source`` = getmotd / getmessages / adopted）。
+
+        不影响 save_id（换档见 adopt_identity）。``identified_at`` 只记第一次
+        「这份档认到身份」的时刻 —— 排查「这档是怎么来的」时这行最省时间（研究线建议）。
+        """
         def _mut(doc):
             ident = doc.setdefault("identity", {})
             if hd2_account:
                 ident["hd2_account_id"] = str(hd2_account)
             if steam_id:
                 ident["steam_id"] = str(steam_id)
+            if source:
+                ident["source"] = str(source)
+            if is_identified(doc) and not ident.get("identified_at"):
+                ident["identified_at"] = _now()
         return self.update(_mut)
 
     def adopt_identity(self, *, hd2_account=None, steam_id=None, root=None):
@@ -544,7 +823,7 @@ class SaveStore:
         mine = self.load()
         has_content = any(bool(v) for v in (mine.get("earned") or {}).values())
         if target_id == self.save_id:
-            target.set_identity(hd2_account, steam_id)
+            target.set_identity(hd2_account, steam_id, source="adopted")
             return target
         if target.path().exists():
             if has_content:
@@ -555,7 +834,7 @@ class SaveStore:
                 target.save(theirs)
         elif has_content:
             target.save(mine)
-        target.set_identity(hd2_account, steam_id)
+        target.set_identity(hd2_account, steam_id, source="adopted")
         if has_content:
             _archive_save(self, "merged")
         return target
