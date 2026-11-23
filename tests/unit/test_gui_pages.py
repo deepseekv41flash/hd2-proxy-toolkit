@@ -202,6 +202,25 @@ def test_status_page_refresh_and_status(root, app):
     assert app.profile["status"]["variants"] == []
 
 
+def test_status_page_shows_save_state(root, app):
+    """G2：顶部一行显示「哪份存档在生效 / 校验了没 / 本局有没有写入」。"""
+    page = _make(StatusPage, root, app)
+    save = {"save_id": "steam_76561199881579811", "origin": "last",
+            "verified": False, "session_dirty": False}
+    page.on_status({**MINIMAL_STATUS, "save": save})
+    assert "steam_76561199881579811" in page.save_lbl.cget("text")
+    assert "待校验" in page.save_lbl.cget("text")
+
+    page.on_status({**MINIMAL_STATUS, "save": {**save, "verified": True, "session_dirty": True}})
+    assert "已校验" in page.save_lbl.cget("text")
+    assert "本局有写入" in page.save_lbl.cget("text")
+
+    page.on_status(MINIMAL_STATUS)          # 旧引擎 / saves 关闭：没有 save 字段
+    assert page.save_lbl.cget("text") == "存档 未启用"
+    page.on_status(None)
+    assert page.save_lbl.cget("text") == ""
+
+
 def test_status_add_variant_and_dedup(root, app):
     page = _make(StatusPage, root, app)
     page.variant_dd.select_index(0)

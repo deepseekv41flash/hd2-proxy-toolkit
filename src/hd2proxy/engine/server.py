@@ -25,7 +25,8 @@ import time
 from pathlib import Path
 
 from . import certs, diagnostics, hosts as hosts_mod, httpio, logutil, model, paths, upstream
-from .hooks import capture, inventory, items, warinfo
+from .active_save import ActiveSave
+from .hooks import capture, inventory, items, progression, warinfo
 from .logutil import log, log_throttled, rotate_logs
 from .model import Mod, resolve_plan, rewrite_status
 
@@ -35,6 +36,7 @@ class Proxy:
     def __init__(self, mod, cert_dir, send_chain=False, spec=None):
         self.mod = mod
         self.spec = spec                      # EngineSpec | None（None = 研究线旧行为）
+        self.save = None                      # ActiveSave | None（G2 存档层，main() 里挂）
         self.started_at = time.time()
         self.rewrites = []                    # 最近改写事件（控制面/GUI 读）
         self.cert_dir = Path(cert_dir)
@@ -86,6 +88,32 @@ class Proxy:
                 del self.rewrites[:-200]
         except Exception:
             pass
+
+    def _save_observe(self, path, body, hdrs):
+        """G2 存档层：从**上游原始响应**里记身份与目录（不参与改写，失败只记日志）。
+
+        为什么用原始 body：``items`` 的 catalog_build 必须取**注入前**响应，否则会随
+        profile 配置漂移、失去跨版本可比性（研究线 2026-11-23 口径）。
+        """
+        save = self.save
+        if save is None:
+            return
+        if paths.GETMOTD_MARK in path or paths.GETMESSAGES_MARK in path:
+            plain, _ = httpio.maybe_gunzip(body, hdrs)
+            try:
+                doc = json.loads(plain)
+            except (ValueError, TypeError):
+                return
+            account = doc.get("accountId") if isinstance(doc, dict) else None
+            if not account:
+                return
+            if paths.GETMOTD_MARK in path:
+                save.on_getmotd(account)      # SteamID64（主键）
+            else:
+                save.on_getmessages(account)  # HD2 20 位 id（只作别名）
+        elif paths.ITEMS_PATH in path:
+            plain, _ = httpio.maybe_gunzip(body, hdrs)
+            save.record_items(plain)
 
     def on_sni(self, sslsock, servername, ctx):
         # 单域名白名单：别的 SNI 一律拒绝（不是开放代理）
@@ -152,6 +180,12 @@ class Proxy:
                     path, body, hdrs,
                     method=first.split(" ")[0] if " " in first else "",
                     spec=self._capture_spec())
+                # G2：登录**请求体**里的 clientVersion（catalog_build 的第三段，不是必需字段）
+                if self.save is not None and body and paths.LOGIN_PATH in path:
+                    try:
+                        self.save.note_login(body)
+                    except Exception as e:        # noqa: BLE001
+                        log("clientVersion 记录失败：%r" % e)
                 try:
                     ip, port = upstream.upstream_addr(self.mod, self.mod.host)
                     raw = socket.create_connection((ip, port), timeout=20)
@@ -349,6 +383,27 @@ class Proxy:
                             % (cz_hits, " [from gzip]" if was_gz else ""), audit=True)
                         self._note("customize", "%d slot(s)" % cz_hits)
 
+                # ---- G2 存档层：身份/目录记录 + Progression 根响应合并 ----
+                # 与上面的「配置驱动改写链」正交：只认精确根路径 `/api/Progression`，
+                # 身份与目录取**上游原始响应**（items 必须注入前，否则 catalog_build 漂移）。
+                if self.save is not None and not self.mod.passthrough and rbody:
+                    try:
+                        self._save_observe(path, rbody, rhdrs)
+                        if progression.is_root_path(path):
+                            plain, was_gz = httpio.maybe_gunzip(rbody, rhdrs)
+                            new_body, save_n = progression.apply(plain, self.save)
+                            if save_n:
+                                out_body = new_body
+                                rewrite_added = save_n
+                                dropped_encoding = was_gz
+                                self.stats["rewrite"] += 1
+                                log("SAVE REWRITE +%d field(s)（存档 %s）%s"
+                                    % (save_n, self.save.save_id,
+                                       " [from gzip]" if was_gz else ""), audit=True)
+                                self._note("save", "+%d field(s)" % save_n)
+                    except Exception as e:    # noqa: BLE001 - 存档层异常绝不打断游戏
+                        log("存档层处理失败（本次跳过）：%r" % e)
+
                 # 只要动过 body（去 chunk / 解 gzip / 改写）就必须重写响应头，
                 # 否则客户端仍按 chunked 或旧长度解析 → 直接失败
                 # （curl 表现为 HTTP 200 + 0 字节 + exit 56）。
@@ -489,6 +544,7 @@ class EngineContext:
             "cert": _certs.cert_status(self.cert_dir),
             "planets": self.mod.target_planets(),
             "capture": _capture_state(proxy),
+            "save": (proxy.save.status() if proxy.save is not None else None),
             "rewrites": list(proxy.rewrites)[-50:],
             "log": str(paths.PROXY_LOG),
         }
@@ -665,6 +721,20 @@ def main(argv=None):
     # ---- 5. 起代理 ----------------------------------------------------------
     send_chain = (a.cert_mode == "ca" or certs._session_mode(cert_dir) == "ca")
     proxy = Proxy(mod, cert_dir, send_chain=send_chain, spec=spec)
+    # ---- 5b. G2 存档层：profile 模式才启用；legacy 模式保持旧行为（不写盘） ----
+    if spec is not None and (spec.saves or {}).get("enabled"):
+        try:
+            sv = spec.saves or {}
+            proxy.save = ActiveSave(wait_seconds=sv.get("wait_seconds", 1.2),
+                                    strict=bool(sv.get("identity_strict", False)))
+            st = proxy.save.start()
+            if st.get("origin") == "last":
+                log("存档：首屏预绑定 %s（身份待 GetMotd 校验）" % st.get("save_id"), audit=True)
+            else:
+                log("存档：无历史档，先按 local 渲染（等身份到达后迁移）", audit=True)
+        except Exception as e:                # noqa: BLE001 - 存档层失败不能挡住代理
+            log("⚠ 存档层启动失败（继续以无存档模式运行）：%r" % e)
+            proxy.save = None
     rotate_logs()
     srv = None
     last_err = None
@@ -728,10 +798,22 @@ def main(argv=None):
                 proxy.spec = new_spec
                 mod.passthrough = bool(new_spec.passthrough)
                 logutil.VERBOSE = bool(new_spec.verbose or logutil.VERBOSE)
+                # 存档层：wait_seconds / identity_strict 可热改；enabled 需要重启引擎
+                if proxy.save is not None:
+                    sv = new_spec.saves or {}
+                    try:
+                        proxy.save.wait_seconds = max(
+                            0.0, float(sv.get("wait_seconds", proxy.save.wait_seconds)))
+                        proxy.save.strict = bool(sv.get("identity_strict", proxy.save.strict))
+                    except (TypeError, ValueError):
+                        pass
+                    if not sv.get("enabled", True):
+                        log("⚠ profile 关闭了 saves.enabled：存档层需重启引擎才停用（本次继续生效）")
                 active = [k for k, v in (
                     ("warinfo", new_spec.warinfo), ("status_extra", new_spec.status_extra),
                     ("status_plan", new_spec.status_plan), ("inventory", new_spec.inventory),
                     ("items", new_spec.items), ("customize", new_spec.customize),
+                    ("saves", (new_spec.saves or {}).get("enabled")),
                     ("capture", (new_spec.capture or {}).get("enabled"))) if v]
                 log("profile 热重载: %s · passthrough=%s · 生效钩子=%s"
                     % (profile_doc.get("name") or "?", new_spec.passthrough,
@@ -762,6 +844,11 @@ def main(argv=None):
         try:
             if ctx.control is not None:
                 ctx.control.stop()
+        except Exception:
+            pass
+        try:
+            if proxy.save is not None:
+                proxy.save.close()
         except Exception:
             pass
 

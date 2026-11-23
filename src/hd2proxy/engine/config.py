@@ -56,6 +56,8 @@ DEFAULT_PROFILE = {
         "enabled": False, "dir": "", "paths": ["api/"], "req_paths": [],
         "max_bytes": 8388608, "planet_settings": False,
     },
+    # G2 存档层：每玩家可持久化的 earned 账本（Progression 根响应合并）
+    "saves": {"enabled": True, "wait_seconds": 1.2, "identity_strict": False},
     "experimental": {"customize": {"enabled": False, "edits": []}},
 }
 
@@ -379,6 +381,20 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
         errors.append("capture.planet_settings 必须是 true/false")
     doc["capture"] = cap
 
+    # ---- saves（G2 存档层）-------------------------------------------------
+    sv = _as_dict(doc.get("saves"))
+    if not isinstance(sv.get("enabled"), bool):
+        errors.append("saves.enabled 必须是 true/false")
+    ws = sv.get("wait_seconds")
+    if (not isinstance(ws, (int, float)) or isinstance(ws, bool)
+            or not (0 <= float(ws) <= 10)):
+        errors.append("saves.wait_seconds 必须是 0..10 的数字（秒；无 _last 时首屏最多等身份多久）")
+    else:
+        sv["wait_seconds"] = float(ws)
+    if not isinstance(sv.get("identity_strict"), bool):
+        errors.append("saves.identity_strict 必须是 true/false")
+    doc["saves"] = sv
+
     # ---- experimental -----------------------------------------------------
     exp = _as_dict(doc.get("experimental"))
     cz = _as_dict(exp.get("customize"))
@@ -627,6 +643,17 @@ def to_engine_spec(profile: dict, catalog_doc=None) -> EngineSpec:
     else:
         spec.capture = {"enabled": False, "dir": "", "paths": [], "req_paths": [],
                         "max_bytes": _int(cap.get("max_bytes"), 8 << 20) or (8 << 20)}
+
+    # saves（G2 存档层：Progression 根响应合并 + 首屏预绑定/身份校验）
+    sv = _as_dict(raw.get("saves"))
+    wait = sv.get("wait_seconds")
+    if not isinstance(wait, (int, float)) or isinstance(wait, bool):
+        wait = 1.2
+    spec.saves = {
+        "enabled": bool(sv.get("enabled", True)),
+        "wait_seconds": max(0.0, min(10.0, float(wait))),
+        "identity_strict": bool(sv.get("identity_strict", False)),
+    }
 
     spec.warnings = list(dict.fromkeys([w for w in warnings if w]))
     return spec

@@ -47,6 +47,9 @@ class StatusPage(Page):
         top.pack(fill="x", padx=22, pady=(0, 8))
         self.profile_lbl = tk.Label(top, text="", bg=theme.BG, fg=theme.MUTED, font=theme.F_S)
         self.profile_lbl.pack(side="left")
+        # G2：存档状态（谁在生效 / 本局校验了没 / 有没有写入）——实机排查 "档对不上" 的第一现场
+        self.save_lbl = tk.Label(top, text="", bg=theme.BG, fg=theme.DIM, font=theme.F_S)
+        self.save_lbl.pack(side="left", padx=(14, 0))
         self.engine_lbl = tk.Label(top, text="引擎 未运行", bg=theme.BG, fg=theme.DIM,
                                    font=theme.F_S)
         self.engine_lbl.pack(side="right")
@@ -825,6 +828,23 @@ class StatusPage(Page):
         else:
             self.engine_lbl.configure(text="引擎 未运行（配置照常可改，保存到 profile）",
                                       fg=theme.DIM)
+        self._render_save((status or {}).get("save") or {}, engine_up=bool(status))
+
+    def _render_save(self, save, *, engine_up=True):
+        """存档一行：``存 steam_… · 已校验``；未启用/未运行时给明确字样（不装"正常"）。"""
+        if not save.get("save_id"):
+            self.save_lbl.configure(text=("存档 未启用" if engine_up else ""), fg=theme.DIM)
+            return
+        if save.get("verified"):
+            state = "已校验"
+        elif save.get("origin") == "last":
+            state = "预绑定·待校验"
+        else:
+            state = "待校验"
+        if save.get("session_dirty"):
+            state += "·本局有写入"
+        self.save_lbl.configure(text="存档 %s · %s" % (save.get("save_id"), state),
+                                fg=theme.MUTED)
 
 
 # ---------------------------------------------------------------- 小工具

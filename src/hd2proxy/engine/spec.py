@@ -35,6 +35,8 @@ class EngineSpec:
     items: dict | None = None
     customize: dict | None = None
     capture: dict | None = None
+    # G2 存档层：{"enabled","wait_seconds","identity_strict"}；None = 未启用（legacy 模式）
+    saves: dict | None = None
 
     # ---- 运行期附加信息（不参与改写，供控制面/日志展示） --------------------
     profile_name: str = ""
@@ -56,6 +58,7 @@ class EngineSpec:
                 "items": self.items,
                 "customize": self.customize,
                 "capture": self.capture,
+                "saves": self.saves,
             },
             "profile_name": self.profile_name,
             "warnings": list(self.warnings),

@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from hd2proxy.engine import certs, config, paths
+from hd2proxy.engine import certs, config, paths, saves
 
 REPO = Path(__file__).resolve().parents[2]
 ENGINE = REPO / "src" / "hd2proxy" / "engine" / "legacy_proxy.py"
@@ -276,6 +276,67 @@ def test_engine_profile_control_flow(tmp_path):
             api(state_file, "/shutdown", method="POST", body={})
             assert proc.wait(15) == 0
             assert not state_file.exists(), "退出后应清理 engine.json"
+        finally:
+            if proc.poll() is None:
+                proc.terminate()
+                try:
+                    proc.wait(5)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+
+
+def test_engine_save_layer_rewrites_progression(tmp_path):
+    """G2 端到端：存档 earned 合并进 `/api/Progression` + 会话基准/pending + /status 暴露。"""
+    state_file = tmp_path / "state" / "engine.json"
+    cert_dir = tmp_path / "certs"
+    certs.generate_session(cert_dir, host=HOST, days=1, force=True)
+    _write_hosts(tmp_path / "hosts")
+    _certutil_stub(tmp_path)
+
+    # 预置「上次玩过的玩家」存档 + _last 指针（引擎启动会乐观预绑定它）
+    saves_root = tmp_path / "run" / "runtime" / "saves"
+    steam_id = "76561198968648344"
+    sid = saves.save_id_for(steam_id)
+    st = saves.SaveStore(sid, root=saves_root)
+    doc = saves.empty_save(sid)
+    doc["earned"]["experience"] = 2759938
+    doc["earned"]["inventory_amounts"] = {"3901895556": 699}
+    st.save(doc)
+    saves.write_last(sid, steam_id, None, root=saves_root)
+
+    up_port, port, crl_port, ctl_port = (free_port() for _ in range(4))
+    profile_path = _make_profile(tmp_path, port=port, crl_port=crl_port,
+                                 control_port=ctl_port)
+    cfg_path = tmp_path / "legacy_cfg.json"
+    cfg_path.write_text(json.dumps({"host": HOST,
+                                    "upstreamTest": "127.0.0.1:%d" % up_port}),
+                        encoding="utf-8")
+    with _Upstream(up_port):
+        proc = start_engine(tmp_path, profile_path, cert_dir, port, ctl_port,
+                            extra_args=("--config", str(cfg_path)))
+        try:
+            wait_engine(state_file)
+
+            # 1) 上游只给 {"id":801}，改写后首屏 experience 应该是存档里的值
+            head, body = tls_get(port, "/api/Progression", cert_dir)
+            assert " 200 " in (" " + (head.splitlines()[0] if head else "") + " "), head[:80]
+            plain = gzip.decompress(body) if body[:2] == b"\x1f\x8b" else body
+            prog = json.loads(plain.decode("utf-8"))
+            assert prog["experience"] == 2759938
+            assert prog["id"] == 801                     # 其余字段原样保留
+
+            # 2) /status 暴露存档状态（GUI 排查用）
+            save_state = api(state_file, "/status")["save"]
+            assert save_state["save_id"] == sid and save_state["origin"] == "last"
+            assert save_state["verified"] is False      # 本局还没等到 GetMotd
+            assert save_state["catalog_build"] is None
+
+            # 3) 会话基准快照 + pending（身份未校验时保留，供下次启动回滚）
+            assert saves.read_session_snapshot(sid, root=saves_root)["doc"]["earned"]["experience"] == 2759938
+            assert saves.read_pending(root=saves_root)["save_id"] == sid
+
+            api(state_file, "/shutdown", method="POST", body={})
+            assert proc.wait(15) == 0
         finally:
             if proc.poll() is None:
                 proc.terminate()

@@ -78,6 +78,12 @@ INV_PATH = "/api/Progression/inventory"
 ITEMS_PATH = "/api/Progression/items"
 CUSTOMIZE_PATH = "/api/Progression/Items/Customize/v2"
 
+# ---- G2 存档层：这几条必须**精确匹配**（`/api/Progression` 是上面几条的前缀！） ----
+PROG_PATH = "/api/Progression"                 # 根进度响应：一次会话只拉一次 → 存档首屏
+GETMOTD_MARK = "/api/Pes/GetMotd"             # 响应 accountId = SteamID64（存档主键来源）
+GETMESSAGES_MARK = "/api/Pes/GetMessages"     # 响应 accountId = HD2 20 位 id（只作别名）
+LOGIN_PATH = "/api/Account/Login"             # 请求体带 clientVersion（catalog_build 辅字段）
+
 # ---- 运行期状态文件（热重载：每个响应到达时现读） ---------------------------
 INV_STATE = RUNTIME / "inventory_inject.json"
 # 附件解锁注入（独立开关）：附件在服务端是 inventory 里的一行，mixId = 附件在该武器上的库存键，

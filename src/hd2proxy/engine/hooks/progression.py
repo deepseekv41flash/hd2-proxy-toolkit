@@ -1,0 +1,32 @@
+"""DSH_SAVE_PROG_V1：``/api/Progression`` 根响应合并存档 earned（G2）。
+
+为什么单独一个钩子：这是**首屏进度响应**，也是整个存档系统里唯一必须「先选档再渲染」的
+一处 —— 客户端一次会话只拉它一次（时序见 `engine/active_save.py` 模块注释）。
+
+边界（有意为之）：
+
+  * **只认精确根路径** `/api/Progression`（去 query / 尾斜杠后比较）。它是
+    `/api/Progression/inventory|items|levelspec|ProgressionPackages|ItemPackages` 的**前缀**，
+    用子串匹配会把库存/目录/等级表一起改坏；
+  * 纯函数式：``apply(body, save)`` 吃 bytes/str/dict + `ActiveSave`，返回 (body, 改动字段数)；
+  * 等待身份 / 加锁 / 会话快照都在 `ActiveSave` 里，本模块不含状态，便于离线单测。
+"""
+
+from ..paths import PROG_PATH
+
+
+def is_root_path(path: str) -> bool:
+    """是否 `/api/Progression` 根路径（去 query / 尾斜杠后**精确**相等）。"""
+    raw = str(path or "").split("?", 1)[0].rstrip("/")
+    return raw == PROG_PATH
+
+
+def apply(body, save):
+    """把存档 earned 合并进 Progression 根响应。
+
+    ``save`` 为 ``ActiveSave``（None = 存档层未启用 → 原样返回）。
+    返回 ``(new_body, 改动字段数)``；无改动时 body 原样返回（引用相同，便于上层判等）。
+    """
+    if save is None:
+        return body, 0
+    return save.apply_progression(body)
