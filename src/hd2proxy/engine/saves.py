@@ -31,9 +31,11 @@ from pathlib import Path
 from . import paths
 from .logutil import log
 
-SAVE_SCHEMA = 1
+SAVE_SCHEMA = 2                  # 2: + catalog_build / identity（2026-11-23 研究线反馈）
 DEFAULT_SAVE_ID = "local"
 _SAVE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+_HD2_ID_RE = re.compile(r"^\d{17,20}$")      # HD2 accountId：20 位数字（GetMessages）
+_STEAM_ID_RE = re.compile(r"^7656119\d{10}$")  # SteamID64：17 位（GetMotd）
 
 
 # --------------------------------------------------------------------------- #
@@ -64,6 +66,25 @@ def normal_save_id(save_id=None) -> str:
     return DEFAULT_SAVE_ID
 
 
+def save_id_for(hd2_account=None, steam_id=None) -> str:
+    """身份 → 存档 id：优先 HD2 20 位账号 id，其次 SteamID64，都没有则 ``local``。
+
+    来源（2026-11-23 研究线实测，别重推）：
+      * ``POST /api/Pes/GetMessages`` 响应 ``accountId`` = **20 位 HD2 账号 id**；
+      * ``POST /api/Pes/GetMotd`` 响应 ``accountId`` = **SteamID64（17 位）**；
+      * 两者都是**响应**里拿到的，不需要解析 Steam 票据。
+    实测时机（两账号抓包）：GetMotd 在登录后 +24~42 s；GetMessages 只在新号会话出现（登录后 +3m9s）。
+    所以引擎侧要先 ``local`` 起档，见到身份后走 ``adopt_identity`` 迁移。
+    """
+    hd2 = "" if hd2_account is None else str(hd2_account).strip()
+    steam = "" if steam_id is None else str(steam_id).strip()
+    if hd2 and _HD2_ID_RE.match(hd2):
+        return hd2
+    if steam and _STEAM_ID_RE.match(steam):
+        return "steam_" + steam
+    return DEFAULT_SAVE_ID
+
+
 def empty_save(save_id=None) -> dict:
     """空档：等价于「空号基线 + 什么都没挣到」。"""
     sid = normal_save_id(save_id)
@@ -73,6 +94,10 @@ def empty_save(save_id=None) -> dict:
         "save_id": sid,
         "created_at": now,
         "updated_at": now,
+        # 目录漂移追溯（Progression/items 会随 build 变；11-16→11-18 多 1 行）
+        "catalog_build": None,
+        # 身份别名（只用于选档/排障，不做鉴权）：HD2 20 位账号 id / SteamID64
+        "identity": {"hd2_account_id": None, "steam_id": None},
         "earned": {
             # /api/Progression 根
             "experience": 0,
@@ -189,6 +214,43 @@ class SaveStore:
     def reset(self) -> dict:
         """清空成空档（旧文件留 .bak）。"""
         return self.save(empty_save(self.save_id))
+
+    def set_catalog_build(self, build) -> dict:
+        """记录本次目录对应的游戏 build（Progression/items 会随版本漂移，必须可追溯）。"""
+        if build in (None, ""):
+            return self.load()
+
+        def _mut(doc):
+            doc["catalog_build"] = str(build)
+        return self.update(_mut)
+
+    def set_identity(self, hd2_account=None, steam_id=None) -> dict:
+        """记录身份别名（不影响 save_id；换档见 adopt_identity）。"""
+        def _mut(doc):
+            ident = doc.setdefault("identity", {})
+            if hd2_account:
+                ident["hd2_account_id"] = str(hd2_account)
+            if steam_id:
+                ident["steam_id"] = str(steam_id)
+        return self.update(_mut)
+
+    def adopt_identity(self, hd2_account=None, steam_id=None, root=None):
+        """见到真实身份后把 ``local`` 档迁移到身份档；返回身份档的 SaveStore。
+
+        规则：目标档已存在 → 直接用它（不动），仅把身份写进去；目标不存在且本档有内容 →
+        把本档复制过去（保留 local 作为兜底）；本档为空 → 不迁移。
+        """
+        target_id = save_id_for(hd2_account, steam_id)
+        target = SaveStore(target_id, root=root or self.root)
+        if target_id == self.save_id:
+            target.set_identity(hd2_account, steam_id)
+            return target
+        if not target.path().exists():
+            mine = self.load()
+            if any(bool(v) for v in (mine.get("earned") or {}).values()):
+                target.save(mine)
+        target.set_identity(hd2_account, steam_id)
+        return target
 
     # ---- 便捷：累计「已获得」 --------------------------------------
     def add_experience(self, amount) -> dict:

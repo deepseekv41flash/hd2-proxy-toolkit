@@ -189,3 +189,50 @@ def test_earned_normalized_on_load(tmp_path):
     doc = st.load()
     assert doc["earned"]["experience"] == 7
     assert doc["earned"]["inventory_amounts"] == {}   # 老/残缺档会被补齐
+
+
+# ---------------------------------------------------------------- 身份 / 目录追溯（v2）
+
+def test_save_id_for_identity_forms():
+    assert saves.save_id_for("13887067702231565058") == "13887067702231565058"
+    assert saves.save_id_for(None, "76561199881579811") == "steam_76561199881579811"
+    assert saves.save_id_for() == saves.DEFAULT_SAVE_ID
+    assert saves.save_id_for("", "") == saves.DEFAULT_SAVE_ID
+    # 非法形态不采信（长度不对/含字母）
+    assert saves.save_id_for("abc123") == saves.DEFAULT_SAVE_ID
+
+
+def test_save_schema_has_catalog_build_and_identity():
+    doc = saves.empty_save()
+    assert doc["catalog_build"] is None
+    assert doc["identity"] == {"hd2_account_id": None, "steam_id": None}
+
+
+def test_store_set_catalog_build_and_identity(tmp_path):
+    st = saves.SaveStore(root=tmp_path)
+    st.set_catalog_build(26568081)
+    st.set_identity("13887067702231565058", "76561199881579811")
+    doc = st.load()
+    assert doc["catalog_build"] == "26568081"
+    assert doc["identity"]["hd2_account_id"] == "13887067702231565058"
+    assert doc["identity"]["steam_id"] == "76561199881579811"
+
+
+def test_adopt_identity_migrates_local_content(tmp_path):
+    local = saves.SaveStore(root=tmp_path)
+    local.add_experience(936)
+    migrated = local.adopt_identity("13887067702231565058", root=tmp_path)
+    assert migrated.save_id == "13887067702231565058"
+    assert migrated.load()["earned"]["experience"] == 936
+    assert migrated.load()["identity"]["hd2_account_id"] == "13887067702231565058"
+    # 目标档已存在时不覆盖
+    migrated.add_experience(5)
+    again = local.adopt_identity("13887067702231565058", root=tmp_path)
+    assert again.load()["earned"]["experience"] == 941
+
+
+def test_adopt_identity_skips_empty_local(tmp_path):
+    local = saves.SaveStore(root=tmp_path)
+    migrated = local.adopt_identity(None, "76561199881579811", root=tmp_path)
+    assert migrated.save_id == "steam_76561199881579811"
+    assert migrated.load()["earned"]["experience"] == 0
