@@ -1122,7 +1122,12 @@ def apply_to_progression(body, save: dict):
 def apply_to_inventory(body, save: dict):
     """把存档的 earned 合并进 ``GET /api/Progression/inventory`` 响应体。
 
-    ``inventory_amounts`` 是**绝对数量**（G5 的 consume 会把它减下去），这里直接覆盖；
+    **数量只抬不降**：``inventory_amounts`` 与响应里的 amount 取 **max**，
+    绝不把服务端的数量改小。原因（2026-11-23 实机验收前复核）：
+      * 本机账本只记录"经过存档层"的增量（结算奖励/消耗），**不知道玩家历史基线**；
+      * 早期实现是"绝对值覆盖"，会把老玩家 5000 货币显示成"本局奖励那点"——解锁时直接被判余额不足；
+      * 服务端仍是事实源：它给得更多就听它的；它给得更少（离线/私服/回滚）才用本机账本兜底。
+    代价：纯本机消耗（服务端没扣）不会在界面上减数量——可接受，服务端真实扣减时它会跟着降。
     ``inventory_ids`` 只保证条目存在。返回 (新 body, 改动数)。
     """
     doc, as_bytes = _decode(body)
@@ -1143,16 +1148,19 @@ def apply_to_inventory(body, save: dict):
         mix = _as_int(key, -1)
         if mix < 0:
             continue
-        amount = max(0, _as_int(value))
+        ledger = max(0, _as_int(value))
         row = by_mix.get(mix)
         if row is None:
-            items.append({"mixId": mix, "amount": amount, "isDiscovered": False})
-            changed += 1
-        elif _as_int(row.get("amount")) != amount:
-            row["amount"] = amount
+            items.append({"mixId": mix, "amount": ledger, "isDiscovered": False})
             changed += 1
         else:
-            continue
+            # 只抬不降：服务端数量更大时保留服务端的（历史基线我们不知道）
+            amount = max(_as_int(row.get("amount")), ledger)
+            if _as_int(row.get("amount")) != amount:
+                row["amount"] = amount
+                changed += 1
+            else:
+                continue
         by_mix[mix] = row
 
     for mix_raw in _as_list(earned.get("inventory_ids")):

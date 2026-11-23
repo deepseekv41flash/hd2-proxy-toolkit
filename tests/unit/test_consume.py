@@ -161,16 +161,16 @@ def test_record_consume_logs_info_with_mission(tmp_path, monkeypatch):
     mgr.start()
     mgr.record_consume(json.dumps({"items": [{"mixId": 3901895556, "amount": 3}]}).encode())
     text = "\n".join(lines)
-    assert "CONSUME mixId=3901895556 amount=3：存档 8 → 5（mission m-1）" in text
+    assert "UNLOCK-COST mixId=3901895556 amount=3：存档 8 → 5（mission m-1）" in text
     mgr.close()
 
 
-def test_consumed_amount_shows_in_inventory_response(tmp_path):
-    """扣到 0 后，下一次 inventory 响应里该行仍是 0（不是被删/回落成旧值）。"""
-    sid = make_save(tmp_path, amounts={"3901895556": 2})
+def test_consumed_amount_shows_when_ledger_was_above_server(tmp_path):
+    """账本数量高于服务端时（本机收益场景），扣减后的数量会如实显示出来。"""
+    sid = make_save(tmp_path, amounts={"3901895556": 10})
     mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
     mgr.start()
-    mgr.record_consume(json.dumps({"items": [{"mixId": 3901895556, "amount": 5}]}).encode())
+    mgr.record_consume(json.dumps({"items": [{"mixId": 3901895556, "amount": 4}]}).encode())
     mgr.close()
 
     body = json.dumps({"items": [{"mixId": 3901895556, "amount": 2, "isDiscovered": False}]}).encode()
@@ -179,6 +179,23 @@ def test_consumed_amount_shows_in_inventory_response(tmp_path):
     import hd2proxy.engine.saves as _saves
     out, changed = _saves.apply_to_inventory(body, mgr2._store.load())
     got = json.loads(out)
-    assert changed == 1 and got["items"][0]["amount"] == 0
-    assert len(got["items"]) == 1                # 行保留（不新增、不删除）
+    assert changed == 1 and got["items"][0]["amount"] == 6      # 账本 10-4=6 > 服务端 2
+    assert len(got["items"]) == 1                              # 行保留（不新增、不删除）
+    mgr2.close()
+
+
+def test_consumed_amount_never_lowers_real_server_value(tmp_path):
+    """账本低于服务端（历史基线未知）时，扣减不会把服务端数量改小 —— 只抬不降。"""
+    sid = make_save(tmp_path, amounts={"3901895556": 2})
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    mgr.record_consume(json.dumps({"items": [{"mixId": 3901895556, "amount": 5}]}).encode())
+    mgr.close()
+
+    body = json.dumps({"items": [{"mixId": 3901895556, "amount": 500, "isDiscovered": False}]}).encode()
+    mgr2 = active_save.ActiveSave(root=tmp_path, run_id="r2")
+    mgr2.start()
+    import hd2proxy.engine.saves as _saves
+    out, changed = _saves.apply_to_inventory(body, mgr2._store.load())
+    assert changed == 0 and json.loads(out)["items"][0]["amount"] == 500
     mgr2.close()

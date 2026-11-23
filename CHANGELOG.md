@@ -6,6 +6,33 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.5.4-alpha.3（2026-11-23）— 修复：库存数量被本机账本改小（只抬不降）+ 续期后信任失效 + consume 语义纠正
+
+- **实机验收前复核发现的两个"会让用户少东西 / 连不上"级缺陷**：
+  1. **库存数量会被改小**：`apply_to_inventory` 原先按账本**绝对数量覆盖**响应。本机账本只记
+     "经过存档层的增量"，不知道玩家历史基线 —— 老玩家 5000 货币会被显示成"本局奖励那点"，
+     **解锁时直接判余额不足**。改为**只抬不降**（服务端更大就保留服务端的；账本更大才抬），
+     与 experience / 成就 / 统计的 max 语义一致；服务端仍是事实源，离线/私服场景由本机账本兜底。
+     代价：纯本机消耗（服务端没扣）不会在界面上减数量 —— 可接受。
+  2. **引擎自动续期后 CA 变化 → 游戏 Error 60**：证书剩余低于 `cert.min_remaining_hours` 时引擎启动
+     自动续期，而架构上"签完即删 CA 私钥"⇒ 续期会**重新生成 CA**；旧 CA 仍在信任库但已不匹配
+     ⇒ 游戏 TLS 握手被拒（Error 60「与服务器通讯时出错」）。**操作口径**：续期后必须重新导入信任
+     （GUI 会引导；命令行 `hd2proxy.exe install`）。README 故障排查补了这条。
+- **`consume` 语义：证据冲突，暂不改写语义** —— 用户认为它只在解锁物品时出现；研究线反证：
+  11-17/11-18 两次**完整浏览会话**里 `consume` 出现 0 次，只在 E3 **打局会话**出现 2 次
+  （均在 `Mission/end` 前约 10s、两客户端间隔 15ms）⇒ 与局内/结算强相关，不像军械库购买。
+  结论：实现保留（防御式解析、不猜形状），**日志改为中性的 `UNLOCK-COST` 但不再宣称"购买扣钱"**；
+  等真实请求体 + 触发时机再定语义。
+- **真正的"购买/解锁扣钱"在响应里（G5 增强，下一版）**：旧研究仓 `D:\mod\workariant-net`
+  `docs/UNLOCK-MAP-2026-11-06.md` §3.1 / `API-ENDPOINTS-2026-11-01.md` §8·§10 的逐字节样本：
+  - 武器/配件 `POST /api/Progression/ProgressionPackage/AcquireUnlockableItem` 响应
+    `{packageId32, inventoryChanges:[{mixId:货币, amount:-5000},{mixId:物品, amount:1}]}`；
+  - 战备 `POST /api/SeasonPass/item/buy` 响应
+    `{items:[{mixId:货币, amount:-85},{mixId:物品, amount:1},{mixId:货币, amount:85}], packageProgress:[]}`；
+  ⇒ 负 amount = 扣钱、正 amount = 授予/记账，直接对**响应**做增量即可同时覆盖"扣钱 + 解锁物品"。
+- **测试**：单测 666 → **669 passed**（库存：只抬不降 / 抬升 / 消费后显示语义）。
+- 规则：只修 bug + 语义纠正 ⇒ 只动 `alpha.N`：`0.5.4-alpha.2` → **`0.5.4-alpha.3`**。
+
 ## v0.5.4-alpha.2（2026-11-23）— 修复：打包版引擎在中文 Windows 控制台启动即崩（GBK 编码）
 
 - **现场**：`hd2proxy.exe engine` 在中文字符控制台（cp936/GBK）下，打印带 `⚠` 的警告行时

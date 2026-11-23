@@ -156,14 +156,31 @@ def _inventory():
                       {"mixId": 3901895556, "amount": 699, "isDiscovered": False}]}
 
 
-def test_apply_inventory_overwrites_amount_and_appends():
+def test_apply_inventory_raises_amount_and_appends():
     save = _save_with_earned(inventory_amounts={"3901895556": 500, "222": 3},
                              inventory_ids=[333])
     out, changed = saves.apply_to_inventory(json.dumps(_inventory()).encode("utf-8"), save)
     items = {i["mixId"]: i["amount"] for i in json.loads(out)["items"]}
-    assert items[3901895556] == 500          # 绝对数量覆盖（consume 会往下减）
-    assert items[222] == 3 and items[333] == 1
+    # 服务端 699 > 账本 500 → 保留服务端（只抬不降，不能把老玩家货币改小）
+    assert items[3901895556] == 699
+    assert items[222] == 3 and items[333] == 1          # 缺的行补上
     assert changed >= 2
+
+
+def test_apply_inventory_never_lowers_server_amount():
+    """历史基线未知：账本数量低于服务端时**一个字节都不改**（否则解锁会被判余额不足）。"""
+    save = _save_with_earned(inventory_amounts={"3901895556": 1, "111": 0})
+    body = json.dumps(_inventory()).encode("utf-8")
+    out, changed = saves.apply_to_inventory(body, save)
+    assert changed == 0 and out is body
+
+
+def test_apply_inventory_lifts_above_server_amount():
+    """账本数量更高（本机收益/私服场景）→ 抬上去。"""
+    save = _save_with_earned(inventory_amounts={"3901895556": 5000})
+    out, changed = saves.apply_to_inventory(json.dumps(_inventory()).encode("utf-8"), save)
+    items = {i["mixId"]: i["amount"] for i in json.loads(out)["items"]}
+    assert items[3901895556] == 5000 and changed == 1
 
 
 def test_apply_inventory_noop():

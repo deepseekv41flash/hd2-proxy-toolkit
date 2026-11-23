@@ -339,6 +339,9 @@ class ActiveSave:
     def record_consume(self, body):
         """G5：``POST /api/Progression/inventory/consume`` 请求体 → 库存扣减（下限 0、保留行）。
 
+        **语义（用户 2026-11-23 纠正）**：这是**解锁/购买物品时的货币扣减**（不是局内用战备）；
+        完整解锁流程见旧研究仓 `hd2-network-proxy`。日志/文档统一写"解锁消耗"。
+
         研究线 2026-11-23 口径：
           * 扣减量只在请求体（响应恒 `{}`）；`inventory_amounts[mixId] -= amount`，**下限 0**；
           * **保留行、amount=0，不删行** —— 库存行同时承担「是否拥有」语义（目录行+库存行成对才显示），
@@ -377,15 +380,15 @@ class ActiveSave:
                     earned_doc["inventory_amounts"] = amounts
                 self.update_earned(_mut, reason="consume")
         for row in applied:
-            log("CONSUME mixId=%s amount=%d：存档 %d → %d%s"
+            log("UNLOCK-COST mixId=%s amount=%d：存档 %d → %d%s"
                 % (row["mixId"], row["amount"], row["before"], row["after"],
                    "（mission %s）" % mission_id if mission_id else ""), audit=True)
         for row in untracked:
             log_throttled("consume-untracked-%s" % row["mixId"],
-                          "CONSUME mixId=%s amount=%d：存档无该行基线，本次不扣"
+                          "UNLOCK-COST mixId=%s amount=%d：存档无该行基线，本次不扣"
                           % (row["mixId"], row["amount"]), every=300)
         if applied or untracked:
-            self._event("consume", "扣减 %d 行（%d 行有变化）/ 未跟踪 %d 行"
+            self._event("unlock-cost", "扣减 %d 行（%d 行有变化）/ 未跟踪 %d 行"
                         % (len(applied), changed, len(untracked)))
         return {"ok": True, "applied": applied, "untracked": untracked, "written": changed}
 
