@@ -117,7 +117,7 @@ def main():
     ap.add_argument("--out", default=str(REPO / "research" / "screenshots"))
     ap.add_argument("--pages", default=",".join(PAGES))
     ap.add_argument("--tabs", action="store_true",
-                    help="额外截取「物品与战备」页的每个 tab（含 0.4.0 的「目录总览」）")
+                    help="额外截取「本地账号」页的每个 tab（含 0.4.0「目录总览」/ 0.6.0「存档」）")
     ap.add_argument("--keep", action="store_true")
     a = ap.parse_args()
     pages = [p.strip() for p in a.pages.split(",") if p.strip()]
@@ -173,7 +173,7 @@ def main():
                     except Exception as e:      # noqa: BLE001
                         status_snapshot = {"error": repr(e)}
             if a.tabs:
-                # 「物品与战备」页每个 tab 单独截一张：0.4.0 的「目录总览」是唯一证据来源
+                # 「本地账号」页每个 tab 单独截一张：目录总览 / 存档 tab 的证据来源
                 app.show_page("inventory")
                 inv = app.pages.get("inventory")
                 if inv is not None:

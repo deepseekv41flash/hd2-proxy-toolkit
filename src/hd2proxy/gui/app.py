@@ -23,7 +23,7 @@ PAGE_DEFS = [
     ("overview", "◈", "总览"),
     ("status", "◍", "战况改写"),
     ("live", "◉", "实时战况"),
-    ("inventory", "▤", "物品与战备"),
+    ("inventory", "▤", "本地账号"),
     ("capture", "◫", "抓包与日志"),
     ("settings", "⚙", "设置"),
 ]

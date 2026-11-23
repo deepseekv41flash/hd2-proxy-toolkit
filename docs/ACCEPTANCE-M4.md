@@ -178,3 +178,23 @@ python -m hd2proxy uninstall --cert-dir <certs>                                 
 
 验收配置说明：`m4-a.json` = 前 5 项（无休眠星，出问题易降级）；`m4-b.json` = 全 6 项。
 两份都不含账号/本机路径（抓包开关已关）。
+
+---
+
+## M5 · 存档系统实机验收（2026-11-23）
+
+> 构建：`v0.5.4-alpha.3`（会话）+ `v0.5.5-alpha.1`（预绑定重启验证）；官方服务器；单机单人一局短任务。
+> 证据：`%LOCALAPPDATA%\HD2ProxyStudio\logs\proxy.log`、`runtime/saves/`、`captures/`。
+
+| # | 验收项 | 结果 | 证据 |
+|---|---|---|---|
+| ① | 首屏身份识别 + 不混档 | **PASS** | 首会话 `local → steam_76561198968648344` 走 **merged** 分支（`local.merged-20261123-181618.json` 归档）；`identity.source=getmotd`；重启后 `activeSave=steam_…（last）`、日志 `首屏按 steam_… 渲染（来源 last，earned 改动 0 字段）`、`getmotd 身份校验一致` |
+| ② | 结算奖励入账（G3） | **PASS** | `MISSION +210 exp · 3608481516×910 · 897894480×1`（mission `e9f0440b…`）与抓到的 `Mission/end` 响应逐字段一致；成就真实报文 4 条（`{6:1680,8:386242,17:4290,24:2925}`）入账；统计 27 项入账（`totalEnemyKills=356105`） |
+| ③ | 重启后不回退 / 不破坏 | **PASS** | 重启后无降级写入、无 `TLS REJECTED`；`inventory` 合并**只抬不降**（老玩家货币不被改小）；`session_dirty` / 会话基准状态正确 |
+| ④ | 换号不混档（第二账号） | **未测** | 需第二个 Steam/HD2 账号；代码路径已有单测（`switch_identity`：已识别档 → 整档回滚 + `_orphan` 审计） |
+
+**已知限制（已在 README 写清）**：客户端一次会话只拉一次 `/api/Progression`；同机换号那一刻首屏可能已按旧档渲染，重启后生效。
+
+**现场处置记录**：首次实机报 **Error 60** → 根因是引擎 auto-renew 换发 CA 后信任库未更新；
+`hd2proxy.exe install --cert-dir <state>\certs` 重导当前 CA 后恢复（`trusted=true`，`LocalMachine`）。
+后续版本已加 `certs/ca-history.json` 留痕 + 日志告警。

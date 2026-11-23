@@ -1,4 +1,7 @@
-"""物品与战备页：武器 / 附件 / 外观 / 战备 / 目录追加 / 目录总览 六个 tab。
+"""本地账号页（原名「物品与战备」）：武器 / 附件 / 外观 / 战备 / 目录追加 / 目录总览 / 存档 七个 tab。
+
+2026-11-23 改名 + 加「存档（本机账本）」tab：本页改的东西**全部只在本机生效**（库存行 / 目录上架 /
+本机 earned 账本），不回传服务器；服务端仍是事实源。页头固定三条边界提示。
 
 前四个 tab 写 `profile["inventory"][key]`（行格式 {"mixId","amount","isDiscovered"}）；
 目录追加 tab 写 `profile["items"]`（template + add）；目录总览是**只读**查询页
@@ -32,13 +35,23 @@ def _catalog_add_id(entry):
         return None
 
 
+# 三条边界（页头固定展示 + 存档 tab 里再展开一次，避免用户误以为"改账号数据"）
+BOUNDARY_SHORT = ("仅本机视图", "不回传服务器", "服务端仍是事实源")
+BOUNDARY_LINES = (
+    "只在本机生效：改的是客户端收到的响应，不写服务端任何数据",
+    "不回传服务器：本机账本不会同步到任何服务器，也不会影响同账号的其它机器",
+    "服务端仍是事实源：服务端给得更多就听它的，本机账本只在服务端给得更少时兜底",
+)
+
+
 class InventoryPage(Page):
-    title = "物品与战备"
+    title = "本地账号"
 
     # ---------------------------------------------------------------- 构图
     def build(self):
-        self.header("物品与战备",
-                    "库存行 / 目录上架都只是 profile 改写；改完点右上角「应用配置」热更新")
+        self.header("本地账号（仅本机视图）",
+                    "库存 / 目录 / 存档都只改本机；改完点右上角「应用配置」热更新")
+        self._build_boundary_bar()
         self._lists = {}
         self._amounts = {}
         self._keywords = {}
@@ -70,7 +83,133 @@ class InventoryPage(Page):
                 self._build_edit_tab(key, label)
         self._build_items_tab()
         self._build_catalog_tab()
+        self._build_save_tab()
         self.nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+
+    # ---- 页头三条边界 --------------------------------------------------
+    def _build_boundary_bar(self):
+        bar = tk.Frame(self, bg=theme.PANEL, highlightbackground=theme.BORDER,
+                       highlightthickness=1)
+        bar.pack(fill="x", padx=22, pady=(0, 8))
+        self._boundary_labels = []
+        for text in BOUNDARY_SHORT:
+            lbl = tk.Label(bar, text="● " + text, bg=theme.PANEL, fg=theme.MUTED,
+                           font=theme.F_S)
+            lbl.pack(side="left", padx=(12, 0), pady=5)
+            self._boundary_labels.append(lbl)
+        tk.Label(bar, text="改名自「物品与战备」", bg=theme.PANEL, fg=theme.DIM,
+                 font=theme.F_S).pack(side="right", padx=12, pady=5)
+
+    # ---- 存档（本机账本）tab --------------------------------------------
+    def _build_save_tab(self):
+        tab = tk.Frame(self.nb, bg=theme.BG)
+        self.nb.add(tab, text="存档（本机账本）")
+        self._save_tab = tab
+
+        top = tk.Frame(tab, bg=theme.BG)
+        top.pack(fill="x", padx=12, pady=(10, 4))
+        self.save_state_lbl = tk.Label(top, text="引擎未运行", bg=theme.BG,
+                                       fg=theme.DIM, font=theme.F_S)
+        self.save_state_lbl.pack(side="left")
+        theme.button(top, "存档预演", command=self._preview_save,
+                     primary=True).pack(side="right", padx=(8, 0))
+        theme.button(top, "刷新摘要", command=self._refresh_save_summary).pack(
+            side="right", padx=(8, 0))
+        theme.button(top, "打开存档目录", command=self._open_save_dir).pack(side="right")
+
+        self.save_summary_lbl = tk.Label(tab, text="", bg=theme.PANEL, fg=theme.FG,
+                                         font=theme.F_S, justify="left", anchor="w",
+                                         padx=12, pady=10)
+        self.save_summary_lbl.pack(fill="x", padx=12, pady=(6, 8))
+
+        box = tk.Frame(tab, bg=theme.PANEL, highlightbackground=theme.BORDER,
+                       highlightthickness=1, padx=12, pady=8)
+        box.pack(fill="x", padx=12, pady=(0, 8))
+        tk.Label(box, text="边界（务必知道）", bg=theme.PANEL, fg=theme.FG,
+                 font=theme.F_S).pack(anchor="w")
+        for line in BOUNDARY_LINES:
+            tk.Label(box, text="· " + line, bg=theme.PANEL, fg=theme.MUTED,
+                     font=theme.F_S, anchor="w", justify="left").pack(fill="x")
+
+        self.save_dir_lbl = tk.Label(tab, text="", bg=theme.BG, fg=theme.DIM,
+                                     font=theme.F_S, anchor="w", justify="left")
+        self.save_dir_lbl.pack(fill="x", padx=12, pady=(0, 10))
+        self._refresh_save_summary()
+
+    def _refresh_save_summary(self):
+        """读本机账本 → 摘要（只读；引擎不跑也能看）。"""
+        from ...engine import save_preview
+        try:
+            doc, source = save_preview.load_save()
+            info = save_preview.summarize_save(doc)
+        except Exception as e:      # noqa: BLE001 - 读不到只影响这一栏
+            self.save_summary_lbl.configure(text="读取存档失败：%r" % (e,))
+            return
+        ident = info.get("identity") or {}
+        who = ("steam %s（%s）" % (ident.get("steam_id"), ident.get("source"))
+               if ident.get("steam_id") else "未识别（local 档）")
+        lines = [
+            "档：%s（%s）" % (info.get("save_id") or "?", source),
+            "身份：%s" % who,
+            "经验 %d · 成就 %d · 包进度 %d · 库存行 %d · 统计 %d 项 · 结算 %d 局"
+            % (info.get("experience", 0), info.get("achievements", 0),
+               info.get("package_progress", 0), info.get("inventory_amounts", 0),
+               info.get("stats_fields", 0), info.get("missions_count", 0)),
+        ]
+        if info.get("catalog_build"):
+            lines.append("目录：%s" % info["catalog_build"])
+        self.save_summary_lbl.configure(text="\n".join(lines))
+        self.save_dir_lbl.configure(
+            text="存档目录：%s（点「存档预演」可在开游戏前看这份档会改什么 / 一局会加多少）"
+                 % (self._save_root()))
+
+    def _save_root(self):
+        from ...engine import paths as engine_paths
+        return engine_paths.SAVES_DIR
+
+    def _open_save_dir(self):
+        import os
+        from pathlib import Path
+        root = Path(self._save_root())
+        try:
+            root.mkdir(parents=True, exist_ok=True)
+            os.startfile(str(root))         # noqa: S606 - Windows 资源管理器
+        except Exception as e:              # noqa: BLE001
+            self.app.toast("打开目录失败：%r" % (e,), error=True)
+
+    def _preview_save(self):
+        from ...engine import save_preview
+        def done(result):
+            if isinstance(result, Exception):
+                self.app.toast("存档预演失败", error=True)
+                self.app.show_text("存档预演失败", repr(result))
+                return
+            save = result.get("save") or {}
+            self.app.toast("存档预演：经验 %d · 统计 %d 项 · %d 条结算样本"
+                           % (save.get("experience", 0), save.get("stats_fields", 0),
+                              len(result.get("missions") or [])))
+            self.app.show_text("存档预演（不开游戏）", save_preview.format_text(result))
+        self.app.run_bg(lambda: save_preview.preview(), done, busy="存档预演中…")
+
+    def _render_save_state(self, status):
+        """引擎状态 → 存档一行（live 身份校验态；与 status_page 顶部那行一致）。"""
+        save = (status or {}).get("save") or {}
+        lbl = getattr(self, "save_state_lbl", None)
+        if lbl is None:
+            return
+        if not save.get("save_id"):
+            lbl.configure(text="引擎未运行 / 存档层未启用", fg=theme.DIM)
+            return
+        if save.get("verified"):
+            state = "已校验"
+        elif save.get("origin") == "last":
+            state = "预绑定·待校验"
+        else:
+            state = "待校验"
+        if save.get("session_dirty"):
+            state += " · 本局有写入"
+        lbl.configure(text="引擎：存档 %s · %s" % (save.get("save_id"), state),
+                      fg=theme.MUTED)
 
     # ---- 前四个 tab ----------------------------------------------------
     def _build_edit_tab(self, key, label):
@@ -675,6 +814,7 @@ class InventoryPage(Page):
         if getattr(self, "catalog_overview_list", None) is not None and not self._filled_catalog:
             self._fill_catalog_list()
         self._render_summary()
+        self._refresh_save_summary()
 
     def _heal_catalog_rows(self):
         """老 profile 自愈：库存里已有「目录缺失物品」但没配目录行时补上（用户不必删了重加）。
@@ -693,7 +833,7 @@ class InventoryPage(Page):
             self._render_items()
 
     def on_status(self, status):
-        # 本页数据全在 profile 里，引擎状态不影响编辑；只在顶部提示里留个记号
+        # 本页数据全在 profile 里，引擎状态不影响编辑；顶部提示 + 存档一行跟着更新
         if status:
             self.sum_lbl.configure(fg=theme.MUTED)
-        return
+        self._render_save_state(status)

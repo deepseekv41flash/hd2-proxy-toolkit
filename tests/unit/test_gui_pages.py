@@ -500,7 +500,9 @@ def test_inventory_catalog_overview_is_read_only_and_filters(inv_page, app):
     page = inv_page
     catalog = page.app.catalogs
     tabs = [page.nb.tab(i, "text") for i in range(len(page.nb.tabs()))]
-    assert tabs == ["武器", "附件", "外观", "战备", "目录追加", "目录总览"]
+    # 2026-11-23 改名「本地账号」并新增「存档（本机账本）」tab
+    assert tabs == ["武器", "附件", "外观", "战备", "目录追加", "目录总览",
+                    "存档（本机账本）"]
     summary = catalog.catalog_summary()
     assert page.catalog_overview_list.listbox.size() == len(catalog.search_items("", limit=None))
     text = page.catalog_summary_lbl.cget("text")
@@ -1059,3 +1061,29 @@ def test_live_page_save_without_snapshot_warns(root, app):
     page = _make(LivePage, root, app)
     page.save_snapshot()
     assert app.last_toast()[1] is True          # error=True
+
+
+# ---------------------------------------------------------------- 本地账号（存档）
+def test_account_page_save_tab_and_boundaries(inv_page):
+    """2026-11-23 改名「本地账号（仅本机视图）」+ 存档 tab + 三条边界提示。"""
+    page = inv_page
+    assert page.title == "本地账号"
+    assert [lbl.cget("text") for lbl in page._boundary_labels] == [
+        "● 仅本机视图", "● 不回传服务器", "● 服务端仍是事实源"]
+    tabs = [page.nb.tab(i, "text") for i in page.nb.tabs()]
+    assert "存档（本机账本）" in tabs
+
+    page.on_status({"save": {"save_id": "steam_76561198968648344", "origin": "last",
+                             "verified": True, "session_dirty": True}})
+    text = page.save_state_lbl.cget("text")
+    assert "steam_76561198968648344" in text and "已校验" in text and "本局有写入" in text
+
+    page.on_status({"save": {"save_id": "steam_x", "origin": "last",
+                             "verified": False, "session_dirty": False}})
+    assert "预绑定" in page.save_state_lbl.cget("text")
+
+    page.on_status(None)
+    assert "未运行" in page.save_state_lbl.cget("text")
+
+    body = page.save_summary_lbl.cget("text")
+    assert "身份：" in body and "经验" in body and "统计" in body

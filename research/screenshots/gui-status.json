@@ -1,15 +1,15 @@
 {
- "version": "0.4.0-alpha.1",
- "pid": 14704,
- "uptime_seconds": 1.6,
+ "version": "0.5.5-alpha.1",
+ "pid": 27572,
+ "uptime_seconds": 2.4,
  "host": "api.live.prod.thehelldiversgame.com",
- "listen_ip": "100.67.169.17",
- "port": 61950,
- "crl_port": 61951,
+ "listen_ip": "100.67.88.219",
+ "port": 50457,
+ "crl_port": 50458,
  "mode": "rewrite",
  "profile": "演示配置",
- "profile_path": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-6i7ue1v7\\profile.json",
- "control_port": 61952,
+ "profile_path": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-gntvrlxv\\profile.json",
+ "control_port": 50459,
  "stats": {
   "tls": 0,
   "req": 0,
@@ -17,18 +17,18 @@
   "rewrite": 0
  },
  "cert": {
-  "cert_dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-6i7ue1v7\\certs",
+  "cert_dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-gntvrlxv\\certs",
   "exists": true,
   "mode": "ca",
   "host": "api.live.prod.thehelldiversgame.com",
   "san": [
    "api.live.prod.thehelldiversgame.com"
   ],
-  "not_after": "2026-11-19T05:41:37+00:00",
+  "not_after": "2026-11-24T10:51:30+00:00",
   "remaining_hours": 24.0,
-  "thumbprint": "87DB95198E3ABAEE1E160713E13EA5684779B15C",
+  "thumbprint": "F130B4B6F12390551D5E00D21543B0A448426EE4",
   "trust_subject": "CN=HD2 Variant Mod Session CA",
-  "trust_thumbprint": "87DB95198E3ABAEE1E160713E13EA5684779B15C",
+  "trust_thumbprint": "F130B4B6F12390551D5E00D21543B0A448426EE4",
   "trusted": null,
   "trust_scope": null,
   "usable": true,
@@ -39,10 +39,39 @@
  ],
  "capture": {
   "enabled": true,
-  "dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-6i7ue1v7\\captures",
+  "dir": "C:\\Users\\Admin\\AppData\\Local\\Temp\\hd2proxy-gui-gntvrlxv\\captures",
   "paths": [
    "api/"
   ]
+ },
+ "save": {
+  "enabled": true,
+  "save_id": "local",
+  "origin": "local",
+  "verified": false,
+  "session_dirty": false,
+  "strict": false,
+  "wait_seconds": 1.2,
+  "wait_took": null,
+  "steam_id": null,
+  "hd2_account_id": null,
+  "client_version": null,
+  "catalog_build": null,
+  "snapshot": {
+   "path": "D:\\mod\\work\\hd2-proxy-toolkit\\runtime\\saves\\_session-start\\local.json",
+   "action": "reused",
+   "existed": false,
+   "sha": "",
+   "started_at": "2026-11-23T17:03:17"
+  },
+  "events": [
+   {
+    "ts": "2026-11-23T18:51:31",
+    "kind": "bind",
+    "detail": "activeSave=local ← 启动（基准 reused，hash -）"
+   }
+  ],
+  "warnings": []
  },
  "rewrites": [],
  "log": "D:\\mod\\work\\hd2-proxy-toolkit\\logs\\proxy.log"
