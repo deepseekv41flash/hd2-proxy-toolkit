@@ -6,6 +6,24 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.5.4-alpha.2（2026-11-23）— 修复：打包版引擎在中文 Windows 控制台启动即崩（GBK 编码）
+
+- **现场**：`hd2proxy.exe engine` 在中文字符控制台（cp936/GBK）下，打印带 `⚠` 的警告行时
+  `print` 抛 `UnicodeEncodeError: 'gbk' codec can't encode character '\u26a0'`，
+  整个引擎进程被带走（现场只看到一行 pyinstaller traceback）。
+  典型触发：证书信任自检 / hosts 与监听 IP 不一致的警告 —— 也就是**刚装完就要跑引擎**的那一步。
+  影响：`0.5.0-alpha.1` ~ `0.5.4-alpha.1` 的**打包版 CLI 起引擎**（GUI 起引擎走另一条路径，未必暴露）。
+- **修复**（两道防线）：
+  1. `logutil.ensure_utf8_console()`：CLI/引擎入口启动时把 stdout/stderr 切到
+     `utf-8 + errors="replace"`（`tools/pyinstaller_entry.py`、`__main__.main`、`server.main` 三处都调）；
+  2. `log()` 的控制台输出改走 `_safe_print()`：任何原因导致 print 失败 → 降级用
+     `errors="replace"` 写 bytes；控制台彻底不可用（windowed exe / 已关闭）也**绝不抛异常**
+     （日志文件始终是完整 UTF-8 原文）。
+- **回归测试**：`tests/unit/test_logutil_encoding.py`（10 条）用假 GBK 控制台复现现场：
+  `log("⚠ …")` 不崩、文件里有原文、控制台降级写 bytes；`stdout=None` / `OSError` /
+  无 `reconfigure` 的对象都不崩；并断言 CLI 与引擎入口**真的**调了 `ensure_utf8_console()`。
+- 测试：单测 656 → **666 passed**；规则：**只修 bug** ⇒ 只动 `alpha.N`：`0.5.4-alpha.1` → **`0.5.4-alpha.2`**。
+
 ## v0.5.4-alpha.1（2026-11-23）— 存档层 G5 收尾：局内消耗扣减（`inventory/consume`）
 
 - **新能力**：`POST /api/Progression/inventory/consume` 的**请求体** → 本机库存扣减

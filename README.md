@@ -8,16 +8,17 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.5.4-alpha.1 已发布（2026-11-23，存档层 G5 消耗扣减收尾）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.5.4-alpha.2 已发布（2026-11-23，修复打包版 GBK 控制台崩溃）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 六页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **656 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.5.4-alpha.1`（见下方「下载」）。
+> **666 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.5.4-alpha.2`（见下方「下载」）。
 > 0.5.0 起加入**本机存档层**（`base ⊕ config ⊕ earned`）：启动按 `_last.json` 乐观预绑定上次的档渲染首屏、
 > `Pes/GetMotd` 到达校验、同机换号**整档回滚**到会话基准快照 + 孤儿审计（研究线 2026-11-23 反馈的粒度修正）；
 > 0.5.1 起**结算奖励入账**（`Mission/end` 响应 → 经验/货币/物品/包进度累加进本机账本，按 missionId 防双计）；
 > 0.5.2 起**终身统计与成就**也进账本（`Stats/profile` 逐 key 取 max、成就上报 per-key max）；
 > 0.5.3 起 `hd2proxy save-preview` 可**不开游戏预演**「这份档会改什么 / 一局会加多少」；
 > 0.5.4 起局内**消耗扣减**也进账本（`inventory/consume` 请求体 → 数量减、下限 0、保留行）；
+> 0.5.4-alpha.2 修复打包版在**中文 Windows 控制台**打印 `⚠` 警告时 GBK 编码崩进程（CLI 起引擎直接退出）；
 > 存档只在本机生效、不回传服务器。
 > 0.3.0 起「启动引擎」会先做 **443/8080/17897 端口预检**（冲突列占用者、可换监听地址），总览页新增**系统自检**（端口 / hosts / 证书 / 游戏进程）；
 > alpha.2 修掉现场检查弹控制台窗 + 切总览卡顿（子进程隐藏窗口 / 一条 `netstat -ano` / 诊断节流）；
@@ -62,14 +63,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.5.4-alpha.1）
+## 下载（v0.5.4-alpha.2）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.5.4-alpha.1.md)。
+> [Release Notes](docs/RELEASE-v0.5.4-alpha.2.md)。
 
-- 下载：[GitHub Releases · v0.5.4-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.5.4-alpha.1)
-  （`hd2proxy-toolkit-v0.5.4-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.5.4-alpha.2](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.5.4-alpha.2)
+  （`hd2proxy-toolkit-v0.5.4-alpha.2-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，
@@ -100,7 +101,7 @@ hd2proxy.exe uninstall
 ```bash
 python -m pip install cryptography pytest   # 运行依赖 + 测试依赖
 set PYTHONPATH=src                          # 源码树内使用（或 pip install -e .）
-python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 656 单测 + 5 个离线自检
+python tools/check_gate.py                  # 门禁：版本一致性 + 语法 + 路径 + 666 单测 + 5 个离线自检
 ```
 
 自检全部离线（本机假上游 + 临时数据目录 + 临时证书），不需要游戏、不需要联网、不需要管理员。
@@ -202,7 +203,7 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 src/hd2proxy/engine/                    引擎（server / 钩子 / 配置 / 证书 / 安装 / 控制面 / 离线预演 preview.py）
 src/hd2proxy/gui/                       Tk GUI：壳 + 6 页 + widgets + templates.py（能力模板）
 src/hd2proxy/versioning.py               版本规则与 PEP 440 映射（docs/VERSIONING.md 的实现）
-tests/unit/                             单元测试（656 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / 目录补全 / 存档 / 结算入账 / 统计成就 / 存档预演 / 消耗扣减 / CLI）
+tests/unit/                             单元测试（666 条：钩子等价性 / 配置 / 证书 / 引擎整链路 / GUI / 预演 / 模板 / 变种目录 / 物品名 / 目录补全 / 存档 / 结算入账 / 统计成就 / 存档预演 / 消耗扣减 / CLI）
 tests/selftest*.py                      5 个脚本式离线自检（迁自研究线，仅改路径）
 tools/run_selftests.py                  自检总入口（独立证书/数据目录，GATE 判定）
 tools/check_gate.py                     门禁：版本一致性 + 语法 + 绝对路径 + pytest + 5 自检
