@@ -40,7 +40,7 @@ ENGINE = SRC / "hd2proxy" / "engine" / "legacy_proxy.py"
 TOOLS = ROOT / "tools"
 
 from hd2proxy.engine import (certs, config as cfgmod, installer,  # noqa: E402
-                             live as live_mod, paths,
+                             live as live_mod, logutil as logutil_mod, paths,
                              preview as preview_mod,
                              save_preview as savepreview_mod, sysprobe)
 
@@ -600,6 +600,8 @@ def build_parser():
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    # 中文 Windows 控制台默认 GBK：日志/输出里的 ⚠ 等符号会抛 UnicodeEncodeError
+    logutil_mod.ensure_utf8_console()
     # engine / selftest / gate 是「转发型」命令：要把后续参数原样交给子命令（引擎/脚本）。
     # 不能靠 argparse 的 REMAINDER —— 它以 `--` 开头的参数会在本轮就被 argparse 当成未知选项
     # 报错（M4 实测：`hd2proxy engine --profile X` 直接 usage error）。

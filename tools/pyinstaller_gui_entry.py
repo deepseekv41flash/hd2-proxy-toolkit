@@ -4,7 +4,12 @@
 """
 import sys
 
-from hd2proxy.__main__ import main
+from hd2proxy.engine.logutil import ensure_utf8_console
+
+# 中文 Windows 控制台默认 GBK：日志里的 ⚠ 会抛 UnicodeEncodeError 把进程带走
+ensure_utf8_console()
+
+from hd2proxy.__main__ import main  # noqa: E402
 
 if __name__ == "__main__":
     sys.exit(main(["gui"]))

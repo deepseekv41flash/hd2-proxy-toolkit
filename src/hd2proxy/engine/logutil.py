@@ -6,6 +6,7 @@
 """
 
 import contextlib
+import sys
 import threading
 import time
 
@@ -35,6 +36,47 @@ def quiet():
         SILENT = old
 
 
+def ensure_utf8_console() -> bool:
+    """把 stdout/stderr 切到 UTF-8（errors=replace），避免中文/符号在 GBK 控制台崩进程。
+
+    为什么必须做：中文 Windows 的控制台默认 cp936（GBK），而日志里有 `⚠`（U+26A0）等
+    GBK 编码不出的字符 —— `print` 会抛 UnicodeEncodeError，**把整个引擎进程带走**
+    （0.5.4-alpha.1 打包版启动即崩，现场只有一行 pyinstaller traceback）。
+    返回是否至少成功切换了一个流。
+    """
+    ok = False
+    for stream in (sys.stdout, sys.stderr):
+        if stream is None:                 # windowed exe（console=False）没有控制台
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+            ok = True
+        except Exception:                  # noqa: BLE001 - 非 TextIOWrapper / 已关闭
+            pass
+    return ok
+
+
+def _safe_print(line):
+    """打印到控制台：编码不支持就降级写 bytes，**绝不抛异常**（日志文件已经写过了）。"""
+    stream = sys.stdout
+    if stream is None:
+        return
+    try:
+        print(line, flush=True)
+        return
+    except (UnicodeEncodeError, OSError):
+        pass
+    try:
+        buf = getattr(stream, "buffer", None)
+        if buf is None:
+            return
+        enc = getattr(stream, "encoding", None) or "utf-8"
+        buf.write((line + "\n").encode(enc, "replace"))
+        buf.flush()
+    except Exception:                      # noqa: BLE001 - 控制台彻底不可用也不影响引擎
+        pass
+
+
 def log(msg, audit=False):
     if SILENT:
         return
@@ -49,7 +91,7 @@ def log(msg, audit=False):
                     f.write(time.strftime("%Y-%m-%dT%H:%M:%S ") + msg + "\n")
         except Exception:
             pass
-        print(line, flush=True)
+        _safe_print(line)
 
 
 def log_throttled(key, msg, every=60.0):

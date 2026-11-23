@@ -629,6 +629,7 @@ def build_parser():
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    logutil.ensure_utf8_console()          # GBK 控制台打印 ⚠ 会崩进程
     a = build_parser().parse_args(argv)
 
     # ---- 1. 读配置：旧 config.json 打底；有 profile 则用 profile 覆盖 ----------
