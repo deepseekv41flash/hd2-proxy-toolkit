@@ -6,6 +6,25 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.5.4-alpha.1（2026-11-23）— 存档层 G5 收尾：局内消耗扣减（`inventory/consume`）
+
+- **新能力**：`POST /api/Progression/inventory/consume` 的**请求体** → 本机库存扣减
+  （`engine/hooks/consume.py` + `ActiveSave.record_consume()`）。该端点响应恒 `{}`（2 B），
+  扣减量只在请求体里。
+- **扣减口径（与研究线 2026-11-23 逐条对齐）**：
+  - `inventory_amounts[mixId] -= amount`，**下限 0**；
+  - **保留行、`amount=0` 不删行** —— 库存行同时承担「是否拥有」语义（目录行 + 库存行成对才显示），
+    删行可能让物品从军械库消失；服务端是否删行无样本，保留是安全默认；
+  - 只扣**本机账本已跟踪**的 mixId：没基线就不凭空造数量（打 INFO 说明）；
+  - 每次扣减打 INFO：`CONSUME mixId=… amount=…：存档 A → B（mission …）`，可与结算入账串起来对账。
+- **请求体形状尚未采样**（研究线将在一次本地会话补采），解析按**两段式**：先防御式认
+  `{"items":[…]}` / `[…]` / `{"consumables":[…]}` / 单条目 / `mixId32`；形状不认识就**不扣**
+  （宁可不扣，也不扣错）；形状确认后只改解析器。
+- **测试**：单测 644 → **656 passed**（+12：路径/形状/坏行/扣除/下限 0 保留行/未跟踪跳过/
+  无变化不写盘/未识别不写盘/strict 拒写/INFO 日志带 missionId/扣到 0 后库存响应仍为 0）；
+  引擎端到端新增「POST 消耗 → 存档数量扣减」。
+- 规则：**功能变更** ⇒ 动 `X.Y.Z`：`0.5.3-alpha.1` → **`0.5.4-alpha.1`**。
+
 ## v0.5.3-alpha.1（2026-11-23）— 存档层 G6：存档预演（不开游戏看「这份档会改什么 / 一局会加多少」）
 
 - **新命令 `hd2proxy save-preview`**（`engine/save_preview.py`）：把本机账本**套到真实响应样本上**做纯计算预演：
