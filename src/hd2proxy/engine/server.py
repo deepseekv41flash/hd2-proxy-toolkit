@@ -29,6 +29,7 @@ from .active_save import ActiveSave
 from .hooks import achievements as achievements_hook
 from .hooks import capture, inventory, items, progression, stats as stats_hook, warinfo
 from .hooks import consume as consume_hook
+from .hooks import purchase as purchase_hook
 from .logutil import log, log_throttled, rotate_logs
 from .model import Mod, resolve_plan, rewrite_status
 
@@ -91,7 +92,7 @@ class Proxy:
         except Exception:
             pass
 
-    def _save_observe(self, path, body, hdrs):
+    def _save_observe(self, path, body, hdrs, reqbody=None):
         """G2/G3 存档层：从**上游原始响应**里记身份、目录与结算奖励（不改写，失败只记日志）。
 
         为什么用原始 body：``items`` 的 catalog_build 必须取**注入前**响应，否则会随
@@ -124,6 +125,12 @@ class Proxy:
             # G4：终身统计（单调计数器）→ 记录进 earned.stats.profile
             plain, _ = httpio.maybe_gunzip(body, hdrs)
             save.record_stats(plain)
+        else:
+            kind = purchase_hook.kind_of(path)
+            if kind:
+                # G5+：购买/解锁响应 → 扣钱 + 授予（负=扣、正=授予；10s 窗口去重）
+                plain, _ = httpio.maybe_gunzip(body, hdrs)
+                save.record_purchase(plain, kind, request_body=reqbody)
 
     def on_sni(self, sslsock, servername, ctx):
         # 单域名白名单：别的 SNI 一律拒绝（不是开放代理）
@@ -412,7 +419,7 @@ class Proxy:
                 # 身份与目录取**上游原始响应**（items 必须注入前，否则 catalog_build 漂移）。
                 if self.save is not None and not self.mod.passthrough and rbody:
                     try:
-                        self._save_observe(path, rbody, rhdrs)
+                        self._save_observe(path, rbody, rhdrs, reqbody=body)
                         if progression.is_root_path(path):
                             plain, was_gz = httpio.maybe_gunzip(rbody, rhdrs)
                             new_body, save_n = progression.apply(plain, self.save)

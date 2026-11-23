@@ -35,6 +35,9 @@ MISSION_END_DOC = json.loads(
     (FIXTURES / "mission_end" / "12b9a872.json").read_text(encoding="utf-8"))
 STATS_FRESH_DOC = json.loads(
     (FIXTURES / "fresh" / "stats_profile.json").read_text(encoding="utf-8"))
+ACQUIRE_DOC = {"packageId32": 2221505542,
+               "inventoryChanges": [{"mixId": 3901895556, "amount": -99},
+                                    {"mixId": 718265621, "amount": 1}]}
 
 STATUS_DOC = {
     "warId": 801,
@@ -105,6 +108,15 @@ class _Upstream:
                 self.wfile.write(body)
 
             def do_POST(self):
+                if "/AcquireUnlockableItem" in self.path:
+                    body = json.dumps(ACQUIRE_DOC).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Connection", "close")
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 if "/api/Operation/Mission/end" in self.path:
                     # G3：结算响应 = 本局奖励增量（经验/物品/包进度）
                     body = json.dumps(MISSION_END_DOC).encode()
@@ -433,6 +445,18 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
             assert " 20" in (" " + (head.splitlines()[0] if head else "") + " "), head[:80]
             after_consume = saves.SaveStore(sid, root=saves_root).load()
             assert after_consume["earned"]["inventory_amounts"]["3901895556"] == 699 - 99
+
+            # 8) G5+：购买/解锁响应 → 扣钱 + 授予（负=扣、正=授予）
+            head, body = tls_post(
+                port, "/api/Progression/ProgressionPackage/AcquireUnlockableItem",
+                {"expectedCost": [{"mixId": 3901895556, "amount": 99}],
+                 "itemMixId": 718265621, "targetLevel": 7,
+                 "packageId32": 2221505542}, cert_dir)
+            assert " 20" in (" " + (head.splitlines()[0] if head else "") + " "), head[:80]
+            after_buy = saves.SaveStore(sid, root=saves_root).load()["earned"]
+            assert after_buy["inventory_amounts"]["3901895556"] == 699 - 99 - 99
+            assert after_buy["inventory_amounts"]["718265621"] == 1
+            assert after_buy["purchases"]["count"] == 1
 
             api(state_file, "/shutdown", method="POST", body={})
             assert proc.wait(15) == 0

@@ -1,8 +1,10 @@
 """DSH_SAVE_CONS_V1：`POST /api/Progression/inventory/consume` **请求体** → 库存扣减（G5）。
 
-**语义（用户 2026-11-23 纠正）**：这个端点不是"局内用掉战备"，而是**解锁/购买物品时的货币扣减**
-（完整解锁流程见旧研究仓 `hd2-network-proxy` 的记录）。所以日志与文档一律写"解锁消耗"，
-实现上仍是同一 id 空间里的数量扣减。
+**语义（2026-11-23 实机取证后）**：真实报文是
+``{"consumedItems":[{mixId,amount}×5],"boosters":[]}``，发生在 `Mission/end` **前 3 秒**、
+5 个不同 mixId ×1 ⇒ 是**局内消耗品结算上报**（撤离时上报用掉的东西），不是购买扣钱。
+购买/解锁的"扣钱 + 授予"在**响应**里（见 `hooks/purchase.py`）。日志写中性的 `UNLOCK-COST`，
+本模块只做"账本已跟踪行的数量扣减"，语义不写死。
 
 研究线证据（2026-11-23）：
 
@@ -26,7 +28,8 @@ import json
 
 from ..paths import CONSUME_PATH
 
-_SHELL_KEYS = ("items", "consumables", "values", "entries")
+# 真实报文外壳（2026-11-23 实机）：`{"consumedItems":[{mixId,amount}],"boosters":[]}`
+_SHELL_KEYS = ("consumedItems", "items", "consumables", "boosters", "values", "entries")
 
 
 def is_path(path) -> bool:

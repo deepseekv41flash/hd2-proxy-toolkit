@@ -47,6 +47,19 @@ def test_extract_shapes():
         {"mixId": 9, "amount": 1}]
 
 
+def test_extract_real_consumeditems_shell():
+    """2026-11-23 实机真实报文外壳：`{"consumedItems":[…],"boosters":[]}`。"""
+    body = {"consumedItems": [{"mixId": 548295611, "amount": 1},
+                              {"mixId": 2446402932, "amount": 1},
+                              {"mixId": 1228689284, "amount": 1},
+                              {"mixId": 2616066963, "amount": 1},
+                              {"mixId": 3467463065, "amount": 1}],
+            "boosters": []}
+    rows = consume.extract_consumes(json.dumps(body).encode())
+    assert len(rows) == 5 and rows[0] == {"mixId": 548295611, "amount": 1}
+    assert consume.is_path("/api/Progression/inventory/consume")
+
+
 def test_extract_skips_bad_rows():
     body = {"items": [
         {"mixId": 1, "amount": 2},

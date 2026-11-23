@@ -34,6 +34,8 @@ from pathlib import Path
 from . import paths, saves
 from .logutil import log, log_throttled
 
+PURCHASE_DEDUPE_SECONDS = 10.0   # 购买响应去重窗口：客户端重试会重复同一份响应
+
 ORIGIN_LAST = "last"       # 预绑定来源：_last.json（老玩家首屏按它渲染）
 ORIGIN_LOCAL = "local"     # 没有任何历史：先按 local 渲染，等身份到达再迁移
 
@@ -86,6 +88,7 @@ class ActiveSave:
         self._first_progression = False
         self._last_catalog = None
         self._ident_recorded = (None, None)    # 已落盘的身份（避免每发 GetMotd 都写盘）
+        self._purchase_seen = {}               # 购买去重键 -> 时间戳（短窗口防双扣）
         self._rebase_done = False              # 会话基准是否已重建（同一会话只重建一次）
 
     # ------------------------------------------------------------ 生命周期
@@ -323,18 +326,104 @@ class ActiveSave:
         with self._lock:
             merged = dict((self._store.load().get("earned") or {}).get("achievements") or {})
             changed = 0
+            lower = {}
             for key, value in values.items():
-                if value > _int(merged.get(key)):
+                cur = _int(merged.get(key))
+                if value > cur:
                     merged[key] = value
                     changed += 1
+                elif value < cur:
+                    lower[key] = (value, cur)          # 上报值 < 存档值：per-key max 不动它
+            if lower:
+                log_throttled("ach-lower",
+                              "成就上报值低于存档（per-key max 不改动）：%s"
+                              % ", ".join("%s %d<%d" % (k, rep, cur)
+                                          for k, (rep, cur) in list(lower.items())[:3]),
+                              every=300)
             if not changed:
-                return {"ok": True, "recorded": 0, "keys": len(values)}
+                return {"ok": True, "recorded": 0, "keys": len(values),
+                        "lower": {k: v[0] for k, v in lower.items()}}
 
             def _mut(earned, doc):
                 earned["achievements"] = merged
             self.update_earned(_mut, reason="achievements")
-        self._event("achievements", "上报 %d 条（%d 条更新）" % (len(values), changed))
+        self._event("achievements", "上报 %d 条（%d 条更新，报文 %d 字符）"
+                    % (len(values), changed, len(body) if hasattr(body, "__len__") else 0))
         return {"ok": True, "recorded": changed, "keys": len(values)}
+
+    def record_purchase(self, response_body, kind, *, request_body=None):
+        """G5+：``AcquireUnlockableItem`` / ``SeasonPass/item/buy`` **响应**增量入账。
+
+        旧仓 `variant-net` 逐字节实证（2026-11-06）：**负 amount = 扣钱、正 amount = 授予/记账**；
+        直接对响应做增量即可同时覆盖"解锁扣钱 + 解锁物品"。
+
+        三个约束（研究线 2026-11-23 提醒）：
+          * 增量**必须去重**：客户端重试会重复同一份响应 → 按 (packageId32,itemMixId) /
+            (seasonPassItemId,warId) + 10 s 窗口去重，绝不双扣；
+          * `SeasonPass/item/buy` 的 `+85` 是 `medalsSpentMixId`（已花奖章**累计计数器**），
+            不是"获得 85 奖章" → 按普通 mixId 增量处理，但日志/文档不写"获得"；
+          * `expectedCost` 只作交叉校验（响应缺增量时用它兜底扣费）。
+        """
+        from .hooks import purchase as _buy
+        parsed = (_buy.extract_acquire(response_body) if kind == _buy.ACQUIRE
+                  else _buy.extract_seasonpass(response_body))
+        context = _buy.request_context(request_body) if request_body else {}
+        if not parsed.get("deltas"):
+            # 响应没有增量：看看请求里有没有 expectedCost 可兜底
+            cost = _buy.extract_expected_cost(request_body) if request_body else []
+            if not cost:
+                return {"ok": False, "reason": "no-deltas", "kind": kind}
+            parsed = {"ok": True, "kind": kind, "package_id32": None,
+                      "deltas": [{"mixId": row["mixId"], "amount": -row["amount"]}
+                                 for row in cost]}
+            self._event("purchase", "响应无增量，按 expectedCost 兜底扣费（%d 项）" % len(cost))
+            log("⚠ 购买响应没有增量，改用请求 expectedCost 兜底扣费（%s）" % kind, audit=True)
+        key = _buy.dedupe_key(parsed, context)
+        now = time.time()
+        with self._lock:
+            self._purchase_seen = {k: ts for k, ts in self._purchase_seen.items()
+                                   if now - ts <= PURCHASE_DEDUPE_SECONDS}
+            if key in self._purchase_seen:
+                log_throttled("purchase-dup",
+                              "购买响应重复（%s）已跳过（防客户端重试双扣）" % key, every=60)
+                self._event("purchase", "重复购买响应 %s 已跳过" % key)
+                return {"ok": True, "duplicate": True, "key": key}
+
+            earned = self._store.load().get("earned") or {}
+            amounts = dict(earned.get("inventory_amounts") or {})
+            applied = []
+            for delta in parsed["deltas"]:
+                mix = str(delta["mixId"])
+                amount = _int(delta["amount"])
+                before = _int(amounts.get(mix))
+                after = max(0, before + amount)
+                applied.append({"mixId": mix, "amount": amount, "before": before,
+                                "after": after, "tracked": mix in amounts})
+                amounts[mix] = after
+
+            def _mut(earned_doc, doc):
+                earned_doc["inventory_amounts"] = amounts
+                state = earned_doc.setdefault(
+                    "purchases", {"count": 0, "recent_keys": [], "last": None})
+                state["count"] = _int(state.get("count")) + 1
+                keys = state.setdefault("recent_keys", [])
+                keys.append(key)
+                del keys[:-20]
+                state["last"] = {"at": _now(), "kind": parsed.get("kind"), "key": key,
+                                 "deltas": parsed["deltas"],
+                                 "package_id32": parsed.get("package_id32"),
+                                 "context": context}
+            self.update_earned(_mut, reason="purchase")
+            self._purchase_seen[key] = now
+
+        for row in applied:
+            log("PURCHASE mixId=%s amount=%+d：存档 %d → %d%s"
+                % (row["mixId"], row["amount"], row["before"], row["after"],
+                   "（未跟踪，账本新建行）" if not row["tracked"] else ""), audit=True)
+        self._event("purchase", "%s %d 项增量（%s）"
+                    % (parsed.get("kind"), len(applied), key))
+        return {"ok": True, "key": key, "kind": parsed.get("kind"),
+                "applied": applied, "package_id32": parsed.get("package_id32")}
 
     def record_consume(self, body):
         """G5：``POST /api/Progression/inventory/consume`` 请求体 → 库存扣减（下限 0、保留行）。

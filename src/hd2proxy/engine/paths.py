@@ -90,8 +90,11 @@ STATS_PROFILE_MARKS = ("/api/Stats/profile/summary",
                        "/api/Stats/profile/801/summary")
 # G5：客户端结算后主动上报成就累计值（响应恒为空 `{}`，值在**请求体**里）
 ACHIEVEMENTS_PATH = "/api/Progression/Achievements"
-# G5：解锁/购买物品时的货币扣减（响应恒为空 `{}`，扣减量只在**请求体**里）
+# G5：局内消耗品结算上报（响应恒为空 `{}`，消耗清单在**请求体** `consumedItems` 里）
 CONSUME_PATH = "/api/Progression/inventory/consume"
+# G5+：真正的"解锁/购买"写路径 —— 扣钱 + 授予都在**响应**里（旧仓 variant-net UNLOCK-MAP §3.1）
+ACQUIRE_ITEM_PATH = "/api/Progression/ProgressionPackage/AcquireUnlockableItem"
+SEASONPASS_BUY_PATH = "/api/SeasonPass/item/buy"
 
 # ---- 运行期状态文件（热重载：每个响应到达时现读） ---------------------------
 INV_STATE = RUNTIME / "inventory_inject.json"

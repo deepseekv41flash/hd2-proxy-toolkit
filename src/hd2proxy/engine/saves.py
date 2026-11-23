@@ -171,6 +171,8 @@ def empty_save(save_id=None) -> dict:
             "assignments": {},
             # G3：结算审计（本局增量记录 + missionId 去重，防重试双计）
             "missions": {"count": 0, "recent_ids": [], "last": None},
+            # G5+：购买/解锁审计（响应增量 + 去重键，防重试双扣）
+            "purchases": {"count": 0, "recent_keys": [], "last": None},
         },
     }
 
@@ -348,7 +350,7 @@ def _merge_earned_into(dst: dict, src: dict) -> dict:
     merge_stats_into(de, se)
 
     # 预留复杂结构：较新的档为准，缺键补齐
-    for key in ("season_pass", "assignments", "missions"):
+    for key in ("season_pass", "assignments", "missions", "purchases"):
         got = se.get(key) or {}
         if not isinstance(got, dict) or not got:
             continue

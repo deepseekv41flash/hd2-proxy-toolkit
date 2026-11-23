@@ -429,6 +429,33 @@ def generate_session(cert_dir, host=DEFAULT_HOST, days=2, force=False, mode="ca"
     return report
 
 
+CA_HISTORY_FILE = "ca-history.json"
+
+
+def ca_history(cert_dir) -> list:
+    """CA 变更历史（thumbprint + 时间），排查「Error 60 是不是续期换 CA 导致的」用。"""
+    p = Path(cert_dir) / CA_HISTORY_FILE
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return doc if isinstance(doc, list) else []
+
+
+def _record_ca_history(cert_dir, old_thumb: str, new_thumb: str) -> None:
+    p = Path(cert_dir) / CA_HISTORY_FILE
+    doc = ca_history(cert_dir)
+    doc.append({"at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "old": old_thumb or None, "new": new_thumb or None})
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_name(p.name + ".tmp")
+        tmp.write_text(json.dumps(doc[-20:], ensure_ascii=False, indent=1), encoding="utf-8")
+        os.replace(tmp, p)
+    except OSError:
+        pass
+
+
 def ensure_session(cert_dir, host=DEFAULT_HOST, days=2,
                    min_remaining_hours=12.0, force=False) -> dict:
     """启动前保证证书可用：缺失/过期/剩余不足 → 自动重签；否则复用。
@@ -441,7 +468,18 @@ def ensure_session(cert_dir, host=DEFAULT_HOST, days=2,
     if usable and not force and existing_ok(cert_dir, host, days):
         return {"action": "reused", "report": cert_status(cert_dir),
                 "remaining_hours": remaining}
+    before = cert_status(cert_dir)
+    old_thumb = str(before.get("thumbprint") or "") if before.get("exists") else ""
     report = generate_session(cert_dir, host=host, days=days, force=True)
+    new_thumb = str((report or {}).get("thumbprint_sha1")
+                    or (report or {}).get("thumbprint") or "")
+    if new_thumb and new_thumb != old_thumb:
+        _record_ca_history(cert_dir, old_thumb, new_thumb)
+        if old_thumb:
+            # 换发 CA = 信任库里的旧 CA 立刻失效：不重装就会 Error 60（实机 2026-11-23 踩过）
+            log("⚠ 证书续期换发了新 CA（%s → %s）：旧 CA 仍在信任库但已不匹配 —— "
+                "需重新运行 install / GUI「安装 / 修复」，否则游戏会报 Error 60"
+                % (old_thumb[:12], new_thumb[:12]), audit=True)
     return {"action": "generated", "report": report,
             "remaining_hours": session_remaining_hours(cert_dir)}
 

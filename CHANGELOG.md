@@ -6,6 +6,30 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.5.5-alpha.1（2026-11-23）— 购买/解锁响应入账 + consume 真实外壳 + CA 变更留痕
+
+- **G5+：真正的"解锁/购买"写路径入账**（`engine/hooks/purchase.py` + `ActiveSave.record_purchase()`）——
+  旧仓 `variant-net` 逐字节实证：**负 amount = 扣钱、正 amount = 授予/记账**，直接对**响应**做增量：
+  - `POST /api/Progression/ProgressionPackage/AcquireUnlockableItem`（武器/配件）：
+    响应 `{"packageId32":…,"inventoryChanges":[{"mixId":货币,"amount":-5000},{"mixId":物品,"amount":1}]}`；
+  - `POST /api/SeasonPass/item/buy`（战备）：响应 `{"items":[{"mixId":货币,"amount":-85},
+    {"mixId":物品,"amount":1},{"mixId":medalsSpent,"amount":85}],"packageProgress":[]}`；
+  - **去重**：按 `(packageId32,itemMixId)` / `(seasonPassItemId,warId)` + 10 s 窗口，防客户端重试双扣；
+  - `+85` 是 `medalsSpentMixId`（已花奖章**累计计数器**），日志/文档不写"获得奖章"；
+  - 响应无增量时用请求 `expectedCost` **兜底扣费**；`targetLevel` 只是 UI 门槛（不作校验）；
+  - 审计进 `earned.purchases`（count / recent_keys / last）。
+- **consume 真实外壳**：实机报文是 `{"consumedItems":[{mixId,amount}×5],"boosters":[]}`（发生在
+  `Mission/end` 前 3 秒）⇒ 是**局内消耗品结算上报**，不是购买扣钱；解析补 `consumedItems`/`boosters`，
+  语义仍不写死（日志中性 `UNLOCK-COST`）。
+- **成就上报对照**：上报值 < 存档值时打 INFO（per-key max 不改动）；事件里记"报文长度（字符）"；
+  **不再按字节数反推条数**（实测 141 B 对应 4 条，与研究线早先估算不一致）。
+- **CA 变更留痕**（Error 60 根因治理）：续期换发 CA 时写 `certs/ca-history.json`（old/new thumbprint + 时间，
+  保留 20 条），并在日志里显式告警"需重新 install/GUI 安装修复"。
+- **README 验收口径按模式分列**：官方服务器模式 = 不干扰服务端既有进度（**重启后不变是预期**）、不混档、
+  不降级写入；mock/自建模式 = 打一局→重启→经验/货币**变多**（存档层是权威）。
+- **测试**：669 → **687 passed**（购买入账 15 / CA 历史 2 / consume 真实外壳 1 / 引擎端到端购买步骤）。
+- 规则：功能变更 ⇒ 动 `X.Y.Z`：`0.5.4-alpha.3` → **`0.5.5-alpha.1`**。
+
 ## v0.5.4-alpha.3（2026-11-23）— 修复：库存数量被本机账本改小（只抬不降）+ 续期后信任失效 + consume 语义纠正
 
 - **实机验收前复核发现的两个"会让用户少东西 / 连不上"级缺陷**：
