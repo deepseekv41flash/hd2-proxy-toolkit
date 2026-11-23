@@ -6,6 +6,36 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.5.1-alpha.1（2026-11-23）— 存档层 G3：结算奖励入账（只读响应，不碰请求体）
+
+- **新能力（G3）**：`POST /api/Operation/Mission/end` 的**响应**里已经带服务端算好的本局增量，
+  MITM 架构下**不需要请求体**（研究线 2026-11-23 结论）：`experience`（本局值，如 936）、
+  `badges[].itemRewards`、`lootedItemRewards`、`lootedHeavyItemRewards`、`levelUpRewards`、
+  `progressionPackageUpdates`。
+- **入账规则**（`engine/hooks/mission_end.py` + `ActiveSave.record_mission_end()`）：
+  - `experience` **累加**进存档（本局增量，不是覆盖）；
+  - 物品/货币按 mixId 累加进 `inventory_amounts`；
+  - `progressionPackageUpdates`（`{id32,level,progress}`，实测跨局递增 = 服务端当前值）按 **max** 合并；
+  - 按 `missionId` 保留最近 20 局去重：客户端**重试同一份结算响应不会双计**；
+  - `campaignWon / impact / othersImpact*` 是战果展示：**不碰**（研究线红线：不伪造社区战果）。
+- **入账口径（有实据）**：`rewards` 是服务端**最终入账**清单，`badges[].itemRewards` 是明细 ——
+  5 份真实响应恒有 `rewards[战备点] == 明细 × multipliers(3)`（1478→4434 / 346→1038 / 334→1002 /
+  1534→4602），而征用单两者相同。默认取 `rewards`，缺失才退回明细；口径开关只有一处
+  （`hooks/mission_end.ITEM_SOURCE`），日志会打两条来源的比例，实机对一次账即可确认。
+- **生效时机（写进 README）**：客户端结算后**不会重取 `/api/Progression`**（研究线 E3 实测
+  777/1227 条请求里 8 次 Progression 全部对应一次启动）⇒ 存档效果在**重启游戏/回主界面**后可见；
+  结算画面数字由响应本身驱动，与存档无关。
+- **G2 反馈小修（研究线验收建议）**：
+  - 会话基准**只在会话首次身份校验一致时重建一次**（不再每次 GetMotd/HD2 别名到达都重建，
+    回滚点稳定在"会话开始"而不是"最后一次校验"）；
+  - `pending` 复用已带 `saveId` 校验（新增测试钉住"不会拿上一个号的基准"）；
+  - orphan 的 `discarded` 对**数值字典（货币/道具数量）给具体数值**（added/removed/changed），
+    换号回滚后能人工判断"哪笔钱该不该退"。
+- **离线样本**：`data/fixtures/saves/mission_end/`（5 份真实结算响应；已剥 `platformAccountId`）。
+- **测试**：单测 591 → **613 passed**（+22：结算解析 12、activeSave 入账/去重/strict/基准 8、
+  夹具守门 2）；引擎端到端新增「POST 结算 → 存档累加 → 再拉 Progression 看到累加值」。
+- 规则：**功能变更** ⇒ 动 `X.Y.Z`：`0.5.0-alpha.1` → **`0.5.1-alpha.1`**。
+
 ## v0.5.0-alpha.1（2026-11-23）— 存档层 G2：本机 earned 账本接上 `/api/Progression` 首屏
 
 - **新能力（G1+G2）**：把「配置驱动的解锁注入」扩成「每玩家可持久化的本机账本」：
