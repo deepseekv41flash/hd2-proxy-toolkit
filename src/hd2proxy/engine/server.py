@@ -26,7 +26,8 @@ from pathlib import Path
 
 from . import certs, diagnostics, hosts as hosts_mod, httpio, logutil, model, paths, upstream
 from .active_save import ActiveSave
-from .hooks import capture, inventory, items, progression, warinfo
+from .hooks import achievements as achievements_hook
+from .hooks import capture, inventory, items, progression, stats as stats_hook, warinfo
 from .logutil import log, log_throttled, rotate_logs
 from .model import Mod, resolve_plan, rewrite_status
 
@@ -118,6 +119,10 @@ class Proxy:
             # G3：结算响应 = 本局奖励增量（经验/物品/包进度）→ 累加进 earned
             plain, _ = httpio.maybe_gunzip(body, hdrs)
             save.record_mission_end(plain)
+        elif stats_hook.is_stats_path(path):
+            # G4：终身统计（单调计数器）→ 记录进 earned.stats.profile
+            plain, _ = httpio.maybe_gunzip(body, hdrs)
+            save.record_stats(plain)
 
     def on_sni(self, sslsock, servername, ctx):
         # 单域名白名单：别的 SNI 一律拒绝（不是开放代理）
@@ -190,6 +195,13 @@ class Proxy:
                         self.save.note_login(body)
                     except Exception as e:        # noqa: BLE001
                         log("clientVersion 记录失败：%r" % e)
+                # G5：成就上报（请求体）→ earned.achievements（per-key max）
+                if (self.save is not None and not self.mod.passthrough and body
+                        and achievements_hook.is_path(path)):
+                    try:
+                        self.save.record_achievements(body)
+                    except Exception as e:        # noqa: BLE001
+                        log("成就上报记录失败：%r" % e)
                 try:
                     ip, port = upstream.upstream_addr(self.mod, self.mod.host)
                     raw = socket.create_connection((ip, port), timeout=20)
@@ -387,7 +399,7 @@ class Proxy:
                             % (cz_hits, " [from gzip]" if was_gz else ""), audit=True)
                         self._note("customize", "%d slot(s)" % cz_hits)
 
-                # ---- G2 存档层：身份/目录记录 + Progression 根响应合并 ----
+                # G2 存档层：身份/目录记录 + Progression 根响应合并
                 # 与上面的「配置驱动改写链」正交：只认精确根路径 `/api/Progression`，
                 # 身份与目录取**上游原始响应**（items 必须注入前，否则 catalog_build 漂移）。
                 if self.save is not None and not self.mod.passthrough and rbody:
@@ -405,6 +417,19 @@ class Proxy:
                                     % (save_n, self.save.save_id,
                                        " [from gzip]" if was_gz else ""), audit=True)
                                 self._note("save", "+%d field(s)" % save_n)
+                        elif stats_hook.is_stats_path(path):
+                            # G4：终身统计逐 key 取 max（只抬不降；新号返回 0 也不抹掉本地战绩）
+                            plain, was_gz = httpio.maybe_gunzip(rbody, rhdrs)
+                            new_body, stats_n = stats_hook.apply(plain, self.save)
+                            if stats_n:
+                                out_body = new_body
+                                rewrite_added = stats_n
+                                dropped_encoding = was_gz
+                                self.stats["rewrite"] += 1
+                                log("SAVE STATS +%d field(s)（存档 %s）%s"
+                                    % (stats_n, self.save.save_id,
+                                       " [from gzip]" if was_gz else ""), audit=True)
+                                self._note("save-stats", "+%d field(s)" % stats_n)
                     except Exception as e:    # noqa: BLE001 - 存档层异常绝不打断游戏
                         log("存档层处理失败（本次跳过）：%r" % e)
 

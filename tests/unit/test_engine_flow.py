@@ -30,9 +30,11 @@ REPO = Path(__file__).resolve().parents[2]
 ENGINE = REPO / "src" / "hd2proxy" / "engine" / "legacy_proxy.py"
 HOST = certs.DEFAULT_HOST
 
+FIXTURES = Path(__file__).resolve().parents[2] / "data" / "fixtures" / "saves"
 MISSION_END_DOC = json.loads(
-    (Path(__file__).resolve().parents[2] / "data" / "fixtures" / "saves"
-     / "mission_end" / "12b9a872.json").read_text(encoding="utf-8"))
+    (FIXTURES / "mission_end" / "12b9a872.json").read_text(encoding="utf-8"))
+STATS_FRESH_DOC = json.loads(
+    (FIXTURES / "fresh" / "stats_profile.json").read_text(encoding="utf-8"))
 
 STATUS_DOC = {
     "warId": 801,
@@ -67,6 +69,15 @@ class _Upstream:
                 pass
 
             def do_GET(self):
+                if "/api/Stats/profile" in self.path:
+                    body = json.dumps(STATS_FRESH_DOC).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Connection", "close")
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 if "/api/WarSeason/801/Status" in self.path:
                     body = gzip.compress(json.dumps(doc).encode())
                     self.send_response(200)
@@ -76,6 +87,18 @@ class _Upstream:
                     body = json.dumps({"id": 801}).encode()
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_PUT(self):
+                need = int(self.headers.get("Content-Length") or 0)
+                if need:
+                    self.rfile.read(need)
+                body = b"{}"
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))
                 self.send_header("Connection", "close")
                 self.end_headers()
@@ -130,16 +153,16 @@ def tls_get(port, path, cert_dir, timeout=20.0):
     return head.decode("latin-1", "replace"), body
 
 
-def tls_post(port, path, payload, cert_dir, timeout=20.0):
+def tls_post(port, path, payload, cert_dir, timeout=20.0, method="POST"):
     """走代理发一个 JSON POST（假上游按路径脚本化响应）。"""
     ctx = ssl.create_default_context(cafile=str(Path(cert_dir) / "anchor.pem"))
     raw = socket.create_connection(("127.0.0.1", port), timeout=timeout)
     tls = ctx.wrap_socket(raw, server_hostname=HOST)
     data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
     try:
-        tls.sendall(("POST %s HTTP/1.1\r\nHost: %s\r\nContent-Type: application/json\r\n"
+        tls.sendall(("%s %s HTTP/1.1\r\nHost: %s\r\nContent-Type: application/json\r\n"
                      "Content-Length: %d\r\nConnection: close\r\n\r\n"
-                     % (path, HOST, len(data))).encode() + data)
+                     % (method, path, HOST, len(data))).encode() + data)
         buf = b""
         while True:
             chunk = tls.recv(65536)
@@ -337,6 +360,7 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
     doc = saves.empty_save(sid)
     doc["earned"]["experience"] = 2759938
     doc["earned"]["inventory_amounts"] = {"3901895556": 699}
+    doc["earned"]["stats"] = {"profile": {"totalEnemyKills": 400000}}
     st.save(doc)
     saves.write_last(sid, steam_id, None, root=saves_root)
 
@@ -386,6 +410,21 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
             save_state = api(state_file, "/status")["save"]
             assert save_state["session_dirty"] is True
             assert any(e["kind"] == "mission" for e in save_state["events"])
+
+            # 5) G4：Stats/profile 逐 key 取 max —— 上游是空号全 0，存档里有 40 万击杀
+            head, body = tls_get(port, "/api/Stats/profile/summary", cert_dir)
+            assert " 200 " in (" " + (head.splitlines()[0] if head else "") + " "), head[:80]
+            stats_doc = json.loads(body.decode("utf-8"))
+            assert stats_doc["totalEnemyKills"] == 400000
+            assert stats_doc["totalBugKills"] == 0            # 存档里没有的项保持上游值
+
+            # 6) G5：成就上报（请求体）→ earned.achievements，下次启动 Progression 合并可见
+            head, body = tls_post(port, "/api/Progression/Achievements",
+                                  {"achievements": [{"id": 6, "value": 1679}]},
+                                  cert_dir, method="PUT")
+            assert " 200 " in (" " + (head.splitlines()[0] if head else "") + " "), head[:80]
+            after_ach = saves.SaveStore(sid, root=saves_root).load()
+            assert after_ach["earned"]["achievements"] == {"6": 1679}
 
             api(state_file, "/shutdown", method="POST", body={})
             assert proc.wait(15) == 0

@@ -85,6 +85,11 @@ GETMESSAGES_MARK = "/api/Pes/GetMessages"     # 响应 accountId = HD2 20 位 id
 LOGIN_PATH = "/api/Account/Login"             # 请求体带 clientVersion（catalog_build 辅字段）
 # G3：结算响应 = 本局奖励增量的源头（experience / badges[].itemRewards / rewards / 包进度）
 MISSION_END_MARK = "/api/Operation/Mission/end"
+# G4：终身统计（纯展示的单调计数器；`/api/Stats/war/801/summary` 另算，暂不碰）
+STATS_PROFILE_MARKS = ("/api/Stats/profile/summary",
+                       "/api/Stats/profile/801/summary")
+# G5：客户端结算后主动上报成就累计值（响应恒为空 `{}`，值在**请求体**里）
+ACHIEVEMENTS_PATH = "/api/Progression/Achievements"
 
 # ---- 运行期状态文件（热重载：每个响应到达时现读） ---------------------------
 INV_STATE = RUNTIME / "inventory_inject.json"

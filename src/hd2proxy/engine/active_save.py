@@ -261,6 +261,81 @@ class ActiveSave:
                 "item_source": inc.get("item_source"), "packages": packages,
                 "unknown_keys": inc.get("unknown_keys") or []}
 
+    # ------------------------------------------------------------ G4/G5 响应入口
+    def apply_stats(self, body):
+        """G4：``Stats/profile`` 响应合并存档终身统计（逐 key 取 max）。"""
+        if body is None:
+            return body, 0
+        with self._lock:
+            try:
+                doc = self._store.load()
+            except Exception as e:            # noqa: BLE001 - 不能打断统计页
+                log("存档读取失败（Stats 合并跳过）：%r" % e)
+                return body, 0
+            new_body, changed = saves.apply_to_stats(body, doc)
+            if changed:
+                self._event("stats", "终身统计合并 +%d 字段" % changed)
+            return new_body, changed
+
+    def record_stats(self, body):
+        """G4：``Stats/profile`` 响应 → 记录终身统计（逐 key 单调 max，不降级）。
+
+        全 0（新号首局）不写盘：没有信息量，还白白刷一次 `.bak`。
+        """
+        nums = saves.parse_stats_numbers(body)
+        if not nums:
+            return {"ok": False, "reason": "no-numbers"}
+        if not any(nums.values()):
+            return {"ok": True, "recorded": 0, "skipped": "all-zero"}
+        with self._lock:
+            merged = dict(saves.stats_profile_of(self._store.load()))
+            changed = 0
+            for key, value in nums.items():
+                cur = merged.get(key)
+                if cur is None or value > cur:
+                    merged[key] = value
+                    changed += 1
+            if not changed:
+                return {"ok": True, "recorded": 0, "keys": len(nums)}
+
+            def _mut(earned, doc):
+                stats = earned.setdefault("stats", {})
+                if not isinstance(stats, dict):
+                    stats = earned["stats"] = {}
+                stats["profile"] = merged
+            self.update_earned(_mut, reason="stats")
+        self._event("stats", "终身统计 %d 项（%d 项更新）" % (len(nums), changed))
+        return {"ok": True, "recorded": changed, "keys": len(nums)}
+
+    def record_achievements(self, body):
+        """G5：``PUT /api/Progression/Achievements`` **请求体** → 成就累计值（per-key max）。
+
+        研究线 2026-11-23：上报的是**完整小列表**（141 B ≈ 5–6 条）；语义倾向累计覆盖，
+        但落成 per-key max 更稳（等价覆盖 + 幂等防双计 + 防旧快照把值改小）。
+        响应恒为 `{}`，所以只读请求体、不动响应。
+        """
+        from .hooks import achievements as _ach
+        values = _ach.extract_achievements(body)
+        if not values:
+            log_throttled("ach-unparsed",
+                          "成就上报体形状未识别（本次不记录）；拿到样本后补解析", every=300)
+            return {"ok": False, "reason": "unparsed"}
+        with self._lock:
+            merged = dict((self._store.load().get("earned") or {}).get("achievements") or {})
+            changed = 0
+            for key, value in values.items():
+                if value > _int(merged.get(key)):
+                    merged[key] = value
+                    changed += 1
+            if not changed:
+                return {"ok": True, "recorded": 0, "keys": len(values)}
+
+            def _mut(earned, doc):
+                earned["achievements"] = merged
+            self.update_earned(_mut, reason="achievements")
+        self._event("achievements", "上报 %d 条（%d 条更新）" % (len(values), changed))
+        return {"ok": True, "recorded": changed, "keys": len(values)}
+
     def note_login(self, body):
         """``/api/Account/Login`` **请求体**里的 clientVersion（catalog_build 辅字段）。"""
         doc = None

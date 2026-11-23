@@ -210,6 +210,80 @@ def _normalize_earned(doc: dict) -> dict:
 # --------------------------------------------------------------------------- #
 # 持久化
 # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+# G4：终身统计（Stats/profile）—— 纯展示的单调计数器，**逐 key 取 max**
+# --------------------------------------------------------------------------- #
+def stats_profile_of(save) -> dict:
+    """取存档里的 ``stats.profile``（兼容两种档：嵌套 ``stats.profile`` 或老档扁平 ``stats``）。"""
+    earned = _normalize_earned(save or {})
+    stats = earned.get("stats")
+    if not isinstance(stats, dict) or not stats:
+        return {}
+    profile = stats.get("profile")
+    if isinstance(profile, dict):
+        return {str(k): v for k, v in profile.items()
+                if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    # 老档/手改档：stats 本身就是 {key: value}
+    if all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in stats.values()):
+        return {str(k): v for k, v in stats.items()}
+    return {}
+
+
+def parse_stats_numbers(body) -> dict:
+    """从 Stats 响应/任意 body 抽出 ``{key: 数值}``（拒绝 bool 与非数值）。"""
+    doc, _ = _decode(body)
+    if not isinstance(doc, dict):
+        return {}
+    return {str(k): v for k, v in doc.items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool)}
+
+
+def apply_to_stats(body, save):
+    """把存档里的终身统计合并进 ``Stats/profile`` 响应（逐 key **取 max**，只抬不降）。
+
+    Stats 是纯展示的终身计数器（27 项 totalXxx）。用 max 而不是覆盖的原因：
+      * 计数器只增，服务端/客户端上报都只会变大；
+      * 换号/新号返回 0 时，不能把本地已记录的终身战绩"抹掉"（研究线 2026-11-23 口径）。
+    返回 ``(new_body, 改动字段数)``；没有可合并项时 body 原样返回。
+    """
+    doc, as_bytes = _decode(body)
+    if not isinstance(doc, dict):
+        return body, 0
+    mine = stats_profile_of(save)
+    if not mine:
+        return body, 0
+    changed = 0
+    for key, value in mine.items():
+        if key not in doc:
+            continue                       # 只改响应里已有的键：不往客户端凭空加字段
+        cur = doc.get(key)
+        if not isinstance(cur, (int, float)) or isinstance(cur, bool):
+            continue
+        if value > cur:
+            doc[key] = value
+            changed += 1
+    if not changed:
+        return body, 0
+    return _encode(doc, as_bytes), changed
+
+
+def merge_stats_into(dst_earned: dict, src_earned: dict) -> dict:
+    """把 ``src_earned`` 的终身统计按 key max 合并进 ``dst_earned``（迁移/换号合并用）。"""
+    mine = stats_profile_of({"earned": dst_earned})
+    theirs = stats_profile_of({"earned": src_earned})
+    if not theirs:
+        return dst_earned
+    for key, value in theirs.items():
+        cur = mine.get(key)
+        if cur is None or value > cur:
+            mine[key] = value
+    stats = dst_earned.setdefault("stats", {})
+    if not isinstance(stats, dict):
+        stats = dst_earned["stats"] = {}
+    stats["profile"] = mine
+    return dst_earned
+
+
 def _merge_earned_into(dst: dict, src: dict) -> dict:
     """把 ``src`` 合并进 ``dst``（迁移/换主键时用），按研究线 2026-11-23 定的字段类型分语义：
 
@@ -270,8 +344,11 @@ def _merge_earned_into(dst: dict, src: dict) -> dict:
             if item not in cur:
                 cur.append(item)
 
+    # G4：终身统计按 key 取 max（单调计数器；迁移时不能因为"较新"把战绩改小）
+    merge_stats_into(de, se)
+
     # 预留复杂结构：较新的档为准，缺键补齐
-    for key in ("stats", "season_pass", "assignments", "missions"):
+    for key in ("season_pass", "assignments", "missions"):
         got = se.get(key) or {}
         if not isinstance(got, dict) or not got:
             continue
