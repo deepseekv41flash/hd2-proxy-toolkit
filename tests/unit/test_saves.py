@@ -193,13 +193,13 @@ def test_earned_normalized_on_load(tmp_path):
 
 # ---------------------------------------------------------------- 身份 / 目录追溯（v2）
 
-def test_save_id_for_identity_forms():
-    assert saves.save_id_for("13887067702231565058") == "13887067702231565058"
-    assert saves.save_id_for(None, "76561199881579811") == "steam_76561199881579811"
+def test_save_id_for_steam_primary():
+    # SteamID64 为主键（每会话稳定）；HD2 20 位 id 只作别名
+    assert saves.save_id_for("76561199881579811") == "steam_76561199881579811"
+    assert saves.save_id_for(None, "13887067702231565058") == "hd2_13887067702231565058"
+    assert saves.save_id_for("76561199881579811", "13887067702231565058") ==         "steam_76561199881579811"
     assert saves.save_id_for() == saves.DEFAULT_SAVE_ID
-    assert saves.save_id_for("", "") == saves.DEFAULT_SAVE_ID
-    # 非法形态不采信（长度不对/含字母）
-    assert saves.save_id_for("abc123") == saves.DEFAULT_SAVE_ID
+    assert saves.save_id_for("abc123", "bad") == saves.DEFAULT_SAVE_ID
 
 
 def test_save_schema_has_catalog_build_and_identity():
@@ -208,12 +208,23 @@ def test_save_schema_has_catalog_build_and_identity():
     assert doc["identity"] == {"hd2_account_id": None, "steam_id": None}
 
 
-def test_store_set_catalog_build_and_identity(tmp_path):
+def test_catalog_build_id_matches_handoff_evidence():
+    """口径：<items_sha8>/<rows>/<clientVersion>；实测目录样例 d71655e6/3020。"""
+    body = b'{"items": [{"mixId": 1}, {"mixId": 2}, {"mixId": 3}]}'
+    info = saves.catalog_build_id(body, "1007203")
+    assert len(info["sha8"]) == 8 and info["rows"] == 3
+    assert info["value"] == "%s/3/1007203" % info["sha8"]
+    # list 形态也支持；没有 clientVersion 时末段留空
+    info2 = saves.catalog_build_id([{"a": 1}])
+    assert info2["rows"] == 1 and info2["value"].endswith("/1/")
+
+
+def test_store_record_catalog_and_identity(tmp_path):
     st = saves.SaveStore(root=tmp_path)
-    st.set_catalog_build(26568081)
-    st.set_identity("13887067702231565058", "76561199881579811")
+    info = st.record_catalog(b'{"items": [{"mixId": 1}]}', "1007203")
+    st.bind_identity("13887067702231565058", "76561199881579811")
     doc = st.load()
-    assert doc["catalog_build"] == "26568081"
+    assert doc["catalog_build"] == info["value"]
     assert doc["identity"]["hd2_account_id"] == "13887067702231565058"
     assert doc["identity"]["steam_id"] == "76561199881579811"
 
@@ -221,18 +232,34 @@ def test_store_set_catalog_build_and_identity(tmp_path):
 def test_adopt_identity_migrates_local_content(tmp_path):
     local = saves.SaveStore(root=tmp_path)
     local.add_experience(936)
-    migrated = local.adopt_identity("13887067702231565058", root=tmp_path)
-    assert migrated.save_id == "13887067702231565058"
-    assert migrated.load()["earned"]["experience"] == 936
-    assert migrated.load()["identity"]["hd2_account_id"] == "13887067702231565058"
-    # 目标档已存在时不覆盖
-    migrated.add_experience(5)
-    again = local.adopt_identity("13887067702231565058", root=tmp_path)
-    assert again.load()["earned"]["experience"] == 941
+    migrated = local.adopt_identity(steam_id="76561199881579811", root=tmp_path)
+    assert migrated.save_id == "steam_76561199881579811"
+    doc = migrated.load()
+    assert doc["earned"]["experience"] == 936
+    assert doc["identity"]["steam_id"] == "76561199881579811"
+    assert list(tmp_path.glob("local.merged-*.json"))
+
+
+def test_adopt_identity_merges_when_target_exists(tmp_path):
+    """目标档已存在也要合并（earned 取并/金额取大），绝不静默丢进度。"""
+    target = saves.SaveStore("steam_76561199881579811", root=tmp_path)
+    target.add_experience(50)
+    target.grant_items({"111": 2})
+    local = saves.SaveStore(root=tmp_path)
+    local.add_experience(936)
+    local.grant_items({"111": 5, "222": 1})
+    merged = local.adopt_identity(steam_id="76561199881579811",
+                                  hd2_account="13887067702231565058", root=tmp_path)
+    doc = merged.load()
+    assert doc["earned"]["experience"] == 936          # 取大
+    assert doc["earned"]["inventory_amounts"]["111"] == 5
+    assert doc["earned"]["inventory_amounts"]["222"] == 1
+    assert doc["identity"]["hd2_account_id"] == "13887067702231565058"
 
 
 def test_adopt_identity_skips_empty_local(tmp_path):
     local = saves.SaveStore(root=tmp_path)
-    migrated = local.adopt_identity(None, "76561199881579811", root=tmp_path)
+    migrated = local.adopt_identity(steam_id="76561199881579811", root=tmp_path)
     assert migrated.save_id == "steam_76561199881579811"
     assert migrated.load()["earned"]["experience"] == 0
+    assert not list(tmp_path.glob("local.merged-*.json"))

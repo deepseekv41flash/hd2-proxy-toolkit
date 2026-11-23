@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -66,23 +67,53 @@ def normal_save_id(save_id=None) -> str:
     return DEFAULT_SAVE_ID
 
 
-def save_id_for(hd2_account=None, steam_id=None) -> str:
-    """身份 → 存档 id：优先 HD2 20 位账号 id，其次 SteamID64，都没有则 ``local``。
+def save_id_for(steam_id=None, hd2_account=None) -> str:
+    """身份 → 存档 id：**SteamID64 为主键**，HD2 20 位账号 id 只作别名（2026-11-23 研究线修订）。
 
-    来源（2026-11-23 研究线实测，别重推）：
-      * ``POST /api/Pes/GetMessages`` 响应 ``accountId`` = **20 位 HD2 账号 id**；
-      * ``POST /api/Pes/GetMotd`` 响应 ``accountId`` = **SteamID64（17 位）**；
-      * 两者都是**响应**里拿到的，不需要解析 Steam 票据。
-    实测时机（两账号抓包）：GetMotd 在登录后 +24~42 s；GetMessages 只在新号会话出现（登录后 +3m9s）。
-    所以引擎侧要先 ``local`` 起档，见到身份后走 ``adopt_identity`` 迁移。
+    为什么以 SteamID64 为主键（实测证据）：
+      * ``POST /api/Pes/GetMotd`` 响应 ``accountId`` = **SteamID64（17 位）** —— 每会话稳定出现
+        （主号登录后 +42 s、空号 +24 s；真实会话里 46 分钟出现 7 次）；
+      * ``POST /api/Pes/GetMessages`` 响应 ``accountId`` = **20 位 HD2 账号 id** —— 不保证出现
+        （主号整份抓包没有；空号只在登录后 +3m09s 出现 1 次）。
+      ⇒ 若以 HD2 为主键，同一玩家会分别落进 ``steam_*`` 与 ``hd2_*`` 两个档、看起来"进度丢了"。
+
+    取值：``steam_<SteamID64>``；没有 SteamID64 但拿得到 HD2 id 时退 ``hd2_<id>``；都没有 ``local``。
+    后出现的别名用 ``SaveStore.bind_identity`` 记录，用 ``adopt_identity`` 合并迁移（见该类）。
     """
-    hd2 = "" if hd2_account is None else str(hd2_account).strip()
     steam = "" if steam_id is None else str(steam_id).strip()
-    if hd2 and _HD2_ID_RE.match(hd2):
-        return hd2
+    hd2 = "" if hd2_account is None else str(hd2_account).strip()
     if steam and _STEAM_ID_RE.match(steam):
         return "steam_" + steam
+    if hd2 and _HD2_ID_RE.match(hd2):
+        return "hd2_" + hd2
     return DEFAULT_SAVE_ID
+
+
+def catalog_build_id(items_body, client_version=None) -> dict:
+    """计算目录版本标识：``{"sha8", "rows", "client_version", "value"}``。
+
+    口径（研究线 2026-11-23 定）：``"<items_sha8>/<items_rows>/<clientVersion>"``，缺段留空。
+    必须传 **注入前** 的 ``/api/Progression/items`` 原始响应（注入后再算会随配置变化、失去可比性）。
+    参考实测：11-16/11-17 两账号 `d71655e6`/3020 行；11-18 主号 `93e7575a`/3021 行（版本差异）。
+    """
+    raw = None
+    if isinstance(items_body, (bytes, bytearray)):
+        raw = bytes(items_body)
+    elif isinstance(items_body, str):
+        raw = items_body.encode("utf-8")
+    rows = None
+    try:
+        doc = json.loads(raw.decode("utf-8")) if raw is not None else items_body
+        if isinstance(doc, list):
+            rows = len(doc)
+        elif isinstance(doc, dict) and isinstance(doc.get("items"), list):
+            rows = len(doc["items"])
+    except (ValueError, UnicodeDecodeError):
+        rows = None
+    sha8 = hashlib.sha256(raw).hexdigest()[:8] if raw is not None else ""
+    ver = "" if client_version is None else str(client_version).strip()
+    value = "%s/%s/%s" % (sha8, "" if rows is None else rows, ver)
+    return {"sha8": sha8, "rows": rows, "client_version": ver or None, "value": value}
 
 
 def empty_save(save_id=None) -> dict:
@@ -139,6 +170,65 @@ def _normalize_earned(doc: dict) -> dict:
 # --------------------------------------------------------------------------- #
 # 持久化
 # --------------------------------------------------------------------------- #
+def _merge_earned_into(dst: dict, src: dict) -> dict:
+    """把 ``src.earned`` 合并进 ``dst.earned``（迁移/换主键时用，**只增不减**）。
+
+    语义（研究线 2026-11-23 定）：earned 取并 / 金额取大 / 集合取并；绝不因为换档丢进度。
+    """
+    de = _normalize_earned(dst)
+    se = _normalize_earned(src)
+    # 标量：取大
+    for key in ("experience", "onboarding_flags", "onboarding_state"):
+        if _as_int(se.get(key)) > _as_int(de.get(key)):
+            de[key] = _as_int(se[key])
+    # 覆盖型：目标为空才用来源
+    for key in ("ship_name", "location"):
+        if not de.get(key) and se.get(key):
+            de[key] = se[key]
+    # 字典：逐键取大（成就 / 包进度用 dict 形式表示）
+    for key in ("achievements", "package_progress", "inventory_amounts"):
+        cur = de.setdefault(key, {})
+        for k2, v2 in (se.get(key) or {}).items():
+            if isinstance(v2, dict):
+                got = cur.setdefault(k2, {})
+                for k3, v3 in v2.items():
+                    if isinstance(v3, list):
+                        for item in v3:
+                            if item not in got.setdefault(k3, []):
+                                got[k3].append(item)
+                    elif _as_int(v3) > _as_int(got.get(k3)):
+                        got[k3] = v3
+            elif _as_int(v2) > _as_int(cur.get(k2, 0)) or k2 not in cur:
+                cur[k2] = v2
+    # 列表：取并
+    for key in ("purchased_season_pass_items", "inventory_ids"):
+        cur = de.setdefault(key, [])
+        for item in _as_list(se.get(key)):
+            if item not in cur:
+                cur.append(item)
+    # 预留复杂结构：目标缺键才补齐（不覆盖已有）
+    for key in ("stats", "season_pass", "assignments"):
+        cur = de.setdefault(key, {})
+        if isinstance(cur, dict):
+            for k2, v2 in (se.get(key) or {}).items():
+                cur.setdefault(k2, v2)
+    return de
+
+
+def _archive_save(store: "SaveStore", reason: str = "merged") -> None:
+    """把存档文件归档成 ``<save_id>.<reason>-<ts>.json``（保留现场审计，不参与读取）。"""
+    p = store.path()
+    if not p.exists():
+        return
+    target = p.with_name("%s.%s-%s.json" % (store.save_id, reason,
+                                           time.strftime("%Y%m%d-%H%M%S")))
+    try:
+        p.replace(target)
+        log("存档 %s 已归档为 %s" % (store.save_id, target.name))
+    except OSError as e:
+        log("存档归档失败（%s）：%r" % (store.save_id, e))
+
+
 class SaveStore:
     """一份存档的读写门面（原子写 / 备份 / 损坏回退 / 热重载友好：每次操作都重新读盘）。"""
 
@@ -224,6 +314,17 @@ class SaveStore:
             doc["catalog_build"] = str(build)
         return self.update(_mut)
 
+    def record_catalog(self, items_body, client_version=None) -> dict:
+        """用**注入前**的 ``/api/Progression/items`` 响应记录目录版本（sha8/行数/clientVersion）。"""
+        info = catalog_build_id(items_body, client_version)
+        if info["sha8"] and self.load().get("catalog_build") != info["value"]:
+            self.set_catalog_build(info["value"])
+        return info
+
+    def bind_identity(self, hd2_account=None, steam_id=None) -> dict:
+        """把后观测到的身份别名写进当前档（主键不变；20 位 HD2 id 只是别名）。"""
+        return self.set_identity(hd2_account, steam_id)
+
     def set_identity(self, hd2_account=None, steam_id=None) -> dict:
         """记录身份别名（不影响 save_id；换档见 adopt_identity）。"""
         def _mut(doc):
@@ -234,22 +335,34 @@ class SaveStore:
                 ident["steam_id"] = str(steam_id)
         return self.update(_mut)
 
-    def adopt_identity(self, hd2_account=None, steam_id=None, root=None):
-        """见到真实身份后把 ``local`` 档迁移到身份档；返回身份档的 SaveStore。
+    def adopt_identity(self, *, hd2_account=None, steam_id=None, root=None):
+        """见到真实身份后把当前档迁移/合并到身份档；返回身份档的 SaveStore。
 
-        规则：目标档已存在 → 直接用它（不动），仅把身份写进去；目标不存在且本档有内容 →
-        把本档复制过去（保留 local 作为兜底）；本档为空 → 不迁移。
+        规则（研究线 2026-11-23 修订：**目标已存在也要合并**，绝不静默丢进度）：
+          * 目标档不存在 → 把本档内容写过去；
+          * 目标档已存在 → 本档 earned **合并进目标**（earned 取并 / 金额取大 / 集合取并）；
+          * 合并后把本档文件归档成 ``<id>.merged-<ts>.json``（保留审计）；
+          * 身份别名（HD2 id / SteamID64）写进目标档的 ``identity``。
         """
-        target_id = save_id_for(hd2_account, steam_id)
+        target_id = save_id_for(steam_id, hd2_account)
         target = SaveStore(target_id, root=root or self.root)
+        mine = self.load()
+        has_content = any(bool(v) for v in (mine.get("earned") or {}).values())
         if target_id == self.save_id:
             target.set_identity(hd2_account, steam_id)
             return target
-        if not target.path().exists():
-            mine = self.load()
-            if any(bool(v) for v in (mine.get("earned") or {}).values()):
-                target.save(mine)
+        if target.path().exists():
+            if has_content:
+                theirs = target.load()
+                theirs["earned"] = _merge_earned_into(theirs, mine)
+                if mine.get("catalog_build") and not theirs.get("catalog_build"):
+                    theirs["catalog_build"] = mine["catalog_build"]
+                target.save(theirs)
+        elif has_content:
+            target.save(mine)
         target.set_identity(hd2_account, steam_id)
+        if has_content:
+            _archive_save(self, "merged")
         return target
 
     # ---- 便捷：累计「已获得」 --------------------------------------

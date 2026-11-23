@@ -901,7 +901,7 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| G1 | `engine/saves.py`：存档读写（原子写/`.bak`/损坏隔离）+ 合并纯函数（Progression / inventory） | ✅ 2026-11-23（15 单测；总 514→529） |
+| G1 | `engine/saves.py`：存档读写（原子写/`.bak`/损坏隔离）+ 合并纯函数（Progression / inventory） + 身份选档（**SteamID64 主键**，HD2 20 位作别名；`adopt_identity` 合并迁移）+ `catalog_build`（items sha8/行数/clientVersion） | ✅ 2026-11-23（22 单测；总 **536 passed**；schema v2） |
 | G2 | `hooks/progression.py`：`GET /api/Progression` 根钩子（experience/achievements/packageProgress/onboarding/shipName/location） | ⏳ 下一步 |
 | G3 | `hooks/mission_end.py`：结算奖励累加进 earned（经验/物品/包进度），响应反映存档 | ⏳ 需先采 `Mission/end` 请求体 |
 | G4 | `Stats` / `SeasonPass` / `Assignment` 子集 | ⏳ |
