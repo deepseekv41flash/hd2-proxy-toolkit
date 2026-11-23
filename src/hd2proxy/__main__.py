@@ -41,7 +41,8 @@ TOOLS = ROOT / "tools"
 
 from hd2proxy.engine import (certs, config as cfgmod, installer,  # noqa: E402
                              live as live_mod, paths,
-                             preview as preview_mod, sysprobe)
+                             preview as preview_mod,
+                             save_preview as savepreview_mod, sysprobe)
 
 OK, FAIL = 0, 2
 
@@ -421,6 +422,24 @@ def cmd_preview(a):
     return OK
 
 
+def cmd_save_preview(a):
+    """存档预演（G6）：把本机存档套到真实样本上，看不玩游戏会看到什么 / 一局结算会加多少。
+
+    纯读：不联网、不写盘、不读 runtime 之外的运行态（默认读 `_last.json` 指向的档）。
+    存档的效果本来要"重启游戏"才可见（客户端结算后不重取 Progression），预演把这个成本省掉。
+    """
+    result = savepreview_mod.preview(
+        save_id=(a.save or None),
+        save_file=(a.save_file or None),
+        base_dir=(a.fixtures or None),
+        mission_names=[a.mission] if a.mission else None)
+    if a.json:
+        _out(result)
+    else:
+        print(savepreview_mod.format_text(result))
+    return OK
+
+
 def cmd_live(a):
     """拉取当前战况（无需游戏）：Status + GWE，并推荐可点靶星。
 
@@ -551,6 +570,13 @@ def build_parser():
     p.add_argument("--samples", default="", help="样本目录（默认 data/samples）")
     p.add_argument("--json", action="store_true", help="输出结构化 JSON（默认人读文本）")
 
+    p = sub.add_parser("save-preview", help="存档预演：把本机存档套到样本上看会改什么（不开游戏）")
+    p.add_argument("--save", default="", help="存档 saveId（默认 _last.json 指向的档）")
+    p.add_argument("--save-file", default="", help="直接指定存档 JSON 文件")
+    p.add_argument("--fixtures", default="", help="存档夹具目录（默认 data/fixtures/saves）")
+    p.add_argument("--mission", default="", help="结算样本文件名（默认取第一份）")
+    p.add_argument("--json", action="store_true", help="输出结构化 JSON")
+
     p = sub.add_parser("live", help="拉取当前战况（无需游戏）：Status + GWE，并推荐可点靶星")
     p.add_argument("--war", type=int, default=0, help="战局号（默认自动取 current/WarId）")
     p.add_argument("--host", default="", help="API 主机（默认官方）")
@@ -604,7 +630,8 @@ def main(argv=None):
         "gate": cmd_gate, "profiles": cmd_profiles, "migrate": cmd_migrate,
         "certs": cmd_certs, "install": cmd_install, "uninstall": cmd_uninstall,
         "status": cmd_status, "verify": cmd_verify, "shutdown": cmd_shutdown,
-        "gui": cmd_gui, "preview": cmd_preview, "live": cmd_live,
+        "gui": cmd_gui, "preview": cmd_preview, "save-preview": cmd_save_preview,
+        "live": cmd_live,
     }[a.cmd]
     return handler(a)
 

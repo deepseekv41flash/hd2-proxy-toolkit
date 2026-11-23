@@ -80,4 +80,7 @@ out, changed = saves.apply_to_progression(body, saves.empty_save())     # 空档
 
 守门测试：`tests/unit/test_save_fixtures.py`（行数/大小/无身份字段/空档不虚增）+
 `tests/unit/test_mission_end.py`（结算解析/口径/坏 body）。
+
+**谁在用**：G6 存档预演 `hd2proxy save-preview` 直接读本目录（`main/`、`fresh/`、`mission_end/`），
+把本机账本套到这些真实样本上输出「会改哪些字段 / 一局结算会加多少」。
 新增或替换夹具时请同步更新上面的表格。
