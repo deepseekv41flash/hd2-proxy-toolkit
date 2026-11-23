@@ -786,8 +786,14 @@ def main(argv=None):
     if spec is not None and (spec.saves or {}).get("enabled"):
         try:
             sv = spec.saves or {}
+            # 身份未校验的首屏合并策略：默认 safe（防换号回声污染）；测试上游(mock/自建服)
+            # 自动升到 full，保证「服务端给得少 ⇒ 存档层兜底」可验证。
+            pv_mode = str(sv.get("preverify_merge") or "safe")
+            if mod.upstream_test and pv_mode == "safe":
+                pv_mode = "full"
             proxy.save = ActiveSave(wait_seconds=sv.get("wait_seconds", 1.2),
-                                    strict=bool(sv.get("identity_strict", False)))
+                                    strict=bool(sv.get("identity_strict", False)),
+                                    preverify_merge=pv_mode)
             st = proxy.save.start()
             if st.get("origin") == "last":
                 log("存档：首屏预绑定 %s（身份待 GetMotd 校验）" % st.get("save_id"), audit=True)
@@ -866,6 +872,12 @@ def main(argv=None):
                         proxy.save.wait_seconds = max(
                             0.0, float(sv.get("wait_seconds", proxy.save.wait_seconds)))
                         proxy.save.strict = bool(sv.get("identity_strict", proxy.save.strict))
+                        _pv = str(sv.get("preverify_merge") or proxy.save.preverify_merge)
+                        if mod.upstream_test and _pv == "safe":
+                            _pv = "full"
+                        proxy.save.preverify_merge = (
+                            _pv if _pv in ("safe", "full", "off")
+                            else proxy.save.preverify_merge)
                     except (TypeError, ValueError):
                         pass
                     if not sv.get("enabled", True):

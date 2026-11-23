@@ -237,3 +237,24 @@ def test_planet_effects_on_super_earth_warns():
     assert errors == []
     assert doc["status"]["planet_effects"] == [{"index": 0, "ids": [1243, 1245]}]
     assert any("SUPER EARTH" in w for w in warnings)
+
+
+def test_saves_preverify_merge_validation():
+    """v0.6.0-alpha.3：首屏合并策略 safe/full/off 三档；默认 safe（防换号回声污染）。"""
+    prof = config.default_profile()
+    doc, errors, _ = config.validate(prof)
+    assert errors == [] and doc["saves"]["preverify_merge"] == "safe"
+    spec = config.to_engine_spec(doc)
+    assert spec.saves["preverify_merge"] == "safe"
+
+    for mode in ("full", "off"):
+        p = config.default_profile()
+        p["saves"]["preverify_merge"] = mode
+        d, errs, _ = config.validate(p)
+        assert errs == [] and d["saves"]["preverify_merge"] == mode
+        assert config.to_engine_spec(d).saves["preverify_merge"] == mode
+
+    p = config.default_profile()
+    p["saves"]["preverify_merge"] = "bogus"
+    _, errs, _ = config.validate(p)
+    assert errs and "preverify_merge" in errs[0]

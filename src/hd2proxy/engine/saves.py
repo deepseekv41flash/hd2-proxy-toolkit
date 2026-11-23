@@ -1059,8 +1059,14 @@ def _merge_package_progress(items: list, earned: dict) -> int:
     return changed
 
 
-def apply_to_progression(body, save: dict):
-    """把存档的 earned 合并进 ``GET /api/Progression`` 响应体。返回 (新 body, 改动数)。"""
+def apply_to_progression(body, save: dict, *, include_achievements: bool = True):
+    """把存档的 earned 合并进 ``GET /api/Progression`` 响应体。返回 (新 body, 改动数)。
+
+    ``include_achievements=False``：**身份未校验的预绑定首屏**用（``saves.preverify_merge=safe``）。
+    成就与 Stats 是客户端会**回显上报**的字段：若把上一档的值合并给另一个账号看到，客户端会把
+    这些"看到的数"加增量后 PUT 回来，被账本记成自己的成就（2026-11-23 ④ 换号实测）。
+    经验/包进度/库存数量是服务端自算字段，回显不改变它们，可安全合并。
+    """
     doc, as_bytes = _decode(body)
     if not isinstance(doc, dict):
         return body, 0
@@ -1109,7 +1115,7 @@ def apply_to_progression(body, save: dict):
         changed += added
 
     ach = doc.get("achievements")
-    if isinstance(ach, list):
+    if include_achievements and isinstance(ach, list):
         changed += _merge_achievements(ach, earned.get("achievements"))
 
     pkg = doc.get("packageProgress")

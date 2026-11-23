@@ -66,10 +66,15 @@ class ActiveSave:
     所有状态读写都在 ``self._lock`` 下；等身份时**不持锁**（否则 GetMotd 线程进不来）。
     """
 
-    def __init__(self, root=None, *, wait_seconds=1.2, strict=False, run_id=None):
+    def __init__(self, root=None, *, wait_seconds=1.2, strict=False, run_id=None,
+                 preverify_merge="safe"):
         self.root = Path(root) if root else Path(paths.SAVES_DIR)
         self.wait_seconds = max(0.0, float(wait_seconds or 0))
         self.strict = bool(strict)
+        # 身份未校验时首屏合并策略：safe=只合并服务端自算字段（默认，防换号回声污染）
+        # full=全合并（仅 upstreamTest/mock 或显式配置），off=不合并
+        mode = str(preverify_merge or "safe")
+        self.preverify_merge = mode if mode in ("safe", "full", "off") else "safe"
         self.run_id = str(run_id or uuid.uuid4().hex[:12])
         self._lock = threading.RLock()
         self._identity_known = threading.Event()
@@ -77,6 +82,8 @@ class ActiveSave:
         self.save_id = saves.DEFAULT_SAVE_ID
         self.steam_id = None
         self.hd2_account = None
+        self._hd2_session = None       # **本局**观测到的 HD2 20 位别名（跨账号切档时绝不能带过去）
+        self._steam_session = None     # **本局**观测到的 SteamID64（用于区分「预绑定提示」与「本局事实」）
         self.origin = ORIGIN_LOCAL
         self.verified = False          # 本局身份是否已校验通过（strict 写入的前置条件）
         self.session_dirty = False     # 本局是否写过 activeSave（决定要不要回滚）
@@ -88,6 +95,7 @@ class ActiveSave:
         self._first_progression = False
         self._last_catalog = None
         self._ident_recorded = (None, None)    # 已落盘的身份（避免每发 GetMotd 都写盘）
+        self._preverify_merges = 0             # 身份校验前已把账本合并进响应的字段数（换号时提示"显示窗口"）
         self._purchase_seen = {}               # 购买去重键 -> 时间戳（短窗口防双扣）
         self._rebase_done = False              # 会话基准是否已重建（同一会话只重建一次）
 
@@ -147,18 +155,42 @@ class ActiveSave:
                        snap.get("action"), snap.get("sha") or "-"))
 
     # ------------------------------------------------------------ 响应入口
+    def _preverify_decision(self, what):
+        """身份未校验时是否允许合并。返回 (合并, 是否包含回显字段)；None=整个跳过。"""
+        if self.verified:
+            return (True, True)
+        if self.preverify_merge == "off":
+            return None
+        if self.preverify_merge == "safe":
+            # 只合并服务端自算、客户端不会回显上报的字段（经验/包进度/…）；
+            # 成就/统计/库存先不合并，避免"上一档显示值 → 客户端回显 → 记进新档"的污染回路。
+            log_throttled("save-preverify-safe",
+                          "存档：身份未校验，首屏按安全策略合并（不含成就/统计/库存：防换号回声污染）",
+                          every=600)
+            return (True, False)
+        return (True, True)                    # full：mock/自建服场景，保证"服务端给得少"时兜底可见
+
     def apply_progression(self, body):
         """``/api/Progression`` 根响应：必要时等身份 → 合并 earned。返回 (body, 改动数)。"""
         if body is None:
             return body, 0
         self._maybe_wait_identity()
         with self._lock:
+            decision = self._preverify_decision("progression")
+            if decision is None:
+                return body, 0
+            _merge, include_ach = decision
             try:
                 doc = self._store.load()
             except Exception as e:            # noqa: BLE001 - 存档异常不能打断首屏
                 log("存档读取失败（Progression 合并跳过）：%r" % e)
                 return body, 0
-            new_body, changed = saves.apply_to_progression(body, doc)
+            new_body, changed = saves.apply_to_progression(
+                body, doc, include_achievements=include_ach)
+            if changed and not self.verified:
+                # 身份校验前就合并了 = 客户端这条响应已经发出去了；若随后发现是别人，
+                # 本会话显示会偏高（客户端一局只拉一次 Progression，无法回撤）。
+                self._preverify_merges += changed
             if not self._first_progression:
                 self._first_progression = True
                 self._event("progression", "首屏按 %s 渲染（来源 %s，earned 改动 %d 字段）"
@@ -266,8 +298,14 @@ class ActiveSave:
 
     # ------------------------------------------------------------ G4/G5 响应入口
     def apply_stats(self, body):
-        """G4：``Stats/profile`` 响应合并存档终身统计（逐 key 取 max）。"""
+        """G4：``Stats/profile`` 响应合并存档终身统计（逐 key 取 max）。
+
+        身份未校验且策略非 full 时**跳过**：统计是客户端/服务端会回显的量，
+        把上一档的战绩合并给另一个账号看没有收益，反而误导（2026-11-23 ④ 实测）。
+        """
         if body is None:
+            return body, 0
+        if not self.verified and self.preverify_merge != "full":
             return body, 0
         with self._lock:
             try:
@@ -289,6 +327,8 @@ class ActiveSave:
         语义与 experience/成就/统计一致：服务端给得更多就听服务端的，账本只在更少时兜底。
         """
         if body is None:
+            return body, 0
+        if not self.verified and self.preverify_merge != "full":
             return body, 0
         with self._lock:
             try:
@@ -579,20 +619,34 @@ class ActiveSave:
             return {"ok": False, "action": "no-id", "save_id": self.save_id}
         with self._lock:
             if steam:
+                if self.steam_id and steam != self.steam_id:
+                    # 本局观测到另一个 Steam 号 ⇒ 之前记着的 HD2 别名属于上一账号，
+                    # 绝不能带进新账号的档（也不能拿它去覆盖目标档里正确的别名）。
+                    self._hd2_session = None
                 self.steam_id = steam
+                self._steam_session = steam
             if hd2:
+                if (self._hd2_session is None and self.hd2_account
+                        and hd2 != self.hd2_account and self._steam_session is None
+                        and self.steam_id):
+                    # 预绑定的 steam+hd2 是**上一局的一对**；本局先到的别名不同 ⇒
+                    # 观测到的不是这对账号，丢掉预绑定的 steam（否则会把别名写进别人的档）。
+                    self.steam_id = None
                 self.hd2_account = hd2
+                self._hd2_session = hd2      # 只认本局观测到的别名（GetMotd 不带 hd2 时它仍是 None）
             self._identity_known.set()
             target_id = saves.save_id_for_identity(self.steam_id, self.hd2_account,
                                                    root=self.root)
             if target_id == self.save_id:
                 # 真实会话里 GetMotd 会重复出现（46 分钟 7 次）：只在「首次校验」或
                 # 「别名变了」时落盘，避免每发都写档 + 刷 .bak
-                changed = (not self.verified) or (self.steam_id, self.hd2_account) != self._ident_recorded
+                changed = ((not self.verified)
+                           or (self.steam_id, self._hd2_session) != self._ident_recorded)
                 self.verified = True
                 if changed:
-                    self._store.set_identity(self.hd2_account, self.steam_id, source=source)
-                    self._ident_recorded = (self.steam_id, self.hd2_account)
+                    # 只写**本局观测到的**别名：GetMotd 先到时不覆盖档里已有的正确 hd2
+                    self._store.set_identity(self._hd2_session, self.steam_id, source=source)
+                    self._ident_recorded = (self.steam_id, self._hd2_session)
                     saves.clear_pending(root=self.root)
                     self._event(source, "身份校验一致 → %s" % self.save_id)
                     # 基准**只在会话首次校验一致时重建一次**（研究线 2026-11-23 建议）：
@@ -616,27 +670,36 @@ class ActiveSave:
                 "rollback": "none", "orphan": "", "dirty_sha": "", "restored_sha": ""}
         if not old_identified:
             # 旧档 local/未识别：不会混进别人的进度 → 合并 + 归档（绝不静默丢）
-            target = self._store.adopt_identity(hd2_account=self.hd2_account,
+            target = self._store.adopt_identity(hd2_account=self._hd2_session,
                                                 steam_id=self.steam_id, root=self.root)
             info["save_id"] = target.save_id
         else:
-            # 两个已识别档之间绝不合并：本局写入整档回滚到会话基准，脏档留 orphan
+            # 两个已识别档之间绝不合并：本局写入整档回滚到会话基准，脏档留 orphan。
+            # 身份只写**本局观测到的**：GetMotd 先到（还没 GetMessages）时 hd2=None，
+            # 既不把上一账号的别名写进新档，也不覆盖目标档里本来就正确的 hd2。
             info.update(self._rollback_session())
             target = saves.SaveStore(target_id, root=self.root)
-            target.set_identity(self.hd2_account, self.steam_id, source=source)
+            target.set_identity(self._hd2_session, self.steam_id, source=source)
         self._bind(target.save_id, reuse=False, mark=False)
         self.verified = True
+        self._ident_recorded = (self.steam_id, self._hd2_session)
+        self.hd2_account = self._hd2_session      # 状态显示/写 _last 用本局别名，不带上一账号的
         saves.clear_pending(root=self.root)
         saves.write_last(self.save_id, self.steam_id, self.hd2_account, root=self.root)
         self._event("switch", "%s → %s（%s，回滚=%s，orphan=%s）"
                     % (old_id, self.save_id, info["action"], info["rollback"],
                        info["orphan"] or "-"))
         if info["action"] == "switched":
+            window = ""
+            if self._preverify_merges:
+                window = ("；本会话首屏曾按旧档合并 %d 处 —— **本局显示可能偏高，重启游戏后按新档纠正**"
+                          % self._preverify_merges)
             self._warn("⚠ 身份切换：%s（已识别）→ %s；**不合并**（避免跨玩家混档）。"
-                       "本局写入=%s，回滚=%s%s"
+                       "本局写入=%s，回滚=%s%s%s"
                        % (old_id, self.save_id, "有" if info["session_dirty"] else "无",
                           info["rollback"],
-                          "，脏档另存 " + info["orphan"] if info["orphan"] else ""))
+                          "，脏档另存 " + info["orphan"] if info["orphan"] else "",
+                          window))
         else:
             log("身份确认：%s（local/未识别）已合并进 %s 并归档"
                 % (old_id, self.save_id), audit=True)

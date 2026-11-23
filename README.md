@@ -8,10 +8,10 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.6.0-alpha.2 已发布（2026-11-23，含 GUI「本地账号」页 + 库存合并修复）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.6.0-alpha.3 已发布（2026-11-23，换号不混档验收 + 别名/回声污染修复）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 六页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
-> **689 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.6.0-alpha.2`（见下方「下载」）。
+> **696 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.6.0-alpha.3`（见下方「下载」）。
 > 0.5.0 起加入**本机存档层**（`base ⊕ config ⊕ earned`）：启动按 `_last.json` 乐观预绑定上次的档渲染首屏、
 > `Pes/GetMotd` 到达校验、同机换号**整档回滚**到会话基准快照 + 孤儿审计（研究线 2026-11-23 反馈的粒度修正）；
 > 0.5.1 起**结算奖励入账**（`Mission/end` 响应 → 经验/货币/物品/包进度累加进本机账本，按 missionId 防双计）；
@@ -65,14 +65,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.6.0-alpha.2）
+## 下载（v0.6.0-alpha.3）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.6.0-alpha.2.md)。
+> [Release Notes](docs/RELEASE-v0.6.0-alpha.3.md)。
 
-- 下载：[GitHub Releases · v0.6.0-alpha.2](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.6.0-alpha.2)
-  （`hd2proxy-toolkit-v0.6.0-alpha.2-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.6.0-alpha.3](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.6.0-alpha.3)
+  （`hd2proxy-toolkit-v0.6.0-alpha.3-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，
@@ -178,8 +178,11 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 - **GUI 入口（v0.6.0 起）**：侧栏「本地账号（仅本机视图）」→「存档（本机账本）」tab：档摘要 /
   引擎校验态 / **存档预演**按钮 / 打开存档目录；页头固定三条边界（仅本机视图 / 不回传服务器 / 服务端仍是事实源）。
 - 排障/调试：`saves.identity_strict`（默认 `false`）严格模式下身份未校验时**拒绝写盘**；
-  `saves.wait_seconds`（默认 1.2）没有历史档时首屏最多等身份多久；战况页顶部一行显示
-  「存档 `<saveId>` · 预绑定待校验 / 已校验 · 本局有写入」。
+  `saves.wait_seconds`（默认 1.2）没有历史档时首屏最多等身份多久；
+  **`saves.preverify_merge`（v0.6.0-alpha.3 新增，默认 `safe`）**身份未校验时的首屏合并策略：
+  `safe` 只合并服务端自算字段（经验/包进度），**成就/统计/库存不合并**（防"上一档显示值 → 客户端回显 →
+  记进新档"的污染回路）；`full` 全合并（`upstreamTest`/mock/自建服自动启用）；`off` 不合并。
+  战况页顶部一行显示「存档 `<saveId>` · 预绑定待校验 / 已校验 · 本局有写入」。
 
 - **结算奖励也会入账（v0.5.1 起）**：`POST /api/Operation/Mission/end` 的**响应**已含服务端算好的本局增量
   （`experience` / `rewards` / 各类奖励清单 / `progressionPackageUpdates`），不需要请求体；
@@ -202,8 +205,10 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 
 **已知限制（务必知道）**：客户端**一次会话只拉一次** `/api/Progression`，而引擎启动时先按
 `runtime/saves/_last.json` 里「上次的档」渲染首屏，`Pes/GetMotd`（登录后 +24~42 s）才校验身份。
-所以同机换号的那一刻，**首屏可能已按旧档渲染，本局客户端不会重取** —— 重启游戏后才会换成新档。
-这不是 bug，是客户端请求时序决定的：我们选择「宁可首屏有内容，也不让老玩家整局看空档」。
+所以同机换号的那一刻，**那一整局客户端都可能沿用旧档的合并视图**（不止首屏，因为不会重取）——
+重启游戏后才会换成新档。这不是 bug，是客户端请求时序决定的：我们选择「宁可首屏有内容，也不让老玩家
+整局看空档」。v0.6.0-alpha.3 起默认 `safe` 策略**只合并服务端自算字段**，已阻断其中「客户端把看到的
+成就数回显上报、被记进新账号账本」的污染路径（2026-11-23 换号实机验收发现并修复）。
 
 离线验证样本：`data/fixtures/saves/{main,fresh}/`（两套真实抓包的 6 个存档端点，无身份/票据字段，
 见该目录 README）；合并语义由 `tests/unit/test_saves*.py` 与 `test_active_save.py` 钉住。

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hd2-proxy-toolkit"
-version = "0.6.0a2"
+version = "0.6.0a3"
 description = "Helldivers 2 local MITM proxy toolkit: GUI for client-side Status / inventory rewriting"
 readme = "README.md"
 requires-python = ">=3.11"

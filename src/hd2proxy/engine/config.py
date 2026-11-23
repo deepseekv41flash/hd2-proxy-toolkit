@@ -57,7 +57,8 @@ DEFAULT_PROFILE = {
         "max_bytes": 8388608, "planet_settings": False,
     },
     # G2 存档层：每玩家可持久化的 earned 账本（Progression 根响应合并）
-    "saves": {"enabled": True, "wait_seconds": 1.2, "identity_strict": False},
+    "saves": {"enabled": True, "wait_seconds": 1.2, "identity_strict": False,
+              "preverify_merge": "safe"},
     "experimental": {"customize": {"enabled": False, "edits": []}},
 }
 
@@ -393,6 +394,12 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
         sv["wait_seconds"] = float(ws)
     if not isinstance(sv.get("identity_strict"), bool):
         errors.append("saves.identity_strict 必须是 true/false")
+    mode = sv.get("preverify_merge", "safe")
+    if mode not in ("safe", "full", "off"):
+        errors.append("saves.preverify_merge 必须是 safe/full/off（当前 %r）："
+                      "身份未校验时是否把本机账本合并进首屏响应" % mode)
+    else:
+        sv["preverify_merge"] = mode
     doc["saves"] = sv
 
     # ---- experimental -----------------------------------------------------
@@ -653,6 +660,7 @@ def to_engine_spec(profile: dict, catalog_doc=None) -> EngineSpec:
         "enabled": bool(sv.get("enabled", True)),
         "wait_seconds": max(0.0, min(10.0, float(wait))),
         "identity_strict": bool(sv.get("identity_strict", False)),
+        "preverify_merge": str(sv.get("preverify_merge") or "safe"),
     }
 
     spec.warnings = list(dict.fromkeys([w for w in warnings if w]))

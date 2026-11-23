@@ -12,6 +12,7 @@ from hd2proxy.engine import active_save, saves
 STEAM_A = "76561198968648344"
 STEAM_B = "76561199881579811"
 HD2_A = "13887067702231565058"
+HD2_B = "11893343864225233967"
 
 
 def make_save(root, steam_id=STEAM_A, experience=1000):
@@ -109,7 +110,7 @@ def test_apply_inventory_raises_and_fills_rows(tmp_path):
     doc = st.load()
     doc["earned"]["inventory_amounts"] = {"3901895556": 699, "718265621": 1}
     st.save(doc)
-    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1", preverify_merge="full")
     mgr.start()
     body = json.dumps({"items": [{"mixId": 3901895556, "amount": 999999,
                                   "isDiscovered": True}]}).encode("utf-8")
@@ -171,6 +172,72 @@ def test_getmessages_records_hd2_alias_only(tmp_path):
     mgr.close()
 
 
+def test_switch_on_getmotd_does_not_carry_previous_hd2(tmp_path):
+    """换号时 GetMotd 先到（GetMessages 还没来）：新档不得带上一位玩家的 HD2 别名。
+
+    2026-11-23 实机 ④ 换号验收暴露：预绑定档的 hd2 被写进空号新档，GetMessages 到达
+    才纠正（约 1 分钟窗口）。身份别名属于「某账号」，跨账号切档时必须丢弃。
+    """
+    sid_a = make_save(tmp_path, STEAM_A, experience=1000)
+    saves.SaveStore(sid_a, root=tmp_path).set_identity(HD2_A, STEAM_A, source="getmotd")
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    info = mgr.on_getmotd(STEAM_B)                     # 空号这局：GetMotd 先到
+    assert info["action"] == "switched"
+    fresh = saves.SaveStore(saves.save_id_for(STEAM_B), root=tmp_path).load()["identity"]
+    assert fresh["steam_id"] == STEAM_B
+    assert fresh.get("hd2_account_id") is None        # 不带主号别名
+    mgr.on_getmessages(HD2_B)                          # 本局别名后到 → 同档补上
+    fresh = saves.SaveStore(saves.save_id_for(STEAM_B), root=tmp_path).load()["identity"]
+    assert fresh["hd2_account_id"] == HD2_B
+    mgr.close()
+
+
+def test_switch_back_does_not_overwrite_target_hd2(tmp_path):
+    """切回主号：目标档已有自己的 hd2，本局（空号）的别名不得覆盖它。"""
+    sid_a = make_save(tmp_path, STEAM_A, experience=1000)
+    saves.SaveStore(sid_a, root=tmp_path).set_identity(HD2_A, STEAM_A, source="getmotd")
+    sid_b = saves.save_id_for(STEAM_B)
+    saves.SaveStore(sid_b, root=tmp_path).set_identity(HD2_B, STEAM_B, source="getmotd")
+    saves.write_last(sid_a, STEAM_A, HD2_A, root=tmp_path)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    mgr.on_getmotd(STEAM_B)          # 切到空号
+    mgr.on_getmessages(HD2_B)        # 空号别名到达（本局观测=B）
+    info = mgr.on_getmotd(STEAM_A)   # 切回主号
+    assert info["action"] == "switched" and mgr.save_id == sid_a
+    ident_a = saves.SaveStore(sid_a, root=tmp_path).load()["identity"]
+    assert ident_a["hd2_account_id"] == HD2_A         # 主号自己的别名不被空号覆盖
+    assert ident_a["steam_id"] == STEAM_A
+    mgr.close()
+
+
+def test_hd2_first_for_other_account_does_not_patch_prebound_steam(tmp_path):
+    """GetMessages 先到且属别的账号：不得把它的别名写进预绑定（上一账号）的档。"""
+    sid_a = make_save(tmp_path, STEAM_A, experience=1000)
+    saves.SaveStore(sid_a, root=tmp_path).set_identity(HD2_A, STEAM_A, source="getmotd")
+    before_a = saves.SaveStore(sid_a, root=tmp_path).path().read_bytes()
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    info = mgr.on_getmessages(HD2_B)                   # 本局先看到空号别名，主号 steam 只是预绑定
+    assert info["action"] in ("switched", "same")
+    assert saves.SaveStore(sid_a, root=tmp_path).path().read_bytes() == before_a   # 主号档未被改
+    mgr.close()
+
+
+def test_switch_warns_when_first_progression_merged_before_identity(tmp_path):
+    """身份校验前已合并首屏 → 换号告警要写清"本局显示偏高、重启纠正"（显示窗口非写盘混档）。"""
+    make_save(tmp_path, STEAM_A, experience=1000)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    out, changed = mgr.apply_progression(prog_body(1))   # 身份未校验就合并（客户端已收到）
+    assert changed == 1 and json.loads(out)["experience"] == 1000
+    mgr.on_getmotd(STEAM_B)                              # 随后发现是另一个账号
+    warns = [w["message"] for w in mgr.status()["warnings"]]
+    assert any("首屏曾按旧档合并" in w and "重启游戏后按新档纠正" in w for w in warns), warns
+    mgr.close()
+
+
 def test_hd2_only_identity_reverse_lookup(tmp_path):
     """只有 20 位 HD2 id 时，反查已有 steam 档而不是新建 hd2_* 档。"""
     sid = make_save(tmp_path, experience=1200)
@@ -183,6 +250,70 @@ def test_hd2_only_identity_reverse_lookup(tmp_path):
     info = mgr.on_getmessages(HD2_A)
     assert info["action"] == "merged"
     assert mgr.save_id == sid                            # 反查命中，回到 steam 档
+    mgr.close()
+
+
+# ---------------------------------------------------------------- 首屏合并策略（防回声污染）
+
+def _prebind_with_ledger(tmp_path):
+    """造一份带账本的预绑定档（成就/库存都有值），返回 mgr。"""
+    sid = make_save(tmp_path, STEAM_A, experience=1000)
+    st = saves.SaveStore(sid, root=tmp_path)
+    doc = st.load()
+    doc["earned"]["achievements"] = {"6": 1680, "8": 386242}
+    doc["earned"]["inventory_amounts"] = {"3608481516": 910}
+    doc["earned"]["stats"] = {"profile": {"totalEnemyKills": 400000}}
+    st.save(doc)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")   # 默认 safe
+    mgr.start()
+    return mgr
+
+
+def test_preverify_safe_merges_experience_but_not_achievements(tmp_path):
+    """safe（新默认）：身份未校验时只合并服务端自算字段，成就/统计/库存不合并。"""
+    mgr = _prebind_with_ledger(tmp_path)
+    body = json.dumps({"experience": 1,
+                       "achievements": [{"id": 6, "value": 10}],
+                       "packageProgress": []}).encode()
+    out, changed = mgr.apply_progression(body)
+    doc = json.loads(out)
+    assert doc["experience"] == 1000                     # 经验合并（服务端自算，回显不影响）
+    assert doc["achievements"] == [{"id": 6, "value": 10}]   # 成就不合并（防回声污染）
+    _stats_body = b'{"totalEnemyKills": 5}'
+    out2, changed2 = mgr.apply_stats(_stats_body)
+    assert changed2 == 0 and out2 is _stats_body
+    inv = json.dumps({"items": []}).encode()
+    out3, changed3 = mgr.apply_inventory(inv)
+    assert changed3 == 0 and out3 is inv                 # 库存也不合并
+    mgr.close()
+
+
+def test_preverify_full_merges_everything_before_identity(tmp_path):
+    """full（mock/自建服）：身份未校验也全合并，保证首屏能看到账本。"""
+    mgr = _prebind_with_ledger(tmp_path)
+    mgr.preverify_merge = "full"
+    body = json.dumps({"experience": 1, "achievements": [], "packageProgress": []}).encode()
+    out, changed = mgr.apply_progression(body)
+    doc = json.loads(out)
+    assert doc["experience"] == 1000
+    assert {a["id"]: a["value"] for a in doc["achievements"]} == {6: 1680, 8: 386242}
+    out2, n2 = mgr.apply_stats(b'{"totalEnemyKills": 5}')
+    assert n2 == 1 and json.loads(out2)["totalEnemyKills"] == 400000
+    out3, n3 = mgr.apply_inventory(json.dumps({"items": []}).encode())
+    assert n3 == 1 and any(int(r["mixId"]) == 3608481516 for r in json.loads(out3)["items"])
+    mgr.close()
+
+
+def test_preverify_off_skips_all_merges_until_verified(tmp_path):
+    """off：身份未校验一律不合并；校验之后恢复正常合并。"""
+    mgr = _prebind_with_ledger(tmp_path)
+    mgr.preverify_merge = "off"
+    body = json.dumps({"experience": 1, "achievements": [], "packageProgress": []}).encode()
+    out, changed = mgr.apply_progression(body)
+    assert changed == 0 and out is body
+    mgr.on_getmotd(STEAM_A)                              # 身份校验通过
+    out2, changed2 = mgr.apply_progression(body)
+    assert changed2 >= 1 and json.loads(out2)["experience"] == 1000
     mgr.close()
 
 

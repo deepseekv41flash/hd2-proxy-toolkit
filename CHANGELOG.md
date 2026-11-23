@@ -6,6 +6,23 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.6.0-alpha.3（2026-11-23）— 换号不混档实机验收 + 修复 HD2 别名残留 / 首屏预合并回声污染
+
+- **④ 换号不混档实机验收 PASS**（主号 ↔ 空号 `76561199881579811` 双向切换，官方服同一引擎进程）：
+  双档分流、主号 earned 未被改动、空号段结算入账与 `Mission/end` 响应逐字段一致、切回主号整档回滚 + `_orphan` 审计；
+  四条红线（experience / achievements / purchasedSeasonPassItems / inventory 行数）无跨账号混入。
+  记录：`docs/ACCEPTANCE-M4.md` §M5「④ 换号 · 实机专项」。
+- **修复 1 · HD2 20 位别名跨账号残留**：换号瞬间 `GetMotd` 先到（`GetMessages` 未到）时把上一账号的
+  别名写进新档（`.bak` 实证），切回时又写进原档。改为只认**本局观测值**（`_hd2_session`）：Steam 号变化即清空旧别名，
+  `GetMotd` 先到 → 新档 hd2 写 null、`GetMessages` 到后补；切回已有档不覆盖其正确别名；
+  `GetMessages` 先到且属别的账号时不写进预绑定档。
+- **修复 2 · 首屏预合并的「显示回声」污染**：预绑定 merge 在身份校验前把上一档账本合进响应，客户端把"看到的数"
+  加增量后回显上报，被记成新账号成就（空号档实测出现主号值）。新增 `saves.preverify_merge`：
+  **`safe`（默认）**只合并服务端自算字段（经验/包进度），成就/统计/库存不合并；
+  `full` 全合并（`upstreamTest`/mock/自建服自动启用）；`off` 全关。换号告警补"首屏曾合并 N 处、显示偏高重启纠正"。
+- 测试 **689 → 696 passed**；README 修正"已知限制"表述（整局沿用旧档视图，不止首屏）。
+- 规则：bug 修复只动 `alpha.N`：`0.6.0-alpha.2` → **`0.6.0-alpha.3`**。
+
 ## v0.6.0-alpha.2（2026-11-23）— 修复：`/api/Progression/inventory` 响应没套账本（服务端给得少时看不到本机库存）
 
 - **问题**：`0.5.4-alpha.3` 只修了 `saves.apply_to_inventory` 的**语义**（只抬不降），

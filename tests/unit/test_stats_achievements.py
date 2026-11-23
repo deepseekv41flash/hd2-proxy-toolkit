@@ -167,7 +167,8 @@ def test_apply_stats_after_record_roundtrip(tmp_path):
     mgr.record_stats(_stats("main"))
     mgr.close()
 
-    mgr2 = active_save.ActiveSave(root=tmp_path, run_id="r2")
+    # 这里测的是「合并机制」本身，用 full 绕过首屏安全策略（策略另有单测）
+    mgr2 = active_save.ActiveSave(root=tmp_path, run_id="r2", preverify_merge="full")
     mgr2.start()
     out, changed = mgr2.apply_stats(_stats("fresh"))
     assert changed == 23
@@ -250,7 +251,7 @@ def test_achievements_roundtrip_into_progression(tmp_path):
 
     body = json.dumps({"experience": 0, "achievements": [{"id": 6, "value": 100}],
                        "packageProgress": [], "purchasedSeasonPassItems": []}).encode()
-    mgr2 = active_save.ActiveSave(root=tmp_path, run_id="r2")
+    mgr2 = active_save.ActiveSave(root=tmp_path, run_id="r2", preverify_merge="full")
     mgr2.start()
     out, changed = mgr2.apply_progression(body)
     got = json.loads(out)
