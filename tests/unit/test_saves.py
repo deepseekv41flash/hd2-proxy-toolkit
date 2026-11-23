@@ -319,3 +319,51 @@ def test_merge_consumables_newer_wins_and_scalars_max(tmp_path):
     merged2 = saves._merge_earned_into(dict(newer), older)
     assert merged2["inventory_amounts"]["1"] == 50
     assert merged2["achievements"]["6"] == 10
+
+
+# ---------------------------------------------------------------- 换号切档（研究线口径）
+
+def test_is_identified():
+    assert saves.is_identified({"save_id": "local"}) is False
+    assert saves.is_identified({"save_id": "steam_76561199881579811"}) is True
+    assert saves.is_identified({}) is False
+
+
+def test_switch_identity_merges_from_local(tmp_path):
+    local = saves.SaveStore(root=tmp_path)
+    local.add_experience(120)
+    res = saves.switch_identity(local, steam_id="76561199881579811", root=tmp_path)
+    assert res["action"] == "merged" and res["old_identified"] is False
+    assert res["store"].load()["earned"]["experience"] == 120
+
+
+def test_switch_identity_does_not_merge_two_identified_saves(tmp_path):
+    old = saves.SaveStore("steam_11111111111111111", root=tmp_path)
+    old.add_experience(999)
+    old.grant_items({"111": 7})
+    before = old.path().read_text(encoding="utf-8")
+    res = saves.switch_identity(old, steam_id="76561199881579811", root=tmp_path)
+    assert res["action"] == "switched" and res["old_identified"] is True
+    assert res["store"].save_id == "steam_76561199881579811"
+    assert old.path().read_text(encoding="utf-8") == before      # 旧档一个字节都不动
+    assert res["store"].load()["earned"]["experience"] == 0     # 不合并
+    assert saves.read_last(root=tmp_path)["last_save_id"] == "steam_76561199881579811"
+
+
+def test_rollback_from_backup_restores_and_archives(tmp_path):
+    st = saves.SaveStore(root=tmp_path)
+    st.add_experience(10)          # 第一版 -> 成为 .bak（第二次写时）
+    st.add_experience(20)          # 第二版（当前）
+    assert st.load()["earned"]["experience"] == 30
+    assert saves.rollback_from_backup(st) is True
+    assert st.load()["earned"]["experience"] == 10
+    assert list(tmp_path.glob("local.rollback-*.json"))
+
+
+def test_write_orphan_under_orphan_dir(tmp_path):
+    p = saves.write_orphan("local", {"earned": {"experience": 5}}, root=tmp_path)
+    assert p and "_orphan" in p
+    import json as _json
+    assert _json.loads(open(p, encoding="utf-8").read())["earned"]["experience"] == 5
+    # _orphan 目录不参与 HD2 反查
+    assert saves.find_save_by_hd2("123", root=tmp_path) == ""

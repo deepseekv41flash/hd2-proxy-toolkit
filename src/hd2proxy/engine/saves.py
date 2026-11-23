@@ -340,6 +340,87 @@ def find_save_by_hd2(hd2_account, root=None) -> str:
     return ""
 
 
+def is_identified(doc: dict) -> bool:
+    """档是否「已识别身份」：非 ``local`` 即视为已识别（local/未确认一律 false）。
+
+    用途：``GetMotd`` 到达后发现与当前 activeSave 不一致时，按研究线口径分流——
+    旧档未识别 → 合并（不会混进别人的进度）；旧档已识别 → **绝不合并**（跨玩家污染）。
+    """
+    if not isinstance(doc, dict):
+        return False
+    return str(doc.get("save_id") or "") not in ("", DEFAULT_SAVE_ID)
+
+
+def rollback_from_backup(store: "SaveStore") -> bool:
+    """把当前档回滚成 ``.bak``（会话前状态）；坏档先挪成 ``.rollback-<ts>.json`` 留审计。
+
+    用于「同机换号」场景：本局对旧档的写入必须撤回，宁可丢窗口内少量写入也不混档。
+    """
+    p = store.path()
+    bak = p.with_name(store.save_id + ".json.bak")
+    if not bak.exists():
+        return False
+    try:
+        if p.exists():
+            p.replace(p.with_name("%s.rollback-%s.json" % (store.save_id,
+                                                         time.strftime("%Y%m%d-%H%M%S"))))
+        bak.replace(p)
+        return True
+    except OSError as e:
+        log("存档回滚失败（%s）：%r" % (store.save_id, e))
+        return False
+
+
+def write_orphan(save_id, doc, root=None, reason: str = "dirty") -> str:
+    """把「不属于任何现有玩家」的增量写入 ``_orphan/<ts>-<src>.json``，供人工处理。"""
+    base = _saves_root(root) / "_orphan"
+    base.mkdir(parents=True, exist_ok=True)
+    name = "%s-%s-%s.json" % (time.strftime("%Y%m%d-%H%M%S"), normal_save_id(save_id), reason)
+    p = base / name
+    try:
+        p.write_text(json.dumps(doc or {}, ensure_ascii=False, indent=1), encoding="utf-8")
+        log("⚠ 存档增量已另存 orphan：%s（来源档 %s）" % (p, save_id))
+        return str(p)
+    except OSError as e:
+        log("orphan 写入失败（%s）：%r" % (p, e))
+        return ""
+
+
+def switch_identity(store: "SaveStore", *, hd2_account=None, steam_id=None,
+                    root=None) -> dict:
+    """处理「GetMotd 与当前 activeSave 不一致」的切档，按研究线 2026-11-23 口径分流：
+
+      * 旧档 ``local``/未识别 → **合并**进目标档（等价 adopt_identity）；
+      * 旧档是另一个**已识别**档（同机换 Steam 号）→ **不合并**，只返回目标档；
+        本局对旧档的写入由调用方（引擎）用 ``rollback_from_backup`` 撤回，
+        并把增量 ``write_orphan`` 另存（引擎侧有 session_dirty 时才做）。
+
+    返回 ``{"action": "same"|"merged"|"switched", "store": SaveStore,
+             "old_identified": bool, "target_id": str}``。
+    """
+    base_root = root or store.root
+    target_id = save_id_for_identity(steam_id, hd2_account, root=base_root)
+    current = store.load()
+    old_identified = is_identified(current)
+    if target_id == store.save_id:
+        target = store
+        target.set_identity(hd2_account, steam_id)
+        action = "same"
+    elif not old_identified:
+        target = store.adopt_identity(hd2_account=hd2_account, steam_id=steam_id,
+                                      root=base_root)
+        action = "merged"
+    else:
+        target = SaveStore(target_id, root=base_root)
+        target.set_identity(hd2_account, steam_id)
+        write_last(target_id, steam_id, hd2_account, root=base_root)
+        log("⚠ 身份切换：旧档 %s（已识别）→ 新档 %s；不合并（避免跨玩家混档）"
+            % (store.save_id, target_id))
+        action = "switched"
+    return {"action": action, "store": target, "old_identified": old_identified,
+            "target_id": target_id}
+
+
 class SaveStore:
     """一份存档的读写门面（原子写 / 备份 / 损坏回退 / 热重载友好：每次操作都重新读盘）。"""
 
