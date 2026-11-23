@@ -913,7 +913,7 @@ uninstall + 清理旧 hosts 残留的**完整闭环**跑通；期间暴露的 6 
 | G3 | **结算奖励入账**：`hooks/mission_end.py`（读 `Mission/end` **响应**，不需要请求体）+ `ActiveSave.record_mission_end()` —— `experience` 累加 / `rewards` 按 mixId 累加（口径实据：rewards=明细×multipliers，开关一处）/ `progressionPackageUpdates` 按 max / `missionId` 近 20 局去重防双计；`data/fixtures/saves/mission_end/` 5 份真实样本；端到端「POST 结算→存档累加→再拉 Progression」 | ✅ 2026-11-23（+22 单测；总 **613 passed**） |
 | G4 | **Stats/profile 终身统计**（`hooks/stats.py` + `ActiveSave.apply_stats/record_stats`：逐 key max、全 0 不写盘、迁移按 max；战局统计不碰）+ 证据结论：**SeasonPass 账号无关**（两账号逐字节相同，货币/已购在 Progression/inventory 里已覆盖）· **Assignment 无写路径**（只读、低优先） | ✅ 2026-11-23（+10 单测） |
 | G5 | `Achievements` PUT **per-key max 合并**（`hooks/achievements.py`，防御式解析：形状未采样）**✅**；`inventory/consume` 扣减 **⏳ 待请求体样本**（响应恒 `{}`，扣减量只在请求体；已请研究线补采） |
-| G6 | `preview.py` 扩展：预演"这一局结算会加多少"（含存档夹具预演） | ⏳ |
+| G6 | **存档预演** `engine/save_preview.py` + CLI `hd2proxy save-preview`：存档摘要 / main·fresh × (Progression·Stats·库存) 合并预演（字段与 mixId 行级差异）/ 真实结算样本投影（+经验/物品/包进度、结算后账本值、未消费字段）；纯读不联网不写盘 | ✅ 2026-11-23（+13 单测；总 **644 passed**） |
 
 ---
 

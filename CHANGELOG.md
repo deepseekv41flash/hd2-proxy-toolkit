@@ -6,6 +6,23 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.5.3-alpha.1（2026-11-23）— 存档层 G6：存档预演（不开游戏看「这份档会改什么 / 一局会加多少」）
+
+- **新命令 `hd2proxy save-preview`**（`engine/save_preview.py`）：把本机账本**套到真实响应样本上**做纯计算预演：
+  - **合并预演**：`main/` 与 `fresh/` 两套夹具 × Progression 根 / Stats/profile / 库存三类响应，
+    逐项列出「哪个字段被抬、从多少到多少」（库存按 mixId 给行级差异）；
+  - **结算投影**：喂一份真实 `Mission/end` 样本，算「这一局 +N 经验 / +哪些物品 / 哪些包进度」，
+    以及结算后的账本值（不写盘）；
+  - **存档摘要**：saveId / 身份来源 / 经验 / 成就 / 包进度 / 库存 / 统计项数 / 结算局数 / `catalog_build`。
+  - 参数：`--save <saveId>`（默认 `_last.json` 指向的档）/ `--save-file <json>` / `--fixtures <dir>` /
+    `--mission <样本名>` / `--json`；纯读：不联网、不写盘。
+- **为什么需要**：存档效果要「重启游戏」才可见（客户端结算后不重取 `/api/Progression`），
+  实机验证成本高；预演在开游戏前就能回答"这份档现在会让我看到多少"「打完一局会多多少」。
+- **`repeatingPlayer` 结论（研究线 2026-11-23）**：12 份真实 `Mission/end` 响应里**恒为 `[]` 或 `null`**
+  （无任何非空样本）⇒ **不落账**（保留在 `unknown_keys` 里，等出现非空样本再议）。
+- **测试**：单测 631 → **644 passed**（+13：载入优先级/摘要/三类合并/结算投影/空档不虚增/缺夹具目录/文本渲染）。
+- 规则：**功能变更** ⇒ 动 `X.Y.Z`：`0.5.2-alpha.1` → **`0.5.3-alpha.1`**。
+
 ## v0.5.2-alpha.1（2026-11-23）— 存档层 G4 终身统计 + G5 成就上报合并
 
 - **G4：Stats/profile 终身统计**（`engine/hooks/stats.py` + `ActiveSave.apply_stats()`/`record_stats()`）：
