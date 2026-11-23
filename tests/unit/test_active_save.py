@@ -1,10 +1,11 @@
-"""引擎侧 activeSave（G2）单测：首屏预绑定 / 首屏等身份 / 身份校验 / 换号回滚。
+"""引擎侧 activeSave（G2/G3）单测：首屏预绑定 / 身份校验 / 换号回滚 / 结算入账。
 
 全部离线：存档根目录用 tmp_path 注入，不起代理、不碰真实状态目录。
 """
 
 import json
 import time
+from pathlib import Path
 
 from hd2proxy.engine import active_save, saves
 
@@ -333,4 +334,130 @@ def test_status_shape(tmp_path):
     assert st["verified"] is False and st["session_dirty"] is False
     assert st["snapshot"]["sha"] and st["events"]
     assert st["strict"] is False and st["wait_seconds"] == 1.2
+    mgr.close()
+
+# ---------------------------------------------------------------- G3 结算入账
+
+MISSION_END_BODY = (Path(__file__).resolve().parents[2] / "data" / "fixtures" / "saves"
+                    / "mission_end" / "12b9a872.json").read_bytes()
+
+
+def test_record_mission_end_accumulates(tmp_path):
+    """结算响应 → 经验累加 / 物品入账 / 包进度 max / 审计记录。"""
+    sid = make_save(tmp_path, experience=1000)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    out = mgr.record_mission_end(MISSION_END_BODY)
+    assert out["ok"] is True and out["experience"] == 936
+    assert out["item_source"] == "rewards"
+
+    doc = saves.SaveStore(sid, root=tmp_path).load()
+    assert doc["earned"]["experience"] == 1936                 # 累加（本局增量 936）
+    assert doc["earned"]["inventory_amounts"]["3608481516"] == 4434
+    assert doc["earned"]["inventory_amounts"]["897894480"] == 7
+    assert doc["earned"]["package_progress"]["277818845"] == {"level": 5, "progress": 459}
+    missions = doc["earned"]["missions"]
+    assert missions["count"] == 1 and len(missions["recent_ids"]) == 1
+    assert missions["last"]["experience"] == 936
+    assert mgr.session_dirty is True
+    assert any(e["kind"] == "mission" for e in mgr.status()["events"])
+    mgr.close()
+
+
+def test_record_mission_end_dedupes_same_mission(tmp_path):
+    """客户端重试同一份结算响应 → 只入账一次（宁可少记也不能双计）。"""
+    sid = make_save(tmp_path, experience=0)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    assert mgr.record_mission_end(MISSION_END_BODY)["ok"] is True
+    dup = mgr.record_mission_end(MISSION_END_BODY)
+    assert dup["ok"] is True and dup["duplicate"] is True
+    doc = saves.SaveStore(sid, root=tmp_path).load()
+    assert doc["earned"]["experience"] == 936
+    assert doc["earned"]["missions"]["count"] == 1
+    assert doc["earned"]["inventory_amounts"]["3608481516"] == 4434
+    mgr.close()
+
+
+def test_record_mission_end_different_missions_both_count(tmp_path):
+    sid = make_save(tmp_path, experience=0)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    mgr.record_mission_end(MISSION_END_BODY)
+    other = json.loads(MISSION_END_BODY.decode("utf-8"))
+    other["missionId"] = "another-mission"
+    mgr.record_mission_end(json.dumps(other).encode())
+    doc = saves.SaveStore(sid, root=tmp_path).load()
+    assert doc["earned"]["experience"] == 936 * 2
+    assert doc["earned"]["missions"]["count"] == 2
+    assert len(doc["earned"]["missions"]["recent_ids"]) == 2
+    mgr.close()
+
+
+def test_record_mission_end_packages_never_lower(tmp_path):
+    """progressionPackageUpdates 是服务端当前值 → max 合并，不累加、不降级。"""
+    sid = make_save(tmp_path, experience=0)
+    st = saves.SaveStore(sid, root=tmp_path)
+    doc = st.load()
+    doc["earned"]["package_progress"]["277818845"] = {"level": 6, "progress": 900}
+    st.save(doc)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    mgr.record_mission_end(MISSION_END_BODY)
+    got = saves.SaveStore(sid, root=tmp_path).load()["earned"]["package_progress"]["277818845"]
+    assert got == {"level": 6, "progress": 900}
+    mgr.close()
+
+
+def test_record_mission_end_requires_mission_id(tmp_path):
+    sid = make_save(tmp_path, experience=1000)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    out = mgr.record_mission_end(json.dumps({"experience": 5}).encode())
+    assert out["ok"] is False and out["reason"] == "no-mission-id"
+    assert saves.SaveStore(sid, root=tmp_path).load()["earned"]["experience"] == 1000
+    assert mgr.session_dirty is False
+    mgr.close()
+
+
+def test_record_mission_end_bad_body(tmp_path):
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    out = mgr.record_mission_end(b"not json")
+    assert out["ok"] is False and out["reason"] == "bad-json"
+    assert mgr.record_mission_end(b"")["ok"] is False
+    assert mgr.session_dirty is False
+    mgr.close()
+
+
+def test_record_mission_end_strict_refused_before_verification(tmp_path):
+    sid = make_save(tmp_path, experience=1000)
+    mgr = active_save.ActiveSave(root=tmp_path, strict=True, run_id="r1")
+    mgr.start()
+    mgr.record_mission_end(MISSION_END_BODY)
+    assert saves.SaveStore(sid, root=tmp_path).load()["earned"]["experience"] == 1000
+    assert mgr.session_dirty is False
+    mgr.on_getmotd(STEAM_A)
+    mgr.record_mission_end(MISSION_END_BODY)
+    assert saves.SaveStore(sid, root=tmp_path).load()["earned"]["experience"] == 1936
+    mgr.close()
+
+
+def test_pending_of_other_save_is_not_reused(tmp_path):
+    """研究线建议：pending 复用必须校验 saveId —— 上一个号的基准不能拿来给这个号。"""
+    sid_a = make_save(tmp_path, experience=1000)
+    st_a = saves.SaveStore(sid_a, root=tmp_path)
+    saves.begin_session(st_a, run_id="old")        # A 的旧基准（exp=1000）
+    st_a.add_experience(1000)                      # 之后 A 档被写脏（当前 exp=2000）
+    data = json.loads((tmp_path / "_last.json").read_text(encoding="utf-8"))
+    data["last_save_id"] = sid_a
+    data["pending"] = {"save_id": saves.save_id_for(STEAM_B), "run_id": "old",
+                       "since": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    (tmp_path / "_last.json").write_text(json.dumps(data), encoding="utf-8")
+
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r2")
+    mgr.start()
+    assert mgr._snapshot["action"] != "reused"     # 没拿"属于 B 的 pending"去复用 A 的旧基准
+    snap = saves.read_session_snapshot(sid_a, root=tmp_path)
+    assert snap["doc"]["earned"]["experience"] == 2000      # 基准 = 当前状态，不是旧快照
     mgr.close()

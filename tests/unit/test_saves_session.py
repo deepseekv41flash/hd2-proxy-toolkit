@@ -164,8 +164,10 @@ def test_earned_diff_reports_scalars_and_container_changes():
     after = {"experience": 150, "achievements": {"1": 1, "2": 3}, "inventory_ids": [2, 3]}
     diff = saves.earned_diff(before, after)
     assert diff["experience"] == {"before": 100, "after": 150}
-    assert diff["achievements"]["before"] == {"kind": "dict", "size": 1}
-    assert diff["achievements"]["added"] == ["2"]
+    # 数值字典（成就计数/货币/数量）：给**具体数值**，人工才能判断"哪笔钱该不该退"
+    assert diff["achievements"]["currency"] is True
+    assert diff["achievements"]["added"] == {"2": 3}
+    # 列表（解锁 id）只给增删项
     assert diff["inventory_ids"]["added"] == [3]
     assert diff["inventory_ids"]["removed"] == [1]
     assert saves.earned_diff(before, before) == {}
@@ -175,8 +177,10 @@ def test_earned_diff_truncates_long_change_sets():
     before = {str(i): i for i in range(20)}
     after = {str(i): i + 1 for i in range(20)}
     diff = saves.earned_diff({"achievements": before}, {"achievements": after})
-    assert len(diff["achievements"]["changed"]) == 8      # max_detail 截断
-    assert set(diff["achievements"]["changed"]) <= set(before)
+    changed = diff["achievements"]["changed"]
+    assert "…" in changed and len(changed) == 9            # 8 条 + 截断标记
+    assert "+12" == changed["…"]
+    assert set(changed) - {"…"} <= set(before)
 
 
 def test_doc_sha_is_canonical():

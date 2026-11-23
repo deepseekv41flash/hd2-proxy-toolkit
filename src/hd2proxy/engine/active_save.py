@@ -46,6 +46,17 @@ def _clean(value) -> str | None:
     return text or None
 
 
+def _now() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _int(value, default=0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 class ActiveSave:
     """一局游戏一个实例（引擎进程级）：activeSave + 会话快照 + 身份状态机。
 
@@ -75,6 +86,7 @@ class ActiveSave:
         self._first_progression = False
         self._last_catalog = None
         self._ident_recorded = (None, None)    # 已落盘的身份（避免每发 GetMotd 都写盘）
+        self._rebase_done = False              # 会话基准是否已重建（同一会话只重建一次）
 
     # ------------------------------------------------------------ 生命周期
     def start(self) -> dict:
@@ -164,6 +176,90 @@ class ActiveSave:
                 self._last_catalog = info.get("value")
                 self._event("catalog", "目录 %s" % info.get("value"))
             return info
+
+    def record_mission_end(self, body):
+        """G3：``Mission/end`` **响应** → earned 累加（经验/物品/包进度），按 missionId 去重。
+
+        为什么只入账、不改写响应：结算画面由响应本身驱动（服务端已算好），且客户端结算后
+        **不会**重取 ``/api/Progression``（研究线 E3 实测 777/1227 条请求）⇒ 存档的效果在
+        **下次启动/回主界面**才可见；这里只负责把增量记进本机账本。
+
+        去重：客户端重试会重复同一份响应，按 ``missionId`` 记最近 20 条，重复直接跳过
+        （宁可少记一局，也不能把奖励双计）。
+        """
+        if not body:
+            return {"ok": False, "reason": "empty"}
+        from .hooks import mission_end as _mission
+        try:
+            inc = _mission.extract_increments(body)
+        except Exception as e:                # noqa: BLE001 - 结算解析失败不能影响游戏
+            log("Mission/end 解析失败（本次不入账）：%r" % e)
+            return {"ok": False, "reason": "parse-error"}
+        if not inc.get("ok"):
+            return {"ok": False, "reason": "bad-json"}
+
+        mission = inc.get("mission") or {}
+        mid = str(mission.get("mission_id") or "")
+        key = mid or ("op%s-%s" % (mission.get("operation_id") or "?",
+                                   mission.get("mission_index") or "?"))
+        if key == "op?-?":
+            log("⚠ Mission/end 响应既无 missionId 也无 operationId，无法去重 —— 本次不入账")
+            return {"ok": False, "reason": "no-mission-id"}
+
+        experience = max(0, _int(inc.get("experience")))
+        items = dict(inc.get("items") or {})
+        packages = dict(inc.get("packages") or {})
+        with self._lock:
+            state = (self._store.load().get("earned") or {}).get("missions") or {}
+            recent = state.get("recent_ids") or []
+            if key in recent:
+                log_throttled("mission-dup",
+                              "Mission/end 重复响应（%s）已跳过（防客户端重试双计）" % key,
+                              every=60)
+                self._event("mission", "重复结算 %s 已跳过" % key)
+                return {"ok": True, "duplicate": True, "key": key}
+
+            def _mut(earned, doc):
+                earned["experience"] = _int(earned.get("experience")) + experience
+                amounts = earned.setdefault("inventory_amounts", {})
+                for mix, amount in items.items():
+                    amounts[str(mix)] = _int(amounts.get(str(mix))) + _int(amount)
+                # progressionPackageUpdates 是服务端当前值（跨局递增）→ 按 max 合并，不累加
+                pkg = earned.setdefault("package_progress", {})
+                for id32, patch in packages.items():
+                    row = pkg.setdefault(str(id32), {})
+                    row["level"] = max(_int(row.get("level")), _int(patch.get("level")))
+                    row["progress"] = max(_int(row.get("progress")),
+                                          _int(patch.get("progress")))
+                ms = earned.setdefault("missions",
+                                       {"count": 0, "recent_ids": [], "last": None})
+                ms["count"] = _int(ms.get("count")) + 1
+                ids = ms.setdefault("recent_ids", [])
+                ids.append(key)
+                del ids[:-20]                 # 只留最近 20 局
+                ms["last"] = {"at": _now(), "experience": experience, "items": items,
+                              "item_source": inc.get("item_source"),
+                              "packages": packages, "mission": mission}
+            self.update_earned(_mut, reason="mission_end")
+
+        detail = _mission.summarize(inc)
+        log("MISSION %s（物品来源 %s，mission %s）"
+            % (detail, inc.get("item_source"), key), audit=True)
+        self._event("mission", "%s ← %s" % (detail, key))
+        # 口径交叉校验：rewards（最终入账）vs badges（明细）差在 multipliers 倍率上。
+        # 真机对一次账即可定口径（不符时改 hooks/mission_end.ITEM_SOURCE 一处即可）。
+        ratios = []
+        for mix, amount in (inc.get("rewards_items") or {}).items():
+            base = (inc.get("badge_items") or {}).get(mix)
+            if base and amount != base:
+                ratios.append("%s:%.2f×" % (mix, amount / base))
+        if ratios:
+            log_throttled("mission-item-source",
+                          "结算物品按 %s 入账；与明细比例 %s（实机对账一次即可确认口径）"
+                          % (inc.get("item_source"), " ".join(ratios[:3])), every=3600)
+        return {"ok": True, "key": key, "experience": experience, "items": items,
+                "item_source": inc.get("item_source"), "packages": packages,
+                "unknown_keys": inc.get("unknown_keys") or []}
 
     def note_login(self, body):
         """``/api/Account/Login`` **请求体**里的 clientVersion（catalog_build 辅字段）。"""
@@ -255,11 +351,14 @@ class ActiveSave:
                 self.verified = True
                 if changed:
                     self._store.set_identity(self.hd2_account, self.steam_id, source=source)
-                    # 校验通过 = 当前状态可以信任：把基准重建到这里（最后一次已验证点）
-                    self._snapshot = saves.rebase_session(self._store, run_id=self.run_id)
-                    saves.clear_pending(root=self.root)
                     self._ident_recorded = (self.steam_id, self.hd2_account)
+                    saves.clear_pending(root=self.root)
                     self._event(source, "身份校验一致 → %s" % self.save_id)
+                    # 基准**只在会话首次校验一致时重建一次**（研究线 2026-11-23 建议）：
+                    # 若每次 GetMotd/别名到达都重建，回滚点会从"会话开始"漂移到"最后一次校验"。
+                    if not self._rebase_done:
+                        self._snapshot = saves.rebase_session(self._store, run_id=self.run_id)
+                        self._rebase_done = True
                 return {"ok": True, "action": "same", "save_id": self.save_id,
                         "target_id": target_id, "steam_id": self.steam_id,
                         "hd2_account_id": self.hd2_account}

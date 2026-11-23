@@ -83,6 +83,8 @@ PROG_PATH = "/api/Progression"                 # 根进度响应：一次会话�
 GETMOTD_MARK = "/api/Pes/GetMotd"             # 响应 accountId = SteamID64（存档主键来源）
 GETMESSAGES_MARK = "/api/Pes/GetMessages"     # 响应 accountId = HD2 20 位 id（只作别名）
 LOGIN_PATH = "/api/Account/Login"             # 请求体带 clientVersion（catalog_build 辅字段）
+# G3：结算响应 = 本局奖励增量的源头（experience / badges[].itemRewards / rewards / 包进度）
+MISSION_END_MARK = "/api/Operation/Mission/end"
 
 # ---- 运行期状态文件（热重载：每个响应到达时现读） ---------------------------
 INV_STATE = RUNTIME / "inventory_inject.json"

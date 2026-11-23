@@ -30,6 +30,10 @@ REPO = Path(__file__).resolve().parents[2]
 ENGINE = REPO / "src" / "hd2proxy" / "engine" / "legacy_proxy.py"
 HOST = certs.DEFAULT_HOST
 
+MISSION_END_DOC = json.loads(
+    (Path(__file__).resolve().parents[2] / "data" / "fixtures" / "saves"
+     / "mission_end" / "12b9a872.json").read_text(encoding="utf-8"))
+
 STATUS_DOC = {
     "warId": 801,
     "time": 1700000000,
@@ -78,6 +82,16 @@ class _Upstream:
                 self.wfile.write(body)
 
             def do_POST(self):
+                if "/api/Operation/Mission/end" in self.path:
+                    # G3：结算响应 = 本局奖励增量（经验/物品/包进度）
+                    body = json.dumps(MISSION_END_DOC).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Connection", "close")
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 body = b'{"ok":true}'
                 self.send_response(202)
                 self.send_header("Content-Length", str(len(body)))
@@ -104,6 +118,28 @@ def tls_get(port, path, cert_dir, timeout=20.0):
     try:
         tls.sendall(("GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n"
                      % (path, HOST)).encode())
+        buf = b""
+        while True:
+            chunk = tls.recv(65536)
+            if not chunk:
+                break
+            buf += chunk
+    finally:
+        tls.close()
+    head, _, body = buf.partition(b"\r\n\r\n")
+    return head.decode("latin-1", "replace"), body
+
+
+def tls_post(port, path, payload, cert_dir, timeout=20.0):
+    """走代理发一个 JSON POST（假上游按路径脚本化响应）。"""
+    ctx = ssl.create_default_context(cafile=str(Path(cert_dir) / "anchor.pem"))
+    raw = socket.create_connection(("127.0.0.1", port), timeout=timeout)
+    tls = ctx.wrap_socket(raw, server_hostname=HOST)
+    data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+    try:
+        tls.sendall(("POST %s HTTP/1.1\r\nHost: %s\r\nContent-Type: application/json\r\n"
+                     "Content-Length: %d\r\nConnection: close\r\n\r\n"
+                     % (path, HOST, len(data))).encode() + data)
         buf = b""
         while True:
             chunk = tls.recv(65536)
@@ -334,6 +370,22 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
             # 3) 会话基准快照 + pending（身份未校验时保留，供下次启动回滚）
             assert saves.read_session_snapshot(sid, root=saves_root)["doc"]["earned"]["experience"] == 2759938
             assert saves.read_pending(root=saves_root)["save_id"] == sid
+
+            # 4) G3：结算响应 → 奖励入账（真实客户端结算后不重取 Progression，
+            #    这里手动再拉一次，验证"下次启动"能看到累加后的值）
+            head, body = tls_post(port, "/api/Operation/Mission/end", b"{}", cert_dir)
+            assert " 200 " in (" " + (head.splitlines()[0] if head else "") + " "), head[:80]
+            after = saves.SaveStore(sid, root=saves_root).load()
+            assert after["earned"]["experience"] == 2759938 + 936
+            assert after["earned"]["inventory_amounts"]["3608481516"] == 4434
+            assert after["earned"]["missions"]["count"] == 1
+
+            head, body = tls_get(port, "/api/Progression", cert_dir)
+            plain = gzip.decompress(body) if body[:2] == b"\x1f\x8b" else body
+            assert json.loads(plain.decode("utf-8"))["experience"] == 2759938 + 936
+            save_state = api(state_file, "/status")["save"]
+            assert save_state["session_dirty"] is True
+            assert any(e["kind"] == "mission" for e in save_state["events"])
 
             api(state_file, "/shutdown", method="POST", body={})
             assert proc.wait(15) == 0

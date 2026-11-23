@@ -169,6 +169,8 @@ def empty_save(save_id=None) -> dict:
             "stats": {},
             "season_pass": {},
             "assignments": {},
+            # G3：结算审计（本局增量记录 + missionId 去重，防重试双计）
+            "missions": {"count": 0, "recent_ids": [], "last": None},
         },
     }
 
@@ -269,7 +271,7 @@ def _merge_earned_into(dst: dict, src: dict) -> dict:
                 cur.append(item)
 
     # 预留复杂结构：较新的档为准，缺键补齐
-    for key in ("stats", "season_pass", "assignments"):
+    for key in ("stats", "season_pass", "assignments", "missions"):
         got = se.get(key) or {}
         if not isinstance(got, dict) or not got:
             continue
@@ -435,10 +437,36 @@ def _value_shape(value):
     return value
 
 
+def _is_number_map(value) -> bool:
+    """``{str(id): 数值}`` 形态（货币/道具数量/成就计数）—— 差异里要给**具体数值**。"""
+    if not isinstance(value, dict) or not value:
+        return False
+    return all(isinstance(v, (int, float)) and not isinstance(v, bool)
+               for v in value.values())
+
+
+def _number_map_diff(before: dict, after: dict, max_detail: int) -> dict:
+    """货币/数量类字典的差异：``{mixId: amount}`` 直接给数值（人工判断"哪笔钱该不该退"）。"""
+    out = {"currency": True}
+    added = {k: after[k] for k in sorted(set(after) - set(before))}
+    removed = {k: before[k] for k in sorted(set(before) - set(after))}
+    changed = {k: {"before": before[k], "after": after[k]}
+               for k in sorted(set(before) & set(after)) if before[k] != after[k]}
+    for key, val in (("added", added), ("removed", removed), ("changed", changed)):
+        if val:
+            items = list(val.items())
+            out[key] = dict(items[:max_detail])
+            if len(items) > max_detail:
+                out[key]["…"] = "+%d" % (len(items) - max_detail)
+    return out
+
+
 def earned_diff(before, after, *, max_keys: int = 12, max_detail: int = 8) -> dict:
     """对比两份 earned，列出差异摘要（orphan 里回答「到底哪些条被丢弃」）。
 
-    容器类给出「规模 + 变化键名」（不复制整个容器 —— 全文另存在 orphan 的 dirty/restored doc 里）。
+    容器类给出「规模 + 变化键名」；**数值字典（货币/道具数量）额外给具体值**
+    （研究线 2026-11-23 建议：换号回滚后要能人工判断"哪笔钱该不该退"）。
+    完整内容另存在 orphan 的 dirty/restored doc 里。
     """
     b = before if isinstance(before, dict) else {}
     a = after if isinstance(after, dict) else {}
@@ -449,12 +477,15 @@ def earned_diff(before, after, *, max_keys: int = 12, max_detail: int = 8) -> di
             continue
         item = {"before": _value_shape(bv), "after": _value_shape(av)}
         if isinstance(bv, dict) and isinstance(av, dict):
-            added = sorted(str(k) for k in set(av) - set(bv))
-            removed = sorted(str(k) for k in set(bv) - set(av))
-            changed = sorted(str(k) for k in set(bv) & set(av) if bv[k] != av[k])
-            item["added"] = added[:max_detail]
-            item["removed"] = removed[:max_detail]
-            item["changed"] = changed[:max_detail]
+            if _is_number_map(bv) or _is_number_map(av):
+                item.update(_number_map_diff(bv, av, max_detail))
+            else:
+                added = sorted(str(k) for k in set(av) - set(bv))
+                removed = sorted(str(k) for k in set(bv) - set(av))
+                changed = sorted(str(k) for k in set(bv) & set(av) if bv[k] != av[k])
+                item["added"] = added[:max_detail]
+                item["removed"] = removed[:max_detail]
+                item["changed"] = changed[:max_detail]
         elif isinstance(bv, list) and isinstance(av, list):
             added = [x for x in av if x not in bv]
             removed = [x for x in bv if x not in av]

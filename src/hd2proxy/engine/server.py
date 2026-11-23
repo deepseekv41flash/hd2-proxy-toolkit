@@ -90,7 +90,7 @@ class Proxy:
             pass
 
     def _save_observe(self, path, body, hdrs):
-        """G2 存档层：从**上游原始响应**里记身份与目录（不参与改写，失败只记日志）。
+        """G2/G3 存档层：从**上游原始响应**里记身份、目录与结算奖励（不改写，失败只记日志）。
 
         为什么用原始 body：``items`` 的 catalog_build 必须取**注入前**响应，否则会随
         profile 配置漂移、失去跨版本可比性（研究线 2026-11-23 口径）。
@@ -114,6 +114,10 @@ class Proxy:
         elif paths.ITEMS_PATH in path:
             plain, _ = httpio.maybe_gunzip(body, hdrs)
             save.record_items(plain)
+        elif paths.MISSION_END_MARK in path:
+            # G3：结算响应 = 本局奖励增量（经验/物品/包进度）→ 累加进 earned
+            plain, _ = httpio.maybe_gunzip(body, hdrs)
+            save.record_mission_end(plain)
 
     def on_sni(self, sslsock, servername, ctx):
         # 单域名白名单：别的 SNI 一律拒绝（不是开放代理）

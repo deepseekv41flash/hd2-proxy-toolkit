@@ -25,6 +25,26 @@
 | `stats_profile_801.json` | `GET /api/Stats/profile/801/summary` | 730 B | 644 B |
 | `season_pass.json` | `GET /api/SeasonPass/1929468580` | 14 589 B | 14 589 B |
 
+## 结算样本（G3）
+
+`mission_end/`：**5 份真实 `POST /api/Operation/Mission/end` 响应**（2026-11-18 主号会话），
+G3 的奖励入账就吃这些字段：
+
+| 文件 | 大小 | `experience`（本局增量） | badges | `rewards` 条数 | 备注 |
+|---|---|---|---|---|---|
+| `12b9a872.json` | 1 577 B | 936 | 9 | 2 | 典型一局 |
+| `15998437.json` | 1 201 B | 267 | 6 | 2 | |
+| `d0bdbe5b.json` | 1 213 B | 258 | 6 | 2 | |
+| `dd2350f7.json` | 1 664 B | 903 | 10 | 2 | |
+| `e899f6af.json` | 560 B | 0 | 1 | 0 | 空结算（exp=0 / 无奖励）|
+
+已剥掉 `progressionPackageUpdates[].platformAccountId`（研究线占位是全 0，但字段名就是身份痕迹）。
+
+**口径实据**：5 份里恒有 `rewards[3608481516] == sum(badges[].itemRewards[3608481516]) × 3`
+（1478→4434 / 346→1038 / 334→1002 / 1534→4602，倍数来自响应里的 `multipliers.factor`），
+而 `rewards[897894480]` 与明细相同 ⇒ `rewards` 是**最终入账**、`badges` 是明细。
+G3 默认按 `rewards` 入账（`hooks/mission_end.ITEM_SOURCE`），实机对一次账若不符可一处切回 `badges`。
+
 ## `Progression/items` 目录签名（文件不入仓）
 
 目录每份 560 KB，只用于 G2 的 `catalog_build`（口径 `<items_sha8>/<items_rows>/<clientVersion>`），
@@ -58,5 +78,6 @@ body = (Path("data/fixtures/saves/main/progression.json")).read_bytes()
 out, changed = saves.apply_to_progression(body, saves.empty_save())     # 空档 → 0 处改动
 ```
 
-守门测试：`tests/unit/test_save_fixtures.py`（行数/大小/无身份字段/空档不虚增）。
+守门测试：`tests/unit/test_save_fixtures.py`（行数/大小/无身份字段/空档不虚增）+
+`tests/unit/test_mission_end.py`（结算解析/口径/坏 body）。
 新增或替换夹具时请同步更新上面的表格。

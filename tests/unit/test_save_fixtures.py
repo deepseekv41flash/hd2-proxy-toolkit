@@ -16,8 +16,17 @@ from hd2proxy.engine import saves
 FIXTURES = Path(__file__).resolve().parents[2] / "data" / "fixtures" / "saves"
 
 # 身份/票据痕迹：这些字符串一出现就说明抓错了文件（或没脱敏）
-LEAK_MARKERS = ("7656119", "accountId", "sessionId", "13887067702231565058",
-                "Bearer ", "X-HD2-Token")
+LEAK_MARKERS = ("7656119", "accountId", "platformAccountId", "sessionId",
+                "13887067702231565058", "Bearer ", "X-HD2-Token")
+
+# G3 结算样本（真实 5 份；platformAccountId 已剥掉）
+MISSION_END_EXPECTED = {
+    "12b9a872.json": (1577, 936),
+    "15998437.json": (1201, 267),
+    "d0bdbe5b.json": (1213, 258),
+    "dd2350f7.json": (1664, 903),
+    "e899f6af.json": (560, 0),
+}
 
 EXPECTED = {
     "main": {"progression": 12921, "inventory": 69120, "customize_v2": 15853,
@@ -102,3 +111,49 @@ def test_earned_never_lowers_real_progression_body():
     doc["earned"]["experience"] = 1
     out, changed = saves.apply_to_progression(body, doc)
     assert changed == 0 and json.loads(out)["experience"] == 2759938
+
+
+# ---------------------------------------------------------------- G3 结算样本
+
+
+def test_mission_end_fixtures_are_intact():
+    """结算响应样本：大小/经验值/无身份痕迹（platformAccountId 已剥掉）。"""
+    base = FIXTURES / "mission_end"
+    for name, (size, exp) in MISSION_END_EXPECTED.items():
+        raw = (base / name).read_bytes()
+        assert len(raw) == size, "%s 大小变了（夹具被替换？同步 README）" % name
+        doc = json.loads(raw.decode("utf-8"))
+        assert doc["experience"] == exp
+        for row in doc.get("progressionPackageUpdates") or []:
+            assert "platformAccountId" not in row        # 身份痕迹已剥掉
+        text = raw.decode("utf-8", "replace")
+        for marker in LEAK_MARKERS:
+            assert marker not in text, "mission_end/%s 含身份/票据痕迹 %r" % (name, marker)
+
+
+def test_mission_end_extract_matches_real_values():
+    """真实结算样本 → 本局增量（经验/入账物品/包进度）。"""
+    from hd2proxy.engine.hooks import mission_end
+
+    raw = (FIXTURES / "mission_end" / "12b9a872.json").read_bytes()
+    inc = mission_end.extract_increments(raw)
+    assert inc["ok"] is True and inc["has_increment"] is True
+    assert inc["experience"] == 936                        # 本局增量，不是总值
+    assert inc["items"] == {"897894480": 7, "3608481516": 4434}
+    assert inc["item_source"] == "rewards"
+    # 明细：badges 求和后被 multipliers(×3) 放大成 rewards —— 5 份样本恒成立
+    assert inc["badge_items"]["3608481516"] == 1478
+    assert inc["rewards_items"]["3608481516"] == 1478 * 3
+    assert inc["packages"] == {"277818845": {"level": 5, "progress": 459}}
+    assert inc["mission"]["operation_id"] == 1242
+    assert inc["mission"]["mission_id"] == "22c690d9-51f2-4d4e-be90-22380a69d08a"
+
+
+def test_mission_end_zero_increment_sample():
+    """空结算（exp=0 / 无奖励）也要能解析，且 has_increment=False。"""
+    from hd2proxy.engine.hooks import mission_end
+
+    raw = (FIXTURES / "mission_end" / "e899f6af.json").read_bytes()
+    inc = mission_end.extract_increments(raw)
+    assert inc["ok"] is True and inc["has_increment"] is False
+    assert inc["experience"] == 0 and inc["items"] == {}
