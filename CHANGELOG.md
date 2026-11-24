@@ -6,6 +6,19 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.9.0-alpha.1（2026-11-24）— 结算事件流 `settlements.jsonl`（形态 3）+ manifest 游标
+
+- `save-export` 新增每玩家 `players/<steamId64>/settlements.jsonl`（契约形态 3，研究线口径已确认、样例 PASS 9/9）：
+  append-only / UTF-8-LF-无BOM / 一行一对象（紧凑）；按玩家文件内 `missionId` 幂等去重；首次有事件才建文件；
+  `--no-optional` 整体关闭。行字段：schema/event/ts(带显式时区)/身份三件套/missionId/operationId/missionIndex/
+  experience/items(本局增量)/packages(结算后绝对值 + 本玩家 platformAccountId)/itemSource(枚举 rewards|badges|both|none)/
+  catalogBuild/**source**(mission_end | ledger-only)。
+- 老局（只有账本 `missions.last`、无原始响应）补发一次 `source=ledger-only`、`packages:{}`、`missionIndex` 可 null。
+- manifest 新增 `settlements {ledgerOnly}` 与 `settlementsCursor {lines,lastMissionId,lastTs}`（导出时按文件重算）。
+- 新增不变量测试：`mission_end.json` 与事件里的 `platformAccountId` 必须等于该玩家 identity。
+- 测试 **728 → 738 passed**、GATE=PASS。
+- 规则：能力变更 ⇒ 动 `X.Y.Z`：`0.8.0-alpha.2` → **`0.9.0-alpha.1`**。
+
 ## v0.8.0-alpha.2（2026-11-24）— `mission_end.json` 按玩家校正 `platformAccountId`
 
 - 问题（研究线 F07）：alpha.1 的 `mission_end.json` 里 `progressionPackageUpdates[]` 缺 `platformAccountId`。

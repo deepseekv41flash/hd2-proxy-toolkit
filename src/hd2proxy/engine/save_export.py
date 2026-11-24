@@ -48,6 +48,8 @@ OUTPUT_FILES = {
 }
 INDEX_FILE = "index.json"
 MANIFEST_FILE = "manifest.json"
+SETTLEMENTS_FILE = "settlements.jsonl"          # 每玩家结算事件流（契约形态 3）
+ITEM_SOURCES = ("rewards", "badges", "both", "none")
 
 
 def default_baseline() -> Path:
@@ -201,6 +203,154 @@ def mission_end_payload(ledger_doc: dict):
     return doc if isinstance(doc, dict) and doc else None
 
 
+# ---------------------------------------------------------------- 结算事件流（形态 3）
+
+def _iso_explicit(raw):
+    """时间戳 → 始终带显式时区偏移的 ISO 串（契约 J08：不允许无时区本地时间）。"""
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(raw).replace(" ", "T"))
+    except ValueError:
+        return str(raw)
+    if dt.tzinfo is None:
+        dt = dt.astimezone()          # 旧账本只存本地时间 → 按本机时区补显式偏移
+    return dt.isoformat(timespec="seconds")
+
+
+def _item_source(value):
+    """限定枚举 rewards|badges|both|none（未知值收敛为 none，不让消费端猜）。"""
+    text = str(value or "").strip().lower()
+    return text if text in ITEM_SOURCES else "none"
+
+
+def _settlement_packages(last: dict, account) -> dict:
+    """该局**结算后绝对值** level/progress（max 幂等）+ 本玩家 platformAccountId。"""
+    out = {}
+    for id32, row in (last.get("packages") or {}).items():
+        if not isinstance(row, dict):
+            continue
+        item = {"level": row.get("level"), "progress": row.get("progress")}
+        if account:
+            item["platformAccountId"] = account
+        out[str(id32)] = item
+    return out
+
+
+def settlement_event(ledger_doc: dict):
+    """账本里最近一局 → 一行结算事件；没有可辨识的 missionId 时返回 None。
+
+    ``source``：
+      * ``mission_end``  = 引擎落过**完整原始响应**（alpha.1 起），事件字段取自该响应/账本；
+      * ``ledger-only``  = 老局只有账本 `missions.last`（无原始响应），packages 记空、missionIndex 可为 null。
+    """
+    ledger_doc = ledger_doc or {}
+    ident = ledger_doc.get("identity") or {}
+    earned = saves._normalize_earned(ledger_doc)
+    ms = earned.get("missions") or {}
+    last = ms.get("last") or {}
+    mission = last.get("mission") or {}
+    mission_id = str(mission.get("mission_id") or "").strip()
+    if not mission_id:
+        return None
+    has_raw = isinstance(ms.get("last_response"), dict) and bool(ms.get("last_response"))
+    steam = str(ident.get("steam_id") or "").strip() or None
+    hd2 = str(ident.get("hd2_account_id") or "").strip() or None
+    account = hd2 or steam
+    event = {
+        "schema": SCHEMA,
+        "event": "settlement",
+        "ts": _iso_explicit(ms.get("last_response_at") or last.get("at")),
+        "saveId": ledger_doc.get("save_id"),
+        "steamId64": steam,
+        "hd2AccountId": hd2,
+        "missionId": mission_id,
+        "operationId": mission.get("operation_id"),
+        "missionIndex": mission.get("mission_index"),
+        "experience": int(last.get("experience") or 0),
+        "items": {str(k): int(v) for k, v in (last.get("items") or {}).items()},
+        "packages": _settlement_packages(last, account) if has_raw else {},
+        "itemSource": _item_source(last.get("item_source")),
+        "catalogBuild": ledger_doc.get("catalog_build"),
+        "source": "mission_end" if has_raw else "ledger-only",
+    }
+    return event
+
+
+def read_settlements(path) -> dict:
+    """读现有 JSONL：返回 ``{"missionIds": set, "lines": [dict], "bad": n}``（坏行跳过，不删）。"""
+    p = Path(path)
+    ids, lines, bad = set(), [], 0
+    if not p.is_file():
+        return {"missionIds": ids, "lines": lines, "bad": bad}
+    try:
+        text = p.read_text(encoding="utf-8")
+    except OSError:
+        return {"missionIds": ids, "lines": lines, "bad": bad}
+    for raw in text.splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            doc = json.loads(raw)
+        except ValueError:
+            bad += 1
+            continue
+        if not isinstance(doc, dict):
+            bad += 1
+            continue
+        lines.append(doc)
+        mid = str(doc.get("missionId") or "").strip()
+        if mid:
+            ids.add(mid)
+    return {"missionIds": ids, "lines": lines, "bad": bad}
+
+
+def append_settlements(player_dir, ledger_doc) -> dict:
+    """把一个结算事件追加到该玩家 ``settlements.jsonl``（按 missionId 幂等去重）。
+
+    契约（研究线 2026-11-24 §2）：每玩家一文件、append-only、UTF-8/LF/无 BOM、一行一对象（紧凑）、
+    去重范围=该玩家文件内；重复导出不追加；坏行容忍由消费端负责（我方读取时跳过、不删）。
+    返回 ``{"appended":0|1, "skipped": bool, "lines": N, "ledgerOnly": N, "cursor": {...}}``。
+    """
+    path = Path(player_dir) / SETTLEMENTS_FILE
+    existing = read_settlements(path)
+    event = settlement_event(ledger_doc)
+    if event is None:
+        return {"appended": 0, "skipped": True, "lines": len(existing["lines"]),
+                "ledgerOnly": sum(1 for x in existing["lines"] if x.get("source") == "ledger-only"),
+                "cursor": _settlements_cursor(existing["lines"])}
+    if event["missionId"] in existing["missionIds"]:
+        return {"appended": 0, "skipped": True, "lines": len(existing["lines"]),
+                "ledgerOnly": sum(1 for x in existing["lines"] if x.get("source") == "ledger-only"),
+                "cursor": _settlements_cursor(existing["lines"])}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    prefix = ""
+    if path.is_file() and path.stat().st_size:
+        with path.open("rb") as fh:
+            fh.seek(-1, os.SEEK_END)
+            if fh.read(1) != b"\n":
+                prefix = "\n"                     # 上次被截断成半行：补换行，保持一行一对象
+    line = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
+    with path.open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(prefix + line + "\n")
+        fh.flush()
+    after = read_settlements(path)
+    return {"appended": 1, "skipped": False, "lines": len(after["lines"]),
+            "ledgerOnly": sum(1 for x in after["lines"] if x.get("source") == "ledger-only"),
+            "cursor": _settlements_cursor(after["lines"])}
+
+
+def _settlements_cursor(lines):
+    """manifest 游标：``{lines, lastMissionId, lastTs}``（导出时按文件重算）。"""
+    if not lines:
+        return {"lines": 0, "lastMissionId": None, "lastTs": None}
+    tail = lines[-1]
+    return {"lines": len(lines),
+            "lastMissionId": tail.get("missionId"),
+            "lastTs": tail.get("ts")}
+
+
 def player_key(ledger_doc: dict) -> str:
     """玩家目录键：优先 steamId64（主键），缺身份时退回 save_id（避免丢数据，manifest 里会标）。"""
     ident = (ledger_doc or {}).get("identity") or {}
@@ -214,7 +364,7 @@ def player_key(ledger_doc: dict) -> str:
 
 
 def build_manifest(ledger_doc: dict, merged: dict, *, version, baseline_dir, baseline_sha,
-                   ledger_sha, baseline_files=None, generated_at=None) -> dict:
+                   ledger_sha, baseline_files=None, settlements=None, generated_at=None) -> dict:
     """manifest：字段按研究线契约 §3（counts 用于服务端启动自检）。"""
     ident = (ledger_doc or {}).get("identity") or {}
     earned = saves._normalize_earned(ledger_doc or {})
@@ -228,7 +378,7 @@ def build_manifest(ledger_doc: dict, merged: dict, *, version, baseline_dir, bas
         exp = earned.get("experience")
     missions = (earned.get("missions") or {}).get("count")
     resolved = os.path.normcase(os.path.realpath(str(baseline_dir)))
-    return {
+    doc = {
         "schema": SCHEMA,
         "saveId": (ledger_doc or {}).get("save_id"),
         "identity": {
@@ -254,6 +404,11 @@ def build_manifest(ledger_doc: dict, merged: dict, *, version, baseline_dir, bas
             "missions": missions,
         },
     }
+    if settlements:
+        # 契约形态 3：结算事件流审计信息（ledger-only 行数 + 游标，供消费端对账）
+        doc["settlements"] = {"ledgerOnly": int(settlements.get("ledgerOnly") or 0)}
+        doc["settlementsCursor"] = dict(settlements.get("cursor") or {})
+    return doc
 
 
 # ---------------------------------------------------------------- 写盘
@@ -319,11 +474,13 @@ def export_player(ledger_doc: dict, *, baseline_dir=None, data_root, version,
     if mission_end is not None:
         mission_end = correct_mission_end(mission_end, ledger_doc)
         _write_json_atomic(player_dir / OUTPUT_FILES["mission_end"], mission_end)
+    settlements = append_settlements(player_dir, ledger_doc) if include_optional else None
     manifest = build_manifest(
         ledger_doc, merged, version=version, baseline_dir=base_dir,
         baseline_sha=baseline_digest(files),
         ledger_sha=ledger_digest(ledger_doc, ledger_file),
         baseline_files=baseline_files_info(files),
+        settlements=settlements,
     )
     _write_json_atomic(player_dir / MANIFEST_FILE, manifest)
     ident = (ledger_doc or {}).get("identity") or {}
@@ -341,7 +498,9 @@ def export_player(ledger_doc: dict, *, baseline_dir=None, data_root, version,
         "playerKey": key,
         "playerDir": str(player_dir),
         "files": sorted([MANIFEST_FILE] + [OUTPUT_FILES[ep] for ep in merged]
-                        + ([OUTPUT_FILES["mission_end"]] if mission_end is not None else [])),
+                        + ([OUTPUT_FILES["mission_end"]] if mission_end is not None else [])
+                        + ([SETTLEMENTS_FILE] if settlements and settlements.get("lines") else [])),
         "manifest": manifest,
         "merged": changed,
+        "settlements": settlements,
     }
