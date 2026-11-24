@@ -42,6 +42,7 @@ TOOLS = ROOT / "tools"
 from hd2proxy.engine import (certs, config as cfgmod, installer,  # noqa: E402
                              live as live_mod, logutil as logutil_mod, paths,
                              preview as preview_mod,
+                             save_export as saveexport_mod,
                              save_preview as savepreview_mod, sysprobe)
 
 OK, FAIL = 0, 2
@@ -440,6 +441,48 @@ def cmd_save_preview(a):
     return OK
 
 
+def _engine_version():
+    import hd2proxy
+    return hd2proxy.__version__
+
+
+def cmd_save_export(a):
+    """自建服存档导出（v0.7.0-alpha.1）：基线 ⊕ 本机账本 → 端点响应文档。
+
+    纯本地：读一份存档 + 一份基线目录，写 `<data-root>/players/<steamId64>/` 与 `index.json`。
+    输出是**服务端可直接回放**的响应体（shape 保真：基线深拷贝只改值）。
+    """
+    try:
+        doc, source = savepreview_mod.load_save(save_id=(a.save or None),
+                                                save_file=(a.save_file or None))
+        result = saveexport_mod.export_player(
+            doc,
+            baseline_dir=(a.baseline or None),
+            data_root=a.data_root,
+            version=_engine_version(),
+            include_optional=bool(a.include_optional),
+            ledger_file=(a.save_file or None))
+    except ValueError as e:
+        print("save-export 失败：%s" % e)
+        return FAIL
+    if a.json:
+        _out(result)
+    else:
+        m = result["manifest"]
+        print("已导出（来源存档：%s）" % source)
+        print("  数据根：%s" % result["dataRoot"])
+        print("  玩家目录：%s/players/%s" % (result["dataRoot"], result["playerKey"]))
+        print("  文件：%s" % "、".join(result["files"]))
+        print("  manifest：saveId=%s · steamId64=%s · catalogBuild=%s"
+              % (m["saveId"], (m["identity"] or {}).get("steamId64"), m["catalogBuild"]))
+        print("  counts：exp=%s · 库存行=%s · 统计非零=%s · 结算局数=%s"
+              % (m["counts"]["experience"], m["counts"]["inventoryRows"],
+                 m["counts"]["statsNonZero"], m["counts"]["missions"]))
+        if result["merged"]:
+            print("  合并改动：%s" % "、".join("%s +%d" % (k, v) for k, v in result["merged"].items()))
+    return OK
+
+
 def cmd_live(a):
     """拉取当前战况（无需游戏）：Status + GWE，并推荐可点靶星。
 
@@ -577,6 +620,18 @@ def build_parser():
     p.add_argument("--mission", default="", help="结算样本文件名（默认取第一份）")
     p.add_argument("--json", action="store_true", help="输出结构化 JSON")
 
+    p = sub.add_parser("save-export",
+                       help="自建服存档导出：基线 ⊕ 本机账本 → 端点响应文档（自建服可直接加载）")
+    p.add_argument("--save", default="", help="存档 saveId（默认 _last.json 指向的档）")
+    p.add_argument("--save-file", default="", help="直接指定存档 JSON 文件")
+    p.add_argument("--baseline", default="",
+                   help="基线目录（端点响应体；默认 data/fixtures/saves/fresh = 空号基线）")
+    p.add_argument("--data-root", required=True,
+                   help="自建服数据根目录（输出 players/<steamId64>/ 与 index.json）")
+    p.add_argument("--include-optional", action="store_true",
+                   help="同时导出可选端点（customize_v2；stats_profile_war 有基线就导出）")
+    p.add_argument("--json", action="store_true", help="输出结构化 JSON")
+
     p = sub.add_parser("live", help="拉取当前战况（无需游戏）：Status + GWE，并推荐可点靶星")
     p.add_argument("--war", type=int, default=0, help="战局号（默认自动取 current/WarId）")
     p.add_argument("--host", default="", help="API 主机（默认官方）")
@@ -633,7 +688,7 @@ def main(argv=None):
         "certs": cmd_certs, "install": cmd_install, "uninstall": cmd_uninstall,
         "status": cmd_status, "verify": cmd_verify, "shutdown": cmd_shutdown,
         "gui": cmd_gui, "preview": cmd_preview, "save-preview": cmd_save_preview,
-        "live": cmd_live,
+        "save-export": cmd_save_export, "live": cmd_live,
     }[a.cmd]
     return handler(a)
 
