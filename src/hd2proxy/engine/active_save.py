@@ -97,6 +97,8 @@ class ActiveSave:
         self._ident_recorded = (None, None)    # 已落盘的身份（避免每发 GetMotd 都写盘）
         self._preverify_merges = 0             # 身份校验前已把账本合并进响应的字段数（换号时提示"显示窗口"）
         self._prebind = False                  # 本局 activeSave 是否来自 _last 预绑定（身份头来源标注用）
+        self._getmotd_seen = False             # 本局是否已观测到 GetMotd（校验失败时据此停止盖身份头）
+        self._identity_uncertain = False       # 身份校验过程中出过错 → 不再向上游断言身份
         self._purchase_seen = {}               # 购买去重键 -> 时间戳（短窗口防双扣）
         self._rebase_done = False              # 会话基准是否已重建（同一会话只重建一次）
 
@@ -599,6 +601,12 @@ class ActiveSave:
         - 客户端自己的 lobby 请求已带该头时由调用方跳过，避免重复头（见 ``server.stamp_identity_header``）。
         """
         with self._lock:
+            # 研究线 2026-11-24 建议：GetMotd 到了却没校验成功（换号/解析失败/切档异常）时，
+            # **宁可不盖身份头** —— 自建服会回落公共数据，比"错给别人的档"安全。
+            if self._identity_uncertain:
+                return None
+            if self._getmotd_seen and not self.verified:
+                return None
             steam_session = _clean(self._steam_session)
             hd2_session = _clean(self._hd2_session)
             steam = steam_session or _clean(self.steam_id)
@@ -639,7 +647,25 @@ class ActiveSave:
                         % (self.wait_took, self.save_id))
 
     def _observe_identity(self, *, steam_id=None, hd2_account=None, source="getmotd") -> dict:
-        """观测到身份 → 校验 / 切档（研究线 2026-11-23 分流口径）。"""
+        """观测到身份 → 校验 / 切档（研究线 2026-11-23 分流口径）。
+
+        v0.7.0-alpha.2：包一层防护 —— 校验/切档抛异常时标记 ``_identity_uncertain``，
+        之后 ``identity_header()`` 不再向上游断言身份（研究线建议：宁可不盖，避免错给别人的档）。
+        """
+        if source == "getmotd":
+            self._getmotd_seen = True
+        try:
+            return self._observe_identity_impl(steam_id=steam_id, hd2_account=hd2_account,
+                                               source=source)
+        except Exception as e:                    # noqa: BLE001 - 身份异常不能打断代理
+            self._identity_uncertain = True
+            log("⚠ 身份校验失败（%s）：本局不再向上游盖身份头（自建服会回落公共数据）：%r"
+                % (source, e), audit=True)
+            self._event("identity-uncertain", "%s 失败：%r" % (source, e))
+            return {"ok": False, "action": "error", "save_id": self.save_id}
+
+    def _observe_identity_impl(self, *, steam_id=None, hd2_account=None, source="getmotd") -> dict:
+        """观测到身份的内部实现（异常由 ``_observe_identity`` 兜底）。"""
         steam = _clean(steam_id)
         hd2 = _clean(hd2_account)
         if not (steam or hd2):

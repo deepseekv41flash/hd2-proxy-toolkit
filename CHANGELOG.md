@@ -6,6 +6,16 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.7.0-alpha.2（2026-11-24）— 身份头安全加固：GetMotd 校验失败时不再断言身份
+
+- 问题（研究线自建服侧建议，按"宁可不盖"原则）：alpha.1 中若 GetMotd 已到但校验/切档失败，
+  引擎会继续用预绑定（上一账号）身份盖 `X-HD2-Account` → 自建服可能错给别人的档。
+- 修复：`ActiveSave` 增加 `_getmotd_seen` / `_identity_uncertain`；`_observe_identity` 异常兜底
+  （WARN + `identity-uncertain` 事件）；`identity_header()` 在这两种状态下**不盖头**，
+  自建服按"无身份头"回落公共数据；正常校验路径不变。
+- 测试 **718 → 720 passed**、GATE=PASS。
+- 规则：bug 修复只动 `alpha.N`：`0.7.0-alpha.1` → **`0.7.0-alpha.2`**。
+
 ## v0.7.0-alpha.1（2026-11-24）— 自建服导出 `save-export` + 身份头盖章 `X-HD2-Account`
 
 - **新增 `hd2proxy save-export`**（契约：研究线 `SELFHOST-SAVE-CONTRACT-2026-11-24` 形态 2 主切片）：

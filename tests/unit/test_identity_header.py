@@ -92,3 +92,30 @@ def test_stamp_identity_header_skips_when_client_already_sent():
 def test_stamp_identity_header_noop_without_identity():
     lines = [b"GET / HTTP/1.1"]
     assert stamp_identity_header(lines, None) is lines
+
+
+def test_identity_header_stops_after_getmotd_failure(tmp_path, monkeypatch):
+    """研究线建议：GetMotd 到了却没校验成功 → 宁可不盖身份头（自建服回落公共数据更安全）。"""
+    _make_save(tmp_path)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    assert mgr.identity_header() == (STEAM_A, "prebind")
+
+    def boom(*a, **k):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(active_save.saves, "save_id_for_identity", boom)
+    info = mgr.on_getmotd(STEAM_A)
+    assert info["ok"] is False and info["action"] == "error"
+    assert mgr.identity_header() is None                 # 不再向上游断言身份
+    assert any(e["kind"] == "identity-uncertain" for e in mgr.status()["events"])
+    mgr.close()
+
+
+def test_identity_header_still_works_after_normal_getmotd(tmp_path):
+    _make_save(tmp_path)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    mgr.on_getmotd(STEAM_A)
+    assert mgr.identity_header() == (STEAM_A, "getmotd")
+    mgr.close()
