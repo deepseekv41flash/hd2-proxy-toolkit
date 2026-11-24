@@ -65,15 +65,31 @@ class _Upstream:
 
     def __init__(self, port):
         self.port = port
+        self.seen_headers = []            # v0.7.0：记录上游收到的请求头（验身份头盖章）
         doc = STATUS_DOC
+
+        seen = self.seen_headers
 
         class H(BaseHTTPRequestHandler):
             def log_message(self, *a):
                 pass
 
+            def _record(self):
+                seen.append({k.lower(): v for k, v in self.headers.items()})
+
             def do_GET(self):
+                self._record()
                 if "/api/Stats/profile" in self.path:
                     body = json.dumps(STATS_FRESH_DOC).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Connection", "close")
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
+                if "/api/Pes/GetMotd" in self.path:
+                    body = json.dumps({"accountId": "76561198968648344"}).encode()
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
                     self.send_header("Content-Length", str(len(body)))
@@ -108,6 +124,7 @@ class _Upstream:
                 self.wfile.write(body)
 
             def do_PUT(self):
+                self._record()
                 need = int(self.headers.get("Content-Length") or 0)
                 if need:
                     self.rfile.read(need)
@@ -120,6 +137,7 @@ class _Upstream:
                 self.wfile.write(body)
 
             def do_POST(self):
+                self._record()
                 if "/AcquireUnlockableItem" in self.path:
                     body = json.dumps(ACQUIRE_DOC).encode()
                     self.send_response(200)
@@ -395,7 +413,7 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
     cfg_path.write_text(json.dumps({"host": HOST,
                                     "upstreamTest": "127.0.0.1:%d" % up_port}),
                         encoding="utf-8")
-    with _Upstream(up_port):
+    with _Upstream(up_port) as up:
         proc = start_engine(tmp_path, profile_path, cert_dir, port, ctl_port,
                             extra_args=("--config", str(cfg_path)))
         try:
@@ -409,6 +427,11 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
             assert prog["experience"] == 2759938
             assert prog["id"] == 801                     # 其余字段原样保留
 
+            # 1b) v0.7.0 身份头盖章：预绑定阶段就有 X-HD2-Account（source=prebind）
+            hdr = up.seen_headers[-1]
+            assert hdr.get("x-hd2-account") == steam_id
+            assert hdr.get("x-hd2-account-source") == "prebind"
+
             # 2) /status 暴露存档状态（GUI 排查用）
             save_state = api(state_file, "/status")["save"]
             assert save_state["save_id"] == sid and save_state["origin"] == "last"
@@ -418,6 +441,16 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
             # 3) 会话基准快照 + pending（身份未校验时保留，供下次启动回滚）
             assert saves.read_session_snapshot(sid, root=saves_root)["doc"]["earned"]["experience"] == 2759938
             assert saves.read_pending(root=saves_root)["save_id"] == sid
+
+            # 3b) v0.7.0 身份头：GetMotd 到达并校验一致后，来源从 prebind 变 getmotd（值仍是 SteamID64）
+            head, body = tls_get(port, "/api/Pes/GetMotd", cert_dir)
+            assert " 200 " in (" " + (head.splitlines()[0] if head else "") + " "), head[:80]
+            tls_get(port, "/api/Progression", cert_dir)
+            hdr2 = up.seen_headers[-1]
+            assert hdr2.get("x-hd2-account") == steam_id
+            assert hdr2.get("x-hd2-account-source") == "getmotd"
+            save_state = api(state_file, "/status")["save"]
+            assert save_state["verified"] is True
 
             # 4) G3：结算响应 → 奖励入账（真实客户端结算后不重取 Progression，
             #    这里手动再拉一次，验证"下次启动"能看到累加后的值）

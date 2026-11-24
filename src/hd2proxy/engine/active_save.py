@@ -96,6 +96,7 @@ class ActiveSave:
         self._last_catalog = None
         self._ident_recorded = (None, None)    # 已落盘的身份（避免每发 GetMotd 都写盘）
         self._preverify_merges = 0             # 身份校验前已把账本合并进响应的字段数（换号时提示"显示窗口"）
+        self._prebind = False                  # 本局 activeSave 是否来自 _last 预绑定（身份头来源标注用）
         self._purchase_seen = {}               # 购买去重键 -> 时间戳（短窗口防双扣）
         self._rebase_done = False              # 会话基准是否已重建（同一会话只重建一次）
 
@@ -110,6 +111,7 @@ class ActiveSave:
             # 此时没有"上次那位玩家"可参照，首屏等身份的逻辑照常生效。
             prebound = sid != saves.DEFAULT_SAVE_ID
             self.origin = ORIGIN_LAST if prebound else ORIGIN_LOCAL
+            self._prebind = prebound
             self.steam_id = _clean(last.get("last_steam_id"))
             self.hd2_account = _clean(last.get("last_hd2_account_id"))
             pending = saves.read_pending(self.root)
@@ -588,6 +590,31 @@ class ActiveSave:
             self.session_dirty = True
             self._event("write", "earned 已写盘（%s）" % reason)
             return out
+
+    def identity_header(self):
+        """给上游补的身份头（自建服按玩家分档用）：返回 ``(account_value, source)`` 或 None。
+
+        - 值优先 SteamID64（18 位主键），没有时退回 HD2 20 位 id；
+        - ``source`` 如实标注：``getmotd`` / ``getmessages`` / ``prebind``（= 仅按 _last 预绑定，尚未校验）；
+        - 客户端自己的 lobby 请求已带该头时由调用方跳过，避免重复头（见 ``server.stamp_identity_header``）。
+        """
+        with self._lock:
+            steam_session = _clean(self._steam_session)
+            hd2_session = _clean(self._hd2_session)
+            steam = steam_session or _clean(self.steam_id)
+            hd2 = hd2_session or _clean(self.hd2_account)
+            value = steam or hd2
+            if not value:
+                return None
+            if self.verified:
+                source = "getmotd" if steam_session else ("getmessages" if hd2_session else "getmotd")
+            elif steam_session or hd2_session:
+                source = "getmotd" if steam_session else "getmessages"
+            elif self._prebind:
+                source = "prebind"
+            else:
+                source = "getmotd" if steam else "getmessages"
+            return value, source
 
     # ------------------------------------------------------------ 身份状态机
     def _maybe_wait_identity(self):

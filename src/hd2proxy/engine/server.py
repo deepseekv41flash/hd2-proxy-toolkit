@@ -35,6 +35,22 @@ from .model import Mod, resolve_plan, rewrite_status
 
 
 # ==== Proxy 类（自 M0 legacy_proxy.py 逐字抽取；仅钩子调用点与控制面接入处改动） ====
+def stamp_identity_header(lines, ident, has_account=False):
+    """v0.7.0：给上游请求补身份头（自建服按玩家分档用）。
+
+    ``ident`` = ``ActiveSave.identity_header()`` 的 ``(value, source)`` 或 None。
+    客户端自己的 lobby 请求已带 ``X-HD2-Account`` 时 ``has_account=True`` → 不重复加（多值头会让服务端取错）。
+    纯函数：不改入参，返回新列表。
+    """
+    if not ident or has_account:
+        return lines
+    value, source = ident
+    lines = list(lines)
+    lines.append(("X-HD2-Account: %s" % value).encode("ascii", "ignore"))
+    lines.append(("X-HD2-Account-Source: %s" % source).encode("ascii", "ignore"))
+    return lines
+
+
 class Proxy:
     def __init__(self, mod, cert_dir, send_chain=False, spec=None):
         self.mod = mod
@@ -232,10 +248,13 @@ class Proxy:
                 _conditional = (b"if-none-match:", b"if-modified-since:", b"if-match:",
                                 b"if-unmodified-since:", b"if-range:")
                 _stripped = False
+                _has_account = False
                 for line in head.split(b"\r\n")[1:]:
                     low = line.lower()
                     if low.startswith(b"connection:"):
                         continue
+                    if low.startswith(b"x-hd2-account:"):
+                        _has_account = True       # 客户端 lobby 请求自带：保留，不重复加
                     # 1.15：Status 是我们要改写的那一个响应。如果客户端带条件请求头
                     # （If-None-Match / If-Modified-Since 等），上游会回 304 且**没有响应体** ——
                     # 我们就没东西可改，客户端继续用自己缓存的旧战况（现场表现：游戏在走代理、
@@ -249,6 +268,11 @@ class Proxy:
                     log_throttled("status-conditional",
                                   "Status 条件请求头已剥离（否则上游 304 无响应体，就没法改写）",
                                   every=3600)
+                # v0.7.0：自建服身份分档 —— 给上游补 X-HD2-Account（+ 来源标注）。
+                # 客户端登录体里没有账号 id、首屏读档也早于身份出现，所以这一层必须由引擎盖章；
+                # 身份未校验时用 _last 预绑定值并标 source=prebind，服务端可自行决定信不信。
+                _ident = self.save.identity_header() if self.save is not None else None
+                lines = stamp_identity_header(lines, _ident, _has_account)
                 lines.append(b"Connection: close")
                 up.sendall(b"\r\n".join(lines) + b"\r\n\r\n" + body)
                 resp = b""

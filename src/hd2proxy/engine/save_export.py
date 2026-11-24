@@ -63,7 +63,10 @@ def now_iso() -> str:
 
 
 def load_baseline(dir_path) -> dict:
-    """读基线目录里存在的端点文件（bytes 原样保存，用于 shape 保真 + 指纹）。"""
+    """读基线目录里存在的端点文件 -> ``{endpoint: {"name": 文件名, "bytes": 原始字节}}``。
+
+    保留文件名 + 原始字节：shape 保真直接用字节；manifest 里逐文件记 sha256 让消费方可独立复算。
+    """
     base = Path(dir_path)
     files = {}
     if not base.is_dir():
@@ -72,7 +75,7 @@ def load_baseline(dir_path) -> dict:
         for name in names:
             p = base / name
             if p.is_file():
-                files[key] = p.read_bytes()
+                files[key] = {"name": name, "bytes": p.read_bytes()}
                 break
     if not files:
         raise ValueError("基线目录里没有任何可用端点文件：%s（期望 progression/inventory/stats_profile ...）"
@@ -80,9 +83,20 @@ def load_baseline(dir_path) -> dict:
     return files
 
 
+def baseline_id(dir_path) -> str:
+    """基线标识：目录名就叫 fresh/main 时直接用，否则 ``custom:<名>``（manifest 供服务端分辨）。"""
+    name = Path(dir_path).name or "unknown"
+    return name if name in ("fresh", "main") else "custom:" + name
+
+
+def baseline_files_info(files: dict) -> dict:
+    """逐文件自描述：``{endpoint: {"name": ..., "sha256": ...}}``（消费方可独立校验）。"""
+    return {k: {"name": v["name"], "sha256": _sha256(v["bytes"])} for k, v in sorted(files.items())}
+
+
 def baseline_digest(files: dict) -> str:
-    """基线指纹：按端点名排序后 "name:sha256" 拼接再哈希（与文件顺序/时间无关）。"""
-    parts = ["%s:%s" % (k, _sha256(files[k])) for k in sorted(files)]
+    """基线总指纹：按端点名排序后 "name:sha256" 拼接再哈希（与文件顺序/时间无关）。"""
+    parts = ["%s:%s" % (k, _sha256(files[k]["bytes"])) for k in sorted(files)]
     return _sha256(("\n".join(parts) + "\n").encode("utf-8"))
 
 
@@ -108,19 +122,23 @@ def _merge_bytes(raw: bytes, ledger_doc: dict, fn) -> tuple[bytes, int]:
     return out, changed
 
 
-def merge_endpoints(files: dict, ledger_doc: dict, *, include_optional: bool = False) -> dict:
-    """按端点合并，返回 ``{endpoint: (doc, changed)}``（doc 已解析，用于 manifest/counts）。"""
+def merge_endpoints(files: dict, ledger_doc: dict, *, include_optional: bool = True) -> dict:
+    """按端点合并，返回 ``{endpoint: (raw_bytes, changed)}``。
+
+    **可选端点默认导出**（研究线 2026-11-24：`customize_v2` / `stats_profile_war` 都是按玩家数据，
+    缺省会让服务端回落公共数据、把 A 玩家的数据显示给 B）。
+    """
     out = {}
     for key in CORE_ENDPOINTS:
         if key not in files:
             continue
-        out[key] = _merge_bytes(files[key], ledger_doc, _MERGE_FN[key])
+        out[key] = _merge_bytes(files[key]["bytes"], ledger_doc, _MERGE_FN[key])
     if include_optional and "stats_profile_war" in files:
-        out["stats_profile_war"] = _merge_bytes(files["stats_profile_war"], ledger_doc,
+        out["stats_profile_war"] = _merge_bytes(files["stats_profile_war"]["bytes"], ledger_doc,
                                                 saves.apply_to_stats)
     if include_optional and "customize_v2" in files:
         # 改装槽快照没有账本合并语义（实验性写路径），只做 shape 保真拷贝
-        out["customize_v2"] = (files["customize_v2"], 0)
+        out["customize_v2"] = (files["customize_v2"]["bytes"], 0)
     return out
 
 
@@ -151,7 +169,7 @@ def player_key(ledger_doc: dict) -> str:
 
 
 def build_manifest(ledger_doc: dict, merged: dict, *, version, baseline_dir, baseline_sha,
-                   ledger_sha, generated_at=None) -> dict:
+                   ledger_sha, baseline_files=None, generated_at=None) -> dict:
     """manifest：字段按研究线契约 §3（counts 用于服务端启动自检）。"""
     ident = (ledger_doc or {}).get("identity") or {}
     earned = saves._normalize_earned(ledger_doc or {})
@@ -164,6 +182,7 @@ def build_manifest(ledger_doc: dict, merged: dict, *, version, baseline_dir, bas
     if exp is None:
         exp = earned.get("experience")
     missions = (earned.get("missions") or {}).get("count")
+    resolved = os.path.normcase(os.path.realpath(str(baseline_dir)))
     return {
         "schema": SCHEMA,
         "saveId": (ledger_doc or {}).get("save_id"),
@@ -176,11 +195,15 @@ def build_manifest(ledger_doc: dict, merged: dict, *, version, baseline_dir, bas
         "engine": {"version": str(version), "mergePolicy": MERGE_POLICY},
         "source": {
             "baselineSha256": baseline_sha,
-            "ledgerSha256": ledger_sha,
+            "baselineId": baseline_id(baseline_dir),
             "baselineDir": str(baseline_dir),
+            "baselineDirResolved": resolved,
+            "baselineFiles": baseline_files or {},
+            "ledgerSha256": ledger_sha,
         },
         "counts": {
             "experience": exp,
+            "achievements": len(prog.get("achievements") or []),
             "inventoryRows": len(inv.get("items") or []),
             "statsNonZero": stats_nz,
             "missions": missions,
@@ -231,7 +254,7 @@ def _same_player(a: dict, b: dict) -> bool:
 
 
 def export_player(ledger_doc: dict, *, baseline_dir=None, data_root, version,
-                  include_optional=False, ledger_file=None) -> dict:
+                  include_optional=True, ledger_file=None) -> dict:
     """导出一个玩家：写 `players/<key>/` + 更新 `index.json`。返回摘要（含 manifest）。"""
     if not data_root:
         raise ValueError("必须指定 --data-root（自建服数据根目录）")
@@ -251,6 +274,7 @@ def export_player(ledger_doc: dict, *, baseline_dir=None, data_root, version,
         ledger_doc, merged, version=version, baseline_dir=base_dir,
         baseline_sha=baseline_digest(files),
         ledger_sha=ledger_digest(ledger_doc, ledger_file),
+        baseline_files=baseline_files_info(files),
     )
     _write_json_atomic(player_dir / MANIFEST_FILE, manifest)
     ident = (ledger_doc or {}).get("identity") or {}

@@ -6,6 +6,23 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.7.0-alpha.1（2026-11-24）— 自建服导出 `save-export` + 身份头盖章 `X-HD2-Account`
+
+- **新增 `hd2proxy save-export`**（契约：研究线 `SELFHOST-SAVE-CONTRACT-2026-11-24` 形态 2 主切片）：
+  基线 ⊕ 本机账本 → `<data-root>/players/<steamId64>/{manifest,progression,inventory,stats_profile}.json` + `index.json`，
+  自建服务器启动时直接加载回放。可选端点（`stats_profile_war` / `customize_v2`）默认导出（`--no-optional` 关闭）。
+- **shape 保真**：输出 = 基线深拷贝只改值；合并语义沿用引擎（max / 库存只抬不降 / 集合并集）；
+  原子写 + 可复现（除 `generatedAt` 逐字节一致）。
+- **manifest 自描述**：`baselineId` / `baselineDirResolved` / `baselineFiles{name,sha256}` /
+  `baselineSha256` / `ledgerSha256` / `counts{experience,achievements,inventoryRows,statsNonZero,missions}`。
+- **身份头盖章**（多人自建服分档，v1 方案 a）：引擎给所有上游请求补
+  `X-HD2-Account: <SteamID64|HD2 id>` + `X-HD2-Account-Source: prebind|getmotd|getmessages`；
+  客户端自带该头时不重复；官方服忽略未知头无副作用。边界：头可伪造，仅限可信自建服。
+- **测试 708 → 718 passed**（save-export 13 + 身份头 8 + e2e 头断言），`GATE=PASS`；
+  研究线 `validate_save_export.py` 对样例实测 PASS 36/0 与 19/0。
+- 规则：能力变更 ⇒ 动 `X.Y.Z`：`0.6.0-alpha.3` → **`0.7.0-alpha.1`**。
+- 不做（后续）：`mission_end.json` 每玩家结算响应体、JSONL 结算事件流、`shared/` 拆分、HTTP 导出接口。
+
 ## v0.6.0-alpha.3（2026-11-23）— 换号不混档实机验收 + 修复 HD2 别名残留 / 首屏预合并回声污染
 
 - **④ 换号不混档实机验收 PASS**（主号 ↔ 空号 `76561199881579811` 双向切换，官方服同一引擎进程）：

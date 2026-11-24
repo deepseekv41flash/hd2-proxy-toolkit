@@ -460,7 +460,7 @@ def cmd_save_export(a):
             baseline_dir=(a.baseline or None),
             data_root=a.data_root,
             version=_engine_version(),
-            include_optional=bool(a.include_optional),
+            include_optional=not bool(a.no_optional),
             ledger_file=(a.save_file or None))
     except ValueError as e:
         print("save-export 失败：%s" % e)
@@ -628,8 +628,8 @@ def build_parser():
                    help="基线目录（端点响应体；默认 data/fixtures/saves/fresh = 空号基线）")
     p.add_argument("--data-root", required=True,
                    help="自建服数据根目录（输出 players/<steamId64>/ 与 index.json）")
-    p.add_argument("--include-optional", action="store_true",
-                   help="同时导出可选端点（customize_v2；stats_profile_war 有基线就导出）")
+    p.add_argument("--no-optional", action="store_true",
+                   help="不导出可选端点（默认导出 customize_v2 / stats_profile_war：按玩家数据，缺省会让服务端串档）")
     p.add_argument("--json", action="store_true", help="输出结构化 JSON")
 
     p = sub.add_parser("live", help="拉取当前战况（无需游戏）：Status + GWE，并推荐可点靶星")

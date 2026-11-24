@@ -42,7 +42,7 @@ def make_ledger(*, steam=STEAM, hd2=HD2, exp=210, with_identity=True):
     return doc
 
 
-def _export(tmp_path, ledger, *, baseline="fresh", version="test-1.0", include_optional=False,
+def _export(tmp_path, ledger, *, baseline="fresh", version="test-1.0", include_optional=True,
             name="root"):
     root = tmp_path / name
     res = sx.export_player(ledger, baseline_dir=str(FIXTURES / baseline),
@@ -103,7 +103,7 @@ def test_manifest_fields_and_counts(tmp_path):
     assert m["engine"] == {"version": "9.9.9", "mergePolicy": sx.MERGE_POLICY}
     assert len(m["source"]["baselineSha256"]) == 64 and len(m["source"]["ledgerSha256"]) == 64
     assert m["source"]["baselineDir"].endswith("fresh")
-    assert m["counts"] == {"experience": 210, "inventoryRows": 56,
+    assert m["counts"] == {"experience": 210, "achievements": 4, "inventoryRows": 56,
                           "statsNonZero": 23, "missions": 2}
 
 
@@ -142,15 +142,29 @@ def test_atomic_write_no_tmp_left(tmp_path):
     assert leftovers == []
 
 
-def test_optional_endpoints_only_when_requested(tmp_path):
+def test_optional_endpoints_exported_by_default(tmp_path):
+    """研究线建议：可选端点默认导出（按玩家数据，缺省会让服务端回落公共数据串档）。"""
     _res, root = _export(tmp_path, make_ledger())
     pdir = root / "players" / STEAM
-    assert not (pdir / "stats_profile_war.json").exists()
-    assert not (pdir / "customize_v2.json").exists()
-    _res2, root2 = _export(tmp_path, make_ledger(), include_optional=True, name="root2")
+    assert (pdir / "stats_profile_war.json").exists()
+    assert (pdir / "customize_v2.json").exists()
+    _res2, root2 = _export(tmp_path, make_ledger(), include_optional=False, name="root2")
     pdir2 = root2 / "players" / STEAM
-    assert (pdir2 / "stats_profile_war.json").exists()
-    assert (pdir2 / "customize_v2.json").exists()
+    assert not (pdir2 / "stats_profile_war.json").exists()
+    assert not (pdir2 / "customize_v2.json").exists()
+
+
+def test_manifest_baseline_self_description(tmp_path):
+    """研究线建议：manifest 给 baselineId / baselineDirResolved / 逐文件 sha256，消费方可独立复算。"""
+    res, _root = _export(tmp_path, make_ledger())
+    src = res["manifest"]["source"]
+    assert src["baselineId"] == "fresh"
+    assert Path(src["baselineDirResolved"]).is_absolute()
+    import hashlib
+    for ep, info in src["baselineFiles"].items():
+        raw = (FIXTURES / "fresh" / info["name"]).read_bytes()
+        assert info["sha256"] == hashlib.sha256(raw).hexdigest(), ep
+    assert set(src["baselineFiles"]) >= {"progression", "inventory", "stats_profile"}
 
 
 def test_baseline_missing_core_endpoint_raises(tmp_path):
