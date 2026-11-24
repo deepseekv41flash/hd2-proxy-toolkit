@@ -9,6 +9,7 @@
 """
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -52,6 +53,14 @@ def export(tmp_path, ledger, *, optional=True, name="root"):
     return res, root / "players" / STEAM
 
 
+TZ_OFFSET_RE = re.compile(r"(Z|[+-]\d{2}:\d{2})$")
+
+
+def _has_explicit_tz(ts):
+    """契约 J08：时间戳必须带显式时区（本地/CI 时区不同，不能断言具体偏移）。"""
+    return bool(TZ_OFFSET_RE.search(str(ts or "")))
+
+
 def read_lines(p):
     """只返回可解析的合法行（消费端容忍坏行的同款行为）。"""
     out = []
@@ -81,7 +90,8 @@ def test_settlement_event_mission_end_fields(tmp_path):
     assert ev["items"] == {"897894480": 7, "3608481516": 4434}
     assert ev["packages"] == {"277818845": {"platformAccountId": HD2, "level": 5, "progress": 459}}
     assert ev["itemSource"] == "rewards" and ev["source"] == "mission_end"
-    assert ev["ts"] == "2026-11-24T13:39:43+08:00"        # 显式时区
+    assert ev["ts"].startswith("2026-11-24T13:39:43")
+    assert _has_explicit_tz(ev["ts"])                      # 显式时区（不限偏移）
 
 
 def test_settlement_event_ledger_only_variant(tmp_path):
@@ -91,7 +101,8 @@ def test_settlement_event_ledger_only_variant(tmp_path):
     assert ev["source"] == "ledger-only"
     assert ev["packages"] == {}                              # 老局无原始响应 → 空
     assert ev["missionIndex"] == 2 and ev["experience"] == 936
-    assert ev["ts"] == "2026-11-23T18:21:39+08:00"
+    assert ev["ts"].startswith("2026-11-23T18:21:39")
+    assert _has_explicit_tz(ev["ts"])
 
 
 def test_item_source_limited_enum(tmp_path):
@@ -111,7 +122,7 @@ def test_repeated_export_is_idempotent(tmp_path):
     m = res["manifest"]
     assert m["settlementsCursor"]["lines"] == 1
     assert m["settlementsCursor"]["lastMissionId"] == "m-1"
-    assert m["settlementsCursor"]["lastTs"].endswith("+08:00")
+    assert _has_explicit_tz(m["settlementsCursor"]["lastTs"])
 
 
 def test_new_mission_appends_and_cursor_moves(tmp_path):

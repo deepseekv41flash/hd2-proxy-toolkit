@@ -6,6 +6,14 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.9.0-alpha.2（2026-11-24）— 修复：settlements 测试对时区敏感（alpha.1 tag CI 红灯）
+
+- `v0.9.0-alpha.1` 的 tag CI 在 unit-tests 失败：`test_repeated_export_is_idempotent` 断言硬编码 `+08:00`，
+  CI（UTC）上 `_iso_explicit()` 补的是 `+00:00` —— **产品行为正确**（契约只要求带显式偏移），是测试写死环境。
+- 修复：测试改为时区无关断言（时间部分精确 + 偏移用正则 `(Z|[+-]HH:MM)$` 校验，3 处）。
+- 全量 738 passed、GATE=PASS；本版 tag CI 预期转绿。无功能变更。
+- 规则：bug 修复只动 `alpha.N`：`0.9.0-alpha.1` → **`0.9.0-alpha.2`**。
+
 ## v0.9.0-alpha.1（2026-11-24）— 结算事件流 `settlements.jsonl`（形态 3）+ manifest 游标
 
 - `save-export` 新增每玩家 `players/<steamId64>/settlements.jsonl`（契约形态 3，研究线口径已确认、样例 PASS 9/9）：
