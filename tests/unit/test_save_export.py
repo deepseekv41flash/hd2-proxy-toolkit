@@ -210,14 +210,34 @@ MISSION_END_DOC = json.loads((FIXTURES / "mission_end" / "12b9a872.json").read_t
 
 
 def test_mission_end_json_written_from_ledger(tmp_path):
-    """v0.8.0：账本里有原始结算响应 → 导出 `mission_end.json`（shape 原样）。"""
+    """v0.8.0：账本里有原始结算响应 → 导出 `mission_end.json`；
+    v0.8.0-alpha.2：按玩家补/校正 platformAccountId（夹具脱敏剥掉了它，官方真实响应总有）。"""
     ledger = make_ledger()
     ledger["earned"]["missions"]["last_response"] = MISSION_END_DOC
     res, root = _export(tmp_path, ledger)
     pdir = root / "players" / STEAM
     got = json.loads((pdir / "mission_end.json").read_text(encoding="utf-8"))
-    assert got == MISSION_END_DOC
+    expected = json.loads(json.dumps(MISSION_END_DOC))
+    for row in expected.get("progressionPackageUpdates") or []:
+        row["platformAccountId"] = HD2          # 玩家自己的 HD2 20 位 id
+    # 键序：platformAccountId 在最前（与官方抓包一致）
+    for row in got.get("progressionPackageUpdates") or []:
+        assert list(row)[0] == "platformAccountId"
+    assert got == expected
     assert "mission_end.json" in res["files"]
+
+
+def test_mission_end_corrects_existing_platform_account_id(tmp_path):
+    """上游给的是占位/别人的 id → 导出时校正为本玩家 identity（HD2 优先）。"""
+    ledger = make_ledger()
+    doc = json.loads(json.dumps(MISSION_END_DOC))
+    for row in doc.get("progressionPackageUpdates") or []:
+        row["platformAccountId"] = "76561190000000000"
+    ledger["earned"]["missions"]["last_response"] = doc
+    _res, root = _export(tmp_path, ledger)
+    got = json.loads((root / "players" / STEAM / "mission_end.json").read_text(encoding="utf-8"))
+    assert got["progressionPackageUpdates"][0]["platformAccountId"] == HD2
+    assert got["progressionPackageUpdates"][0]["id32"] ==         doc["progressionPackageUpdates"][0]["id32"]
 
 
 def test_mission_end_json_absent_without_raw(tmp_path):

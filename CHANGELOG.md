@@ -6,6 +6,16 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.8.0-alpha.2（2026-11-24）— `mission_end.json` 按玩家校正 `platformAccountId`
+
+- 问题（研究线 F07）：alpha.1 的 `mission_end.json` 里 `progressionPackageUpdates[]` 缺 `platformAccountId`。
+- 根因：**不是引擎丢字段** —— 真实上游有（实机抓包 `13887067702231565058`）、客户端收到、账本 `last_response`
+  都原样保留；是我方**公开夹具被脱敏剥掉了该字段**（守门测试禁止身份id），上一份样例的本地 mock 直接服务了脱敏夹具。
+- 修复：`save-export` 新增 `correct_mission_end()` —— 值校正为本玩家 identity（**HD2 20 位优先**，退回 SteamID64）、
+  缺失补齐、键序置前、只改值不重建（深拷贝）、不改入参。公开夹具保持脱敏不变。
+- 重出样例并交研究线复跑校验器；测试 **727 → 728 passed**、GATE=PASS。
+- 规则：bug 修复只动 `alpha.N`：`0.8.0-alpha.1` → **`0.8.0-alpha.2`**。
+
 ## v0.8.0-alpha.1（2026-11-24）— 每玩家结算响应体 `mission_end.json` + 身份头 uncertain 细化
 
 - **`mission_end.json`（契约 §7 后续第 1 条）**：引擎在 `Mission/end` 入账时把**完整原始响应**整份落盘

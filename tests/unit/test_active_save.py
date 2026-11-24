@@ -107,13 +107,16 @@ def test_record_mission_end_stores_raw_response(tmp_path):
     sid = make_save(tmp_path, experience=0)
     payload = {"experience": 936, "campaignWon": False, "impact": 0,
                "missionId": "m-raw-1", "operationId": 1284,
-               "rewards": [{"mixId": 3608481516, "amount": 4434}]}
+               "rewards": [{"mixId": 3608481516, "amount": 4434}],
+               "progressionPackageUpdates": [
+                   {"platformAccountId": "13887067702231565058", "id32": 277818845,
+                    "level": 5, "progress": 459}]}
     mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
     mgr.start()
     mgr.record_mission_end(json.dumps(payload).encode())
     doc = saves.SaveStore(sid, root=tmp_path).load()
     ms = doc["earned"]["missions"]
-    assert ms["last_response"] == payload
+    assert ms["last_response"] == payload          # 逐字段原样（含 platformAccountId，不重建元素）
     assert ms["last_response_at"]
     assert ms["last"]["experience"] == 936 and ms["count"] == 1
     mgr.close()

@@ -157,6 +157,38 @@ def _as_doc(raw, fallback_empty=None):
         return fallback_empty if fallback_empty is not None else {}
 
 
+def _player_account_id(ledger_doc: dict):
+    """玩家自己的账号 id（mission_end 里 platformAccountId 的语义）：HD2 20 位优先（官方抓包口径），
+    没有则退回 SteamID64。"""
+    ident = (ledger_doc or {}).get("identity") or {}
+    hd2 = str(ident.get("hd2_account_id") or "").strip()
+    steam = str(ident.get("steam_id") or "").strip()
+    return hd2 or steam or None
+
+
+def correct_mission_end(doc: dict, ledger_doc: dict) -> dict:
+    """按玩家校正 `mission_end.json`（契约 F07 / per-player 语义）。
+
+    官方响应里 `progressionPackageUpdates[]` 每个元素带 `platformAccountId`（= **该玩家自己的**账号 id，
+    真实抓包为 HD2 20 位）。这里：
+      * 值统一校正为本玩家 identity（HD2 优先，退回 SteamID64）；
+      * 字段缺失时**补齐**（我方公开夹具为脱敏起见剥掉了它；上游真实响应总是有）；
+      * 元素其余键/嵌套**原样保留**（只改值，不重建 dict；platformAccountId 排在最前与官方键序一致）。
+    """
+    out = json.loads(json.dumps(doc))            # 深拷贝，绝不改入参
+    account = _player_account_id(ledger_doc)
+    if not account:
+        return out
+    for row in out.get("progressionPackageUpdates") or []:
+        if not isinstance(row, dict):
+            continue
+        rest = {k: v for k, v in row.items() if k != "platformAccountId"}
+        row.clear()
+        row["platformAccountId"] = account
+        row.update(rest)
+    return out
+
+
 def mission_end_payload(ledger_doc: dict):
     """账本里最近一局的**完整原始 Mission/end 响应**（v0.8.0 起引擎落盘）；没有则 None。
 
@@ -285,6 +317,7 @@ def export_player(ledger_doc: dict, *, baseline_dir=None, data_root, version,
         _write_json_atomic(player_dir / OUTPUT_FILES[ep], _as_doc(raw))
     mission_end = mission_end_payload(ledger_doc) if include_optional else None
     if mission_end is not None:
+        mission_end = correct_mission_end(mission_end, ledger_doc)
         _write_json_atomic(player_dir / OUTPUT_FILES["mission_end"], mission_end)
     manifest = build_manifest(
         ledger_doc, merged, version=version, baseline_dir=base_dir,
