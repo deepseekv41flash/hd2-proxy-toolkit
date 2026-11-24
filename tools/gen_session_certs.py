@@ -29,7 +29,7 @@ def main() -> int:
 
     out = Path(a.out_dir).resolve()
     try:
-        report = certs.generate_session(out, host=a.host, days=a.days,
+        report = certs.generate_session(out, host=a.host, days=a.days, max_days=a.days,
                                         force=a.force, mode=a.mode)
     except RuntimeError as e:
         print("ERROR: %s" % e)

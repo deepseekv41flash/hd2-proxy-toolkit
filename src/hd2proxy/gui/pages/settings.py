@@ -72,13 +72,15 @@ class SettingsPage(Page):
                            font=theme.F_S).pack(side="left", padx=(0, 12))
 
         # ---- cert ------------------------------------------------------
-        wrap, f = theme.section(left, "证书", "ca 模式；有效期硬上限 2 天；签完即删 CA 私钥")
+        wrap, f = theme.section(left, "证书",
+                                "ca 模式；有效期默认 2 天（显式可到 7 天硬上限）；签完即删 CA 私钥")
         wrap.pack(fill="x", pady=(0, 12))
         self.var_days = tk.StringVar()
         self.var_minrem = tk.StringVar()
         self.var_autorenew = tk.BooleanVar()
         self._row(f, 0, "有效期（天）", ttk.Combobox(f, textvariable=self.var_days,
-                                                    values=["1", "2"], width=6, state="readonly"))
+                                                    values=["1", "2", "3", "4", "5", "6", "7"],
+                                                    width=6, state="readonly"))
         self._row(f, 1, "剩余<（小时）续期", ttk.Entry(f, textvariable=self.var_minrem, width=6))
         tk.Checkbutton(f, text="启动前自动续期", variable=self.var_autorenew, bg=theme.BG,
                        fg=theme.FG, selectcolor=theme.PANEL2, activebackground=theme.BG,

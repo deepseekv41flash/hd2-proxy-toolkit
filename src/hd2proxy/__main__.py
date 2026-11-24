@@ -9,7 +9,7 @@
   python -m hd2proxy profiles list                    # 列出本机 profile
   python -m hd2proxy migrate                          # 旧 config.json/runtime -> profile
   python -m hd2proxy certs status                     # 证书状态（有效期/指纹/告警）
-  python -m hd2proxy certs renew                      # 重新签发（ca 模式，≤2 天）
+  python -m hd2proxy certs renew                      # 重新签发（ca 模式；默认 2 天，可 --days 7）
   python -m hd2proxy install --profile <p> --dry-run   # 只打印将改动什么（安全）
   python -m hd2proxy install --profile <p>             # 真安装（需要一次 UAC）
   python -m hd2proxy preview --profile <p>             # 离线预演：不开游戏看会改什么
@@ -292,7 +292,7 @@ def cmd_certs(a):
     if a.action == "renew":
         try:
             report = certs.generate_session(cert_dir, host=a.host, days=a.days,
-                                            force=True, mode="ca")
+                                            max_days=a.days, force=True, mode="ca")
         except Exception as e:      # noqa: BLE001
             print("签发失败：%r" % (e,))
             return FAIL
@@ -325,6 +325,7 @@ def cmd_install(a):
         print("没有会话证书，先签发（ca 模式 %d 天）..." % ctx["days"])
         try:
             certs.generate_session(ctx["cert_dir"], host=ctx["host"], days=ctx["days"],
+                                   max_days=ctx["days"],
                                    force=True, mode="ca")
         except Exception as e:      # noqa: BLE001
             print("签发失败：%r" % (e,))
@@ -579,11 +580,13 @@ def build_parser():
     p.add_argument("--out", default="")
     p.add_argument("--name", default="")
 
-    p = sub.add_parser("certs", help="会话证书（ca 模式，≤2 天）")
+    p = sub.add_parser("certs", help="会话证书（ca 模式；默认 2 天，硬上限 7 天）")
     p.add_argument("action", nargs="?", default="status", choices=["status", "renew"])
     p.add_argument("--cert-dir", default="")
     p.add_argument("--host", default=certs.DEFAULT_HOST)
-    p.add_argument("--days", type=int, default=2)
+    p.add_argument("--days", type=int, default=certs.MAX_DAYS_DEFAULT,
+                   help="有效期天数（默认 %d；显式可到硬上限 %d，超过按 %d 处理）"
+                        % (certs.MAX_DAYS_DEFAULT, certs.MAX_DAYS_HARD, certs.MAX_DAYS_HARD))
 
     p = sub.add_parser("install", help="安装：hosts 指向本机 + 信任会话证书（需要一次 UAC）")
     p.add_argument("--profile", default="")

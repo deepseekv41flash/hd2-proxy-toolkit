@@ -757,8 +757,8 @@ def main(argv=None):
     auto_renew = (spec.cert_auto_renew if spec is not None else False) and not a.no_auto_renew
     if auto_renew:
         try:
-            r = certs.ensure_session(cert_dir, host=host,
-                                     days=(spec.cert_days if spec is not None else 2),
+            _days = (spec.cert_days if spec is not None else certs.MAX_DAYS_DEFAULT)
+            r = certs.ensure_session(cert_dir, host=host, days=_days, max_days=_days,
                                      min_remaining_hours=(spec.cert_min_remaining_hours
                                                           if spec is not None else 12.0))
             log("证书 %s（剩余 %s 小时）"

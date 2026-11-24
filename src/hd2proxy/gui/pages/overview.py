@@ -63,7 +63,7 @@ class OverviewPage(Page):
             cards.columnconfigure(i, weight=1, uniform="c")
         self.card_engine = theme.card(cards, "运行状态", "未运行", "尚未启动引擎")
         self.card_engine[0].grid(row=0, column=0, sticky="nsew", padx=(0, 10))
-        self.card_cert = theme.card(cards, "证书有效期", "—", "会话证书 ca 模式（≤2 天）",
+        self.card_cert = theme.card(cards, "证书有效期", "—", "会话证书 ca 模式（默认 2 天，上限 7 天）",
                                     accent=theme.GOLD)
         self.card_cert[0].grid(row=0, column=1, sticky="nsew", padx=10)
         self.card_stats = theme.card(cards, "本次改写", "0", "Status / 目录 / 库存")

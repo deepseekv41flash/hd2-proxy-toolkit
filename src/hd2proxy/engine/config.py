@@ -14,7 +14,7 @@ import json
 import os
 from pathlib import Path
 
-from . import paths
+from . import certs, paths
 from .spec import EngineSpec
 
 SCHEMA_VERSION = 2
@@ -182,8 +182,10 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
     days = _int(cert.get("days"))
     if days is None or days < 1:
         errors.append("cert.days 必须是 >=1 的整数")
-    elif days > 2:
-        errors.append("cert.days 不能超过 2（安全硬上限）")
+    elif days > certs.MAX_DAYS_HARD:
+        # 默认仍是 2 天；显式配置可放宽到硬上限（2026-11-25 双端定案），但不可越过硬上限
+        errors.append("cert.days 不能超过 %d（硬上限）；默认 %d 天"
+                      % (certs.MAX_DAYS_HARD, certs.MAX_DAYS_DEFAULT))
     else:
         cert["days"] = days
     mrh = cert.get("min_remaining_hours")

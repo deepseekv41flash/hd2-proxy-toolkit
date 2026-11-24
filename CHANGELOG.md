@@ -6,6 +6,23 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.10.0-alpha.1（2026-11-25）— 证书有效期策略：默认 2 天 / 显式可放宽到 7 天硬上限
+
+- 背景：会话证书 2 天有效 + 剩余 <12h 自动续期 ⇒ 实际约每 **36 小时**就要续一次；而本工具**签完即删 CA 私钥**，
+  续期必然换发新 CA ⇒ 每次都要重装一次信任（一次 UAC），跨两天的测试窗口几乎必撞一次轮换。
+- 策略（2026-11-25 与研究线双端定案）：`MAX_DAYS_DEFAULT = 2`（**默认行为完全不变**）、`MAX_DAYS_HARD = 7`；
+  只有**显式配置**才放行到 7：profile `cert.days`、CLI `certs renew --days N`、GUI 证书页下拉。
+- 硬上限**不可被参数突破**：`clamp_days(days, max_days) = min(days, min(max_days 或默认 2, 7))`；
+  即使调用方传 `max_days=99` 也只到 7（不是"只校验 `days <= max_days`"）。
+- 校验同步放宽：`preflight()` / `describe()` 由"超 2 天拒绝"改为"超 7 天拒绝"；`cert.days` 配置校验 1..7。
+- 引擎启动自愈、CLI、`tools/gen_session_certs.py` 全部透传策略上限（显式 7 天不会被压回 2 天）；
+  `build_leaf_mode()`/`build_ca_mode()` 再按硬上限兜底，防止绕过公开入口直调 builder。
+- GUI：证书页有效期下拉 1..7，文案注明"默认 2 天、显式可到 7 天硬上限"。
+- **续期仍会换发新 CA**（安全模型不变：签完即删 CA 私钥）⇒ 换发后依然要重装信任；该告警与 `ca-history.json` 留痕未淡化。
+- 测试：新增 6 条策略单测（默认 2 / 显式 7 / 只给 days 仍 2 / 硬上限不可突破 / preflight 7 放行 8 拒绝 /
+  ensure 7 天 / profile 校验），既有 preflight 与 config 用例同步到新策略；**744 passed、GATE=PASS**。
+- 规则：策略/能力变更 ⇒ 动 `X.Y.Z`：`0.9.0-alpha.2` → **`0.10.0-alpha.1`**。
+
 ## v0.9.0-alpha.2（2026-11-24）— 修复：settlements 测试对时区敏感（alpha.1 tag CI 红灯）
 
 - `v0.9.0-alpha.1` 的 tag CI 在 unit-tests 失败：`test_repeated_export_is_idempotent` 断言硬编码 `+08:00`，

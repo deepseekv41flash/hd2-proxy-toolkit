@@ -45,7 +45,7 @@ def test_internal_underscore_keys_are_not_unknown():
     (lambda p: p.update(schema=1), "schema"),
     (lambda p: p["proxy"].update(listen_ip="127.0.0.1"), "回环"),
     (lambda p: p["proxy"].update(port=0), "proxy.port"),
-    (lambda p: p["cert"].update(days=5), "cert.days"),
+    (lambda p: p["cert"].update(days=8), "cert.days"),   # v0.10.0：2~7 天合法，8 才非法
     (lambda p: p["cert"].update(auto_renew="yes"), "auto_renew"),
     (lambda p: p["status"].update(planet_effects=[{"index": 999, "ids": [1]}]), "planet_effects"),
     (lambda p: p["status"].update(variants=[{"name": "", "planets": []}]), "status.variants"),

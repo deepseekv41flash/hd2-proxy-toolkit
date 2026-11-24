@@ -8,7 +8,7 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.9.0-alpha.2 已发布（2026-11-24，结算事件流 + 测试时区修复）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.10.0-alpha.1 已发布（2026-11-25，证书有效期策略：默认 2 天 / 显式 7 天上限）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 六页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
 > **738 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.7.0-alpha.1`（见下方「下载」）。
@@ -65,14 +65,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.9.0-alpha.2）
+## 下载（v0.10.0-alpha.1）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.9.0-alpha.2.md)。
+> [Release Notes](docs/RELEASE-v0.10.0-alpha.1.md)。
 
-- 下载：[GitHub Releases · v0.9.0-alpha.2](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.9.0-alpha.2)
-  （`hd2proxy-toolkit-v0.9.0-alpha.2-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.10.0-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.10.0-alpha.1)
+  （`hd2proxy-toolkit-v0.10.0-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，
@@ -96,7 +96,7 @@ hd2proxy.exe uninstall
 ```
 
 > 安全边界：只改客户端收到的接口响应，不碰游戏文件、不进进程内存；单域名白名单 + 仅本机来源；
-> 会话证书 ≤2 天、签完删 CA 私钥；详见下文「安全设计」。
+> 会话证书默认 2 天（显式可放宽到 7 天硬上限）、签完删 CA 私钥；详见下文「安全设计」。
 
 ## 现在能做什么
 
@@ -115,7 +115,7 @@ python -m hd2proxy gui                            # 打开图形界面（6 页�
 python -m hd2proxy preview --profile <profile>    # 离线预演：不开游戏看 profile 会改什么（M3）
 python -m hd2proxy save-preview                   # 存档预演：这份档会改什么 / 一局结算会加多少（G6）
 python -m hd2proxy info                        # 版本 / 路径 / 引擎是否在跑
-python -m hd2proxy certs renew --days 1        # 签发会话证书（ca 模式，≤2 天）
+python -m hd2proxy certs renew --days 1        # 签发会话证书（ca 模式；默认 2 天，可 --days 7）
 python -m hd2proxy install --dry-run --listen-ip <本机非回环IP>   # 只看计划，不改系统
 python -m hd2proxy install --listen-ip <IP>    # 真安装（hosts + 证书信任；需要一次 UAC）
 python -m hd2proxy engine --profile <profile>  # 起代理（前台；GUI 在 M2）
@@ -208,7 +208,7 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 （+ `manifest.json` / `index.json`；可选端点默认导出；账本里有最近一局结算响应时会另出 `mission_end.json`；每玩家结算事件追加到 `settlements.jsonl`，manifest 带 `settlementsCursor`）。同时引擎会给上游所有请求补
 `X-HD2-Account`（值优先 SteamID64）+ `X-HD2-Account-Source`（`prebind|getmotd|getmessages`），
 供多人自建服按账号分档；客户端自带该头时不重复。边界：**头可伪造，仅适用于可信自建服**；
-`mission_end.json` 与结算事件流下一版再做。详见 [Release Notes](docs/RELEASE-v0.9.0-alpha.2.md)。
+详见 [Release Notes](docs/RELEASE-v0.10.0-alpha.1.md)。
 
 **已知限制（务必知道）**：客户端**一次会话只拉一次** `/api/Progression`，而引擎启动时先按
 `runtime/saves/_last.json` 里「上次的档」渲染首屏，`Pes/GetMotd`（登录后 +24~42 s）才校验身份。
@@ -234,7 +234,7 @@ tools/bump_version.py                   按版本规则算下一版本号并更�
 tools/check_version.py                  版本一致性检查（__version__ ↔ PEP 440 ↔ CHANGELOG ↔ Release Notes）
 tools/extract_catalog_index.py           /api/Progression/items 抓包 → 紧凑索引（含附件 parent，供按武器分组）
 tools/extract_item_names.py             dlbin 只读路线：LoadoutEntry 物品内部名（武器/投掷物/背包）→ data/sources
-tools/gen_session_certs.py              会话证书签发（ca 模式，≤2 天硬上限）
+tools/gen_session_certs.py              会话证书签发（ca 模式；默认 2 天、硬上限 7 天）
 tools/gen_catalogs.py                   数据目录生成（GUI + 引擎目录；包含服务端目录 3020 行补全/命名/默认标记）
 tools/resolve_catalog_names.py          目录名字/类别解析快照生成（只读研究仓数据表；产物 data/sources/catalog_names_resolved.json）
 tools/gui_smoke.py                      GUI 冒烟：起真引擎 + 假上游 → 六页截图（`--tabs` 逐 tab 截图）

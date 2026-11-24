@@ -2,7 +2,10 @@
 
 关键结论（研究线实测，别动）：
   * **只有 ca 模式能握手**：叶子自签（leaf）时 Schannel 需要 CRL，拿不到就在握手前断开；
-  * 证书有效期 ≤2 天；签名后立刻删 CA 私钥，会话期内不再保留；
+  * 证书有效期**默认 2 天**；显式配置（`cert.days` / `--days`）可放宽到 **7 天硬上限**
+    （2026-11-25 与研究线双端定案：放宽是为了降低"每 ~36h 就得续一次证书 + 重装信任"的频次；
+    硬上限 7 天**不可被参数突破**——`max_days` 再大也钳到 7）；
+  * 签名后立刻删 CA 私钥，会话期内不再保留；
   * 代理必须在 127.0.0.1:8080 提供 ca.crl（Schannel 的 CDP 检查）；
   * preflight 拒绝：SAN 不符 / 有效期过长或已过期 / 模式非 ca / 目录里有多余私钥。
 """
@@ -18,6 +21,35 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from cryptography import x509
+
+
+# ---- 有效期策略（2026-11-25 与 research 线双端定案） --------------------------
+MAX_DAYS_DEFAULT = 2      # 默认有效期：**默认行为不变**，仍是 2 天
+MAX_DAYS_HARD = 7         # 硬上限：任何参数都突破不了（max_days 再大也钳到这里）
+
+
+def effective_max_days(max_days=None) -> int:
+    """策略上限：未显式传入 → 默认 2 天；显式传入也钳在 [1, 硬上限]。"""
+    if max_days is None:
+        return MAX_DAYS_DEFAULT
+    try:
+        want = int(max_days)
+    except (TypeError, ValueError):
+        return MAX_DAYS_DEFAULT
+    return max(1, min(want, MAX_DAYS_HARD))
+
+
+def clamp_days(days, max_days=None) -> int:
+    """把请求的有效期钳进 [1, min(策略上限, 硬上限)]。
+
+    为什么两层：``max_days`` 是策略开关（未显式设置时默认 2 天、不许悄悄放宽），
+    :data:`MAX_DAYS_HARD` 是绝对天花板（就算调用方传 ``max_days=99`` 也只能到 7）。
+    """
+    try:
+        want = int(days) if days is not None else MAX_DAYS_DEFAULT
+    except (TypeError, ValueError):
+        want = MAX_DAYS_DEFAULT
+    return max(1, min(want, effective_max_days(max_days), MAX_DAYS_HARD))
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
@@ -80,8 +112,9 @@ def preflight(host, cert_dir, skipped=None):
             info = json.loads(session.read_text(encoding="utf-8"))
             if info.get("san_dns") != [host]:
                 problems.append("证书 SAN 不是单一目标域名: %r" % (info.get("san_dns"),))
-            if float(info.get("days", 99)) > 2:
-                problems.append("证书有效期过长: %s 天" % info.get("days"))
+            if float(info.get("days", 99)) > MAX_DAYS_HARD:
+                problems.append("证书有效期超过硬上限 %d 天: %s 天"
+                                % (MAX_DAYS_HARD, info.get("days")))
             if info.get("self_check") != "OK":
                 problems.append("证书自检未通过: %s" % info.get("self_check"))
         except Exception as e:
@@ -192,6 +225,7 @@ def leaf_cert(host: str, pub, issuer_name, issuer_key, days: int, is_self: bool)
 
 
 def build_leaf_mode(host: str, out: Path, days: int):
+    days = max(1, min(int(days), MAX_DAYS_HARD))   # 硬上限兜底（不套默认 2 天）
     key = new_key()
     cert = leaf_cert(host, key.public_key(), x509.Name(
         [x509.NameAttribute(NameOID.COMMON_NAME, host + " (local session)")]),
@@ -206,6 +240,7 @@ def build_leaf_mode(host: str, out: Path, days: int):
 
 
 def build_ca_mode(host: str, out: Path, days: int):
+    days = max(1, min(int(days), MAX_DAYS_HARD))   # 硬上限兜底（不套默认 2 天）
     ca_key = new_key()
     now = datetime.now(timezone.utc)
     ca_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "HD2 Variant Mod Session CA")])
@@ -285,8 +320,8 @@ def describe(leaf, mode: str, host: str, anchor=None):
     problems = []
     if dns != [host]:
         problems.append("SAN 必须只有 %s，实际 %s" % (host, dns))
-    if report["days"] > 2:
-        problems.append("有效期超过 2 天")
+    if report["days"] > MAX_DAYS_HARD:
+        problems.append("有效期超过硬上限 %d 天" % MAX_DAYS_HARD)
     if eku and ExtendedKeyUsageOID.SERVER_AUTH not in eku:
         problems.append("缺少 serverAuth EKU")
     report["self_check"] = "OK" if not problems else "FAIL: " + "; ".join(problems)
@@ -397,12 +432,15 @@ def _cert_warnings(info, remaining, trusted=None):
     return out
 
 
-def generate_session(cert_dir, host=DEFAULT_HOST, days=2, force=False, mode="ca") -> dict:
+def generate_session(cert_dir, host=DEFAULT_HOST, days=2, max_days=None,
+                     force=False, mode="ca") -> dict:
     """签发（或复用）一次会话证书。等价于原 tools/gen_session_certs.py 的主流程。
 
-    安全约束保持不变：ca 模式 / SAN 单域名 / 有效期 ≤2 天 / 签完删 CA 私钥 / 无多余私钥。
+    安全约束：ca 模式 / SAN 单域名 / 签完删 CA 私钥 / 无多余私钥；
+    有效期默认 2 天，显式传 ``max_days`` 才放宽（硬上限 7 天不可突破，见 :func:`clamp_days`）。
     返回 report dict；失败抛 RuntimeError。
     """
+    days = clamp_days(days, max_days)
     out = Path(cert_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)
     if not force:
@@ -456,7 +494,7 @@ def _record_ca_history(cert_dir, old_thumb: str, new_thumb: str) -> None:
         pass
 
 
-def ensure_session(cert_dir, host=DEFAULT_HOST, days=2,
+def ensure_session(cert_dir, host=DEFAULT_HOST, days=2, max_days=None,
                    min_remaining_hours=12.0, force=False) -> dict:
     """启动前保证证书可用：缺失/过期/剩余不足 → 自动重签；否则复用。
 
@@ -470,7 +508,7 @@ def ensure_session(cert_dir, host=DEFAULT_HOST, days=2,
                 "remaining_hours": remaining}
     before = cert_status(cert_dir)
     old_thumb = str(before.get("thumbprint") or "") if before.get("exists") else ""
-    report = generate_session(cert_dir, host=host, days=days, force=True)
+    report = generate_session(cert_dir, host=host, days=days, max_days=max_days, force=True)
     new_thumb = str((report or {}).get("thumbprint_sha1")
                     or (report or {}).get("thumbprint") or "")
     if new_thumb and new_thumb != old_thumb:

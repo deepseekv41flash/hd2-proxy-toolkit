@@ -123,11 +123,11 @@ def test_preflight_ok_and_rejects_bad(tmp_path):
     assert certs.preflight(HOST, cert_dir) == []
 
     info = json.loads((cert_dir / "session.json").read_text(encoding="utf-8"))
-    info["days"] = 5                      # 超硬上限
+    info["days"] = 8                      # 超硬上限（7 天；v0.10.0 起 2~7 天合法）
     info["san_dns"] = ["example.com"]     # SAN 不符
     (cert_dir / "session.json").write_text(json.dumps(info), encoding="utf-8")
     problems = certs.preflight(HOST, cert_dir)
-    assert any("有效期过长" in p for p in problems)
+    assert any("硬上限" in p for p in problems)
     assert any("SAN" in p for p in problems)
 
 
@@ -158,3 +158,62 @@ def test_generate_days_within_cap(tmp_path, days):
     assert report["days"] <= 2
     assert report["self_check"] == "OK"
     assert Path(tmp_path / "c" / "ca.crl").exists()
+
+
+# ---- 有效期策略（v0.10.0-alpha.1）：默认 2 天 / 显式放宽到硬上限 7 天 -----------
+
+
+def test_clamp_days_policy_and_hard_cap():
+    """默认策略 2 天；显式 max_days 才放行；硬上限 7 天不可被参数突破。"""
+    assert certs.MAX_DAYS_DEFAULT == 2
+    assert certs.MAX_DAYS_HARD == 7
+    assert certs.clamp_days(7, None) == 2      # 未显式设置策略 → 仍是默认 2 天
+    assert certs.clamp_days(7, 7) == 7         # 显式设置 → 放行
+    assert certs.clamp_days(99, 99) == 7       # 硬上限不可突破（不是只看 days<=max_days）
+    assert certs.clamp_days(8, 7) == 7
+    assert certs.effective_max_days(99) == 7
+    assert certs.effective_max_days(0) == 1
+    assert certs.clamp_days(0, 7) == 1
+
+
+def test_generate_seven_days_when_explicit(tmp_path):
+    report = certs.generate_session(tmp_path / "certs", host=HOST, days=7,
+                                    max_days=7, force=True)
+    assert 6.9 <= report["days"] <= 7.0
+    assert report["self_check"] == "OK"
+    assert not (tmp_path / "certs" / "ca.key").exists(), "签完必须删 CA 私钥"
+
+
+def test_generate_default_still_two_days(tmp_path):
+    """只传 days=7、不传 max_days（默认策略 2 天）→ 仍然只签 2 天。"""
+    report = certs.generate_session(tmp_path / "certs", host=HOST, days=7, force=True)
+    assert report["days"] <= 2
+
+
+def test_preflight_accepts_seven_rejects_eight(tmp_path):
+    cert_dir = tmp_path / "certs"
+    certs.generate_session(cert_dir, host=HOST, days=7, max_days=7, force=True)
+    assert not [p for p in certs.preflight(HOST, cert_dir) if "硬上限" in p]
+
+    sess = cert_dir / "session.json"
+    info = json.loads(sess.read_text(encoding="utf-8"))
+    info["days"] = 8
+    sess.write_text(json.dumps(info, ensure_ascii=False), encoding="utf-8")
+    assert any("硬上限" in p for p in certs.preflight(HOST, cert_dir))
+
+
+def test_ensure_session_seven_days(tmp_path):
+    r = certs.ensure_session(tmp_path / "certs", host=HOST, days=7, max_days=7,
+                             min_remaining_hours=12)
+    assert r["action"] == "generated"
+    assert r["remaining_hours"] > 24 * 6
+
+
+def test_profile_cert_days_validation():
+    from hd2proxy.engine import config
+    ok, errors, _ = config.validate({"schema": 2, "name": "t", "cert": {"days": 7}})
+    assert errors == []
+    assert ok["cert"]["days"] == 7
+    _, bad, _ = config.validate({"schema": 2, "name": "t", "cert": {"days": 8}})
+    assert any("硬上限" in e for e in bad)
+    assert config.default_profile()["cert"]["days"] == 2
