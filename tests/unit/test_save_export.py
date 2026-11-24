@@ -203,6 +203,36 @@ def test_ledger_file_digest_prefers_raw_bytes(tmp_path):
     assert res["manifest"]["source"]["ledgerSha256"] == hashlib.sha256(f.read_bytes()).hexdigest()
 
 
+# ---------------------------------------------------------------- v0.8.0 结算响应体
+
+
+MISSION_END_DOC = json.loads((FIXTURES / "mission_end" / "12b9a872.json").read_text(encoding="utf-8"))
+
+
+def test_mission_end_json_written_from_ledger(tmp_path):
+    """v0.8.0：账本里有原始结算响应 → 导出 `mission_end.json`（shape 原样）。"""
+    ledger = make_ledger()
+    ledger["earned"]["missions"]["last_response"] = MISSION_END_DOC
+    res, root = _export(tmp_path, ledger)
+    pdir = root / "players" / STEAM
+    got = json.loads((pdir / "mission_end.json").read_text(encoding="utf-8"))
+    assert got == MISSION_END_DOC
+    assert "mission_end.json" in res["files"]
+
+
+def test_mission_end_json_absent_without_raw(tmp_path):
+    res, root = _export(tmp_path, make_ledger())
+    assert not (root / "players" / STEAM / "mission_end.json").exists()
+    assert "mission_end.json" not in res["files"]
+
+
+def test_mission_end_json_disabled_with_no_optional(tmp_path):
+    ledger = make_ledger()
+    ledger["earned"]["missions"]["last_response"] = MISSION_END_DOC
+    res, root = _export(tmp_path, ledger, include_optional=False)
+    assert not (root / "players" / STEAM / "mission_end.json").exists()
+
+
 # ---------------------------------------------------------------- CLI
 
 

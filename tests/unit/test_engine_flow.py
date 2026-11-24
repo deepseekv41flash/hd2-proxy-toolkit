@@ -460,6 +460,8 @@ def test_engine_save_layer_rewrites_progression(tmp_path):
             assert after["earned"]["experience"] == 2759938 + 936
             assert after["earned"]["inventory_amounts"]["3608481516"] == 4434
             assert after["earned"]["missions"]["count"] == 1
+            # v0.8.0：原始结算响应整份落盘（供 save-export 产出 mission_end.json）
+            assert after["earned"]["missions"]["last_response"] == MISSION_END_DOC
 
             head, body = tls_get(port, "/api/Progression", cert_dir)
             plain = gzip.decompress(body) if body[:2] == b"\x1f\x8b" else body

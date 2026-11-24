@@ -100,6 +100,39 @@ def test_no_last_zero_wait_skips_waiting(tmp_path):
     mgr.close()
 
 
+# ---------------------------------------------------------------- v0.8.0：结算原始响应落盘
+
+def test_record_mission_end_stores_raw_response(tmp_path):
+    """v0.8.0：结算原始响应整份存进账本（供自建服回放 mission_end.json）。"""
+    sid = make_save(tmp_path, experience=0)
+    payload = {"experience": 936, "campaignWon": False, "impact": 0,
+               "missionId": "m-raw-1", "operationId": 1284,
+               "rewards": [{"mixId": 3608481516, "amount": 4434}]}
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    mgr.record_mission_end(json.dumps(payload).encode())
+    doc = saves.SaveStore(sid, root=tmp_path).load()
+    ms = doc["earned"]["missions"]
+    assert ms["last_response"] == payload
+    assert ms["last_response_at"]
+    assert ms["last"]["experience"] == 936 and ms["count"] == 1
+    mgr.close()
+
+
+def test_record_mission_end_duplicate_keeps_first_raw(tmp_path):
+    sid = make_save(tmp_path, experience=0)
+    mgr = active_save.ActiveSave(root=tmp_path, run_id="r1")
+    mgr.start()
+    first = {"experience": 936, "missionId": "dup-1"}
+    second = {"experience": 936, "missionId": "dup-1", "extra": {"x": 1}}
+    mgr.record_mission_end(json.dumps(first).encode())
+    mgr.record_mission_end(json.dumps(second).encode())      # 同 missionId → 去重
+    ms = saves.SaveStore(sid, root=tmp_path).load()["earned"]["missions"]
+    assert ms["last_response"] == first                       # 不覆盖
+    assert ms["count"] == 1
+    mgr.close()
+
+
 # ---------------------------------------------------------------- G5 live 库存合并
 
 

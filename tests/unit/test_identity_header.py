@@ -94,6 +94,19 @@ def test_stamp_identity_header_noop_without_identity():
     assert stamp_identity_header(lines, None) is lines
 
 
+def test_stamp_identity_header_uncertain_sends_only_source():
+    """uncertain：只发 Source 头（不发 Account），自建服据此跳过 IP 兜底。"""
+    lines = [b"GET /api/Progression HTTP/1.1"]
+    out = stamp_identity_header(lines, ("", "uncertain"))
+    assert out == lines + [b"X-HD2-Account-Source: uncertain"]
+    assert not any(x.startswith(b"X-HD2-Account: ") for x in out)
+
+
+def test_stamp_identity_header_uncertain_skipped_when_client_has_account():
+    lines = [b"PUT /api/lobby HTTP/1.1", b"X-HD2-Account: " + STEAM_A.encode()]
+    assert stamp_identity_header(lines, ("", "uncertain"), has_account=True) is lines
+
+
 def test_identity_header_stops_after_getmotd_failure(tmp_path, monkeypatch):
     """研究线建议：GetMotd 到了却没校验成功 → 宁可不盖身份头（自建服回落公共数据更安全）。"""
     _make_save(tmp_path)
@@ -107,7 +120,8 @@ def test_identity_header_stops_after_getmotd_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(active_save.saves, "save_id_for_identity", boom)
     info = mgr.on_getmotd(STEAM_A)
     assert info["ok"] is False and info["action"] == "error"
-    assert mgr.identity_header() is None                 # 不再向上游断言身份
+    # v0.7.0-alpha.3：不再断言账号，但发 source=uncertain 让自建服跳过 IP 兜底、回落公共数据
+    assert mgr.identity_header() == ("", "uncertain")
     assert any(e["kind"] == "identity-uncertain" for e in mgr.status()["events"])
     mgr.close()
 

@@ -46,7 +46,9 @@ def stamp_identity_header(lines, ident, has_account=False):
         return lines
     value, source = ident
     lines = list(lines)
-    lines.append(("X-HD2-Account: %s" % value).encode("ascii", "ignore"))
+    if value:
+        lines.append(("X-HD2-Account: %s" % value).encode("ascii", "ignore"))
+    # value 为空（source=uncertain）时**只发 Source**：让自建服跳过 IP/唯一玩家兜底、直接回落公共数据。
     lines.append(("X-HD2-Account-Source: %s" % source).encode("ascii", "ignore"))
     return lines
 

@@ -245,6 +245,13 @@ class ActiveSave:
             log("⚠ Mission/end 响应既无 missionId 也无 operationId，无法去重 —— 本次不入账")
             return {"ok": False, "reason": "no-mission-id"}
 
+        # v0.8.0：把**完整原始响应**存进账本，供自建服按玩家回放 `mission_end.json`
+        # （契约：形态 2 的每玩家结算响应体）。只留最近一局（~2 KB/玩家），解析失败就不存。
+        try:
+            _payload = json.loads(body)
+            payload = _payload if isinstance(_payload, dict) else None
+        except (TypeError, ValueError):
+            payload = None
         experience = max(0, _int(inc.get("experience")))
         items = dict(inc.get("items") or {})
         packages = dict(inc.get("packages") or {})
@@ -279,6 +286,9 @@ class ActiveSave:
                 ms["last"] = {"at": _now(), "experience": experience, "items": items,
                               "item_source": inc.get("item_source"),
                               "packages": packages, "mission": mission}
+                if payload is not None:
+                    ms["last_response"] = payload          # 供 save-export 产出 mission_end.json
+                    ms["last_response_at"] = _now()
             self.update_earned(_mut, reason="mission_end")
 
         detail = _mission.summarize(inc)
@@ -603,10 +613,10 @@ class ActiveSave:
         with self._lock:
             # 研究线 2026-11-24 建议：GetMotd 到了却没校验成功（换号/解析失败/切档异常）时，
             # **宁可不盖身份头** —— 自建服会回落公共数据，比"错给别人的档"安全。
-            if self._identity_uncertain:
-                return None
-            if self._getmotd_seen and not self.verified:
-                return None
+            if self._identity_uncertain or (self._getmotd_seen and not self.verified):
+                # 值留空 + source=uncertain：引擎只发 Source 头（不发 Account），
+                # 自建服据此跳过 IP/唯一玩家兜底、直接回落公共数据（研究线 2026-11-24 建议）。
+                return "", "uncertain"
             steam_session = _clean(self._steam_session)
             hd2_session = _clean(self._hd2_session)
             steam = steam_session or _clean(self.steam_id)

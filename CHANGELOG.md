@@ -6,6 +6,18 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.8.0-alpha.1（2026-11-24）— 每玩家结算响应体 `mission_end.json` + 身份头 uncertain 细化
+
+- **`mission_end.json`（契约 §7 后续第 1 条）**：引擎在 `Mission/end` 入账时把**完整原始响应**整份落盘
+  （`earned.missions.last_response` / `last_response_at`，只留最近一局、同 missionId 重试不覆盖）；
+  `save-export` 发现该字段即写 `players/<steamId64>/mission_end.json`（shape 原样，不重建）。
+  端到端验证：隔离引擎 + 本地 mock 模板 `12b9a872`（exp=936）→ 落盘 17 键、导出键集与模板逐项一致。
+- **身份头 uncertain 细化**（研究线建议）：不可信时改为只发 `X-HD2-Account-Source: uncertain`（不带 Account），
+  让自建服跳过 IP 映射/唯一玩家兜底、直接回落公共数据（v0.7.0-alpha.2 的"完全不盖头"会被 IP 兜底接管）。
+- 测试 **720 → 727 passed**、GATE=PASS。
+- 规则：能力变更 ⇒ 动 `X.Y.Z`：`0.7.0-alpha.2` → **`0.8.0-alpha.1`**。
+- 后续：JSONL 结算事件流（形态 3）、`shared/` 拆分。
+
 ## v0.7.0-alpha.2（2026-11-24）— 身份头安全加固：GetMotd 校验失败时不再断言身份
 
 - 问题（研究线自建服侧建议，按"宁可不盖"原则）：alpha.1 中若 GetMotd 已到但校验/切档失败，

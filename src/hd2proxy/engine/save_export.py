@@ -44,6 +44,7 @@ OUTPUT_FILES = {
     "stats_profile": "stats_profile.json",
     "stats_profile_war": "stats_profile_war.json",
     "customize_v2": "customize_v2.json",
+    "mission_end": "mission_end.json",
 }
 INDEX_FILE = "index.json"
 MANIFEST_FILE = "manifest.json"
@@ -154,6 +155,18 @@ def _as_doc(raw, fallback_empty=None):
         return json.loads(raw)
     except (TypeError, ValueError):
         return fallback_empty if fallback_empty is not None else {}
+
+
+def mission_end_payload(ledger_doc: dict):
+    """账本里最近一局的**完整原始 Mission/end 响应**（v0.8.0 起引擎落盘）；没有则 None。
+
+    为什么直接存原始响应：账本只存增量，按语义重建响应体必然与官方 shape 漂移
+    （客户端对缺字段敏感）；原始响应按 shape 原样回放才安全。
+    """
+    earned = saves._normalize_earned(ledger_doc or {})
+    ms = earned.get("missions") or {}
+    doc = ms.get("last_response") if isinstance(ms, dict) else None
+    return doc if isinstance(doc, dict) and doc else None
 
 
 def player_key(ledger_doc: dict) -> str:
@@ -270,6 +283,9 @@ def export_player(ledger_doc: dict, *, baseline_dir=None, data_root, version,
     player_dir = root / "players" / key
     for ep, (raw, _changed) in merged.items():
         _write_json_atomic(player_dir / OUTPUT_FILES[ep], _as_doc(raw))
+    mission_end = mission_end_payload(ledger_doc) if include_optional else None
+    if mission_end is not None:
+        _write_json_atomic(player_dir / OUTPUT_FILES["mission_end"], mission_end)
     manifest = build_manifest(
         ledger_doc, merged, version=version, baseline_dir=base_dir,
         baseline_sha=baseline_digest(files),
@@ -291,7 +307,8 @@ def export_player(ledger_doc: dict, *, baseline_dir=None, data_root, version,
         "dataRoot": str(root),
         "playerKey": key,
         "playerDir": str(player_dir),
-        "files": sorted([MANIFEST_FILE] + [OUTPUT_FILES[ep] for ep in merged]),
+        "files": sorted([MANIFEST_FILE] + [OUTPUT_FILES[ep] for ep in merged]
+                        + ([OUTPUT_FILES["mission_end"]] if mission_end is not None else [])),
         "manifest": manifest,
         "merged": changed,
     }
