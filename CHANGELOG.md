@@ -22,6 +22,11 @@
   `full` 全合并（`upstreamTest`/mock/自建服自动启用）；`off` 全关。换号告警补"首屏曾合并 N 处、显示偏高重启纠正"。
 - 测试 **689 → 696 passed**；README 修正"已知限制"表述（整局沿用旧档视图，不止首屏）。
 - 规则：bug 修复只动 `alpha.N`：`0.6.0-alpha.2` → **`0.6.0-alpha.3`**。
+- 验收补记（2026-11-24，docs-only）：**M6 mock/自建服验收 PASS** —— 研究线明文 mock（`127.0.0.1:9099`，
+  "服务端给得很少"）+ 隔离状态目录（生产档副本）+ alpha.3 引擎，四条判据全过：
+  ① exp 1→210、成就 0→4 条；② inventory 空→`897894480×1`+`3608481516×910`；
+  ③ Stats 全 0→23 项抬回（`totalEnemyKills=356105`）；④ `Mission/end` 模板 936→账本 210→1146、库存/包进度累加。
+  生产账本未被测试改动。记录：`docs/ACCEPTANCE-M4.md` §M6；证据：`D:\mod	mp\evidence-m6-mock\`。
 
 ## v0.6.0-alpha.2（2026-11-23）— 修复：`/api/Progression/inventory` 响应没套账本（服务端给得少时看不到本机库存）
 

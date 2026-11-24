@@ -278,3 +278,64 @@ python -m hd2proxy uninstall --cert-dir <certs>                                 
 **现场处置记录**：首次实机报 **Error 60** → 根因是引擎 auto-renew 换发 CA 后信任库未更新；
 `hd2proxy.exe install --cert-dir <state>\certs` 重导当前 CA 后恢复（`trusted=true`，`LocalMachine`）。
 后续版本已加 `certs/ca-history.json` 留痕 + 日志告警。
+
+## M6 · mock / 自建服验收（2026-11-24）
+
+> 目的：验证存档层**核心价值**——当"服务端给得很少"（私服 / 自建 / mock）时，本机账本必须把
+> 经验 / 成就 / 库存 / 统计 / 结算兜底顶上；同时证明对官方服的正式账本**零影响**。
+> 构建：`v0.6.0-alpha.3`；引擎与 mock 同机；**隔离状态目录**（生产账本副本），不碰真账本。
+
+### 环境
+
+| 组件 | 配置 |
+|---|---|
+| mock（研究线提供） | `127.0.0.1:9099` 明文 HTTP/1.1（不压缩）；数据集=空号基线 + 身份改为**主号**（`GetMotd=76561198968648344` / `GetMessages=11893343864225233967`）+ `inventory={"items":[]}` |
+| 引擎 | `hd2proxy engine --config legacy-cfg-9099.json(upstreamTest:"127.0.0.1:9099") --profile profile-mock-443.json`，`HD2PROXY_STATE=D:\mod\tmp\mock-accept-20261124\state`（内含生产档副本），监听 `100.67.88.219:443`，`preverify_merge=full`，抓包开 |
+| 客户端 | 游戏主号 `76561198968648344` 正常登录（进主菜单） |
+
+### 判据与结果（全 PASS）
+
+| # | mock 给的值（服务端很少） | 引擎响应 / 账本结果 | 判定 |
+|---|---|---|---|
+| ① Progression | exp `1`、成就 `0`、packageProgress `9`、spi `0` | **exp 210**、成就 **4 条** `{6:1680,8:386242,17:4290,24:2925}`、packageProgress **9**（账本无记录→保持服务端值）、spi `0` | ✅ |
+| ② inventory | `items=[]` | **`897894480×1` + `3608481516×910`**（恰 2 行，空→全量回填） | ✅ |
+| ③ Stats | 27 key **全 0** | **23 项**抬回（`totalEnemyKills=356105`；账本 27 项里 4 项本身为 0，故 23 非零） | ✅ |
+| ④ Mission/end | 固定模板 `experience=936` | 账本 exp **210→1146**；库存 `897894480 1→8`、`3608481516 910→5344`；missions 1→2；包进度 `{277818845:{level:5,progress:459}}` | ✅ |
+
+引擎日志（`state/logs/proxy.log`）：
+`SAVE REWRITE +5 field(s)` / `SAVE INV +2 行（只抬不降）` / `SAVE STATS +23 field(s)` ×2（summary 与 /801/summary）/
+`MISSION +936 exp · +2 种物品 · 3608481516×4434 897894480×7 · 1 个包进度`；`getmotd 身份校验一致`，无换号/无 orphan/warnings 空。
+
+### 证据
+
+- `D:\mod\tmp\evidence-m6-mock\`：`raw_Progression.json` / `raw_inventory.json` / `raw_stats.json`（**注入前**上游原始响应）、
+  `ledger-before.json`（生产真档副本）、`ledger-after-test.json`、`proxy.log`、`verification.json`（四条 pass 布尔）
+- 隔离测试目录 `D:\mod\tmp\mock-accept-20261124\state\`（引擎日志 / captures / 被测试改写的账本副本）
+- 研究线 `tools/mock_request_summary.py --json` 导出（待对账）
+
+### 隐私/安全边界
+
+- 隔离状态目录：测试产生的合成结算只写副本，**生产账本 sha/content 未变**（exp 210 / 成就 4 / 库存 910+1 / 统计 27 / missions 1，`_last` 未变）。
+- mock 只在回环 `127.0.0.1:9099`；443/hosts 仍指向本机引擎；测试后生产引擎与证书原状恢复。
+
+### 复现要点
+
+```bash
+# 1) 隔离状态 + 生产档副本
+mkdir -p /d/mod/tmp/mock-accept-20261124/state/runtime/saves
+cp "$LOCALAPPDATA/HD2ProxyStudio/runtime/saves/"*.json /d/mod/tmp/mock-accept-20261124/state/runtime/saves/
+# 2) 起引擎（mock 已在 127.0.0.1:9099）
+HD2PROXY_STATE="D:/mod/tmp/mock-accept-20261124/state" hd2proxy.exe engine \
+  --config <legacy-cfg-9099.json: {"host":"api.live.prod.thehelldiversgame.com","upstreamTest":"127.0.0.1:9099"}> \
+  --profile <profile-mock-443.json: 443 + saves.enabled + preverify_merge=full + capture> \
+  --cert-dir "$LOCALAPPDATA/HD2ProxyStudio/certs" --verbose
+# 3) 游戏主号登录 → 看 state/logs/proxy.log 的 SAVE REWRITE / SAVE INV / SAVE STATS
+# 4) 受控验结算（不必真打任务）：
+curl -s --ssl-no-revoke --cacert "$LOCALAPPDATA/HD2ProxyStudio/certs/anchor.pem" \
+  --resolve api.live.prod.thehelldiversgame.com:443:100.67.88.219 \
+  -X POST -H "Content-Type: application/json" -d '{}' \
+  https://api.live.prod.thehelldiversgame.com/api/Operation/Mission/end
+```
+
+**注意**：源码模式跑引擎时 `paths.SAVES_DIR` 指向**仓库内** `runtime/saves`；隔离运行期数据用 `VMOD_DATA`，
+隔离状态/证书用 `HD2PROXY_STATE`（仅 frozen 版生效）。
