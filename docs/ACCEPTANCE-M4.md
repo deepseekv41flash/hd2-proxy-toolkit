@@ -339,3 +339,20 @@ curl -s --ssl-no-revoke --cacert "$LOCALAPPDATA/HD2ProxyStudio/certs/anchor.pem"
 
 **注意**：源码模式跑引擎时 `paths.SAVES_DIR` 指向**仓库内** `runtime/saves`；隔离运行期数据用 `VMOD_DATA`，
 隔离状态/证书用 `HD2PROXY_STATE`（仅 frozen 版生效）。
+
+### M6 三方对账（研究线 mock 日志 × 引擎日志 × 抓包，2026-11-24 11:42–11:47）
+
+| 端点 | mock 侧（研究线 `mock_request_summary.py --since/--until`） | 引擎侧 | 结论 |
+|---|---|---|---|
+| `GET /api/Progression` | 1 次 11:42:19.563 · `[exact]` 1500 B | `gwe-dump` 1500 B + `SAVE REWRITE +5` | ✅ |
+| `GET /api/Progression/inventory` | 1 次 11:42:19.596 · `[exact]` **45 B** | `gwe-dump` 45 B + `SAVE INV +2 行` | ✅ 逐字节吻合 |
+| `GET /api/Stats/profile/summary` | 1 次 11:42:19.709 · `[exact]` 644 B（另有 `/801/summary` 同秒） | `SAVE STATS +23` ×2 | ✅ |
+| `POST /api/Operation/Mission/end` | **仅 1 次** 11:46:23.078 · 1614 B `[state:mission_end]` | `MISSION +936 …`（同一秒） | ✅ 无重复触发 |
+| `POST /api/Pes/GetMotd` | 1 次 11:42:22 · 136 B `[exact]` · `accountId=76561198968648344` | `getmotd 身份校验一致` | ✅ |
+
+窗口 65 行请求 / 37 个端点模板；四条判据相关端点全部 `[exact]`，**无 fallback、无 4xx/5xx**。
+另有 3 次客户端**设置写**（`PUT OnboardingState` ×2、`PUT ShipName` ×1）落 `[fallback] 200 {}` ——
+存档层不消费这类响应，对判据无影响；若将来验"设置类写回显"，需 mock 侧加这两个端点回显。
+
+研究线记录：`docs/ACCEPTANCE-MOCK-ALPHA3-2026-11-24.md`；数据集/日志留存 `state/tmp/accept-main-identity/`、
+`state/logs/acceptance-20261124/`（含 `dataset-diff.txt`）。
