@@ -24,7 +24,8 @@ import threading
 import time
 from pathlib import Path
 
-from . import certs, diagnostics, hosts as hosts_mod, httpio, logutil, model, paths, upstream
+from . import (certs, diagnostics, hosts as hosts_mod, httpio, logutil, model, paths,
+                 unlock_all, upstream)
 from .active_save import ActiveSave
 from .hooks import achievements as achievements_hook
 from .hooks import capture, inventory, items, progression, stats as stats_hook, warinfo
@@ -39,14 +40,11 @@ def _log_unlock_all(spec):
     """「一键解锁全部物品」的规格日志（启动 / 热重载各打一次，不随请求刷屏）。"""
     inv = getattr(spec, "inventory", None) or {}
     st = inv.get("unlockAll")
-    if not isinstance(st, dict) or not st.get("added"):
+    if not isinstance(st, dict) or not st.get("enabled"):
         return
     scope = ",".join(st.get("scope") or [])
-    log("一键解锁全部物品（仅本机视图）：注入 %d 行（目录 %d 行；跳过 不在架 %d / 货币 %d / "
-        "默认拥有 %d / 无 mixId %d%s）"
-        % (st.get("added", 0), st.get("catalogRows", 0), st.get("skippedNotInCatalog", 0),
-           st.get("skippedCurrency", 0), st.get("skippedDefaultOwned", 0),
-           st.get("skippedNoMixId", 0), ("；范围 " + scope) if scope else ""), audit=True)
+    log("一键解锁全部物品（仅本机视图）：运行时按客户端目录展开 + 舰船模块 6 条包等级置满%s"
+        % (("；范围 " + scope) if scope else ""), audit=True)
 
 
 def stamp_identity_header(lines, ident, has_account=False):
@@ -113,6 +111,12 @@ class Proxy:
 
     def _customize_spec(self):
         return self._spec_part("customize")
+
+    def _unlock_all_enabled(self) -> bool:
+        """「一键解锁全部物品」是否开启（v0.10.1-alpha.2：请求期按运行时目录展开）。"""
+        cfg = self._inventory_spec()
+        ua = (cfg or {}).get("unlockAll") if isinstance(cfg, dict) else None
+        return bool(ua.get("enabled")) if isinstance(ua, dict) else bool(ua)
 
     def _note(self, kind, detail):
         """记一条改写事件（控制面/GUI 实时展示；只保留最近 200 条）。"""
@@ -423,6 +427,15 @@ class Proxy:
                 elif (not self.mod.passthrough) and paths.ITEMS_PATH in path and rbody:
                     # DSH_GWE_ITEMS_V1：往服务端物品目录里补一条（克隆同族记录，改 itemId/mixId）
                     plain, was_gz = httpio.maybe_gunzip(rbody, rhdrs)
+                    # 一键解锁：缓存**运行时客户端目录**（离线目录是子集，不能用于"解锁全部"）
+                    if self._unlock_all_enabled():
+                        try:
+                            _cat = json.loads(plain)
+                            if isinstance(_cat, list):
+                                n = unlock_all.set_catalog(_cat)
+                                log("UNLOCK 运行期目录已缓存 %d 行" % n)
+                        except Exception as e:      # noqa: BLE001 - 目录解析失败不影响代理
+                            log("UNLOCK 目录解析失败（本次不缓存）: %r" % e)
                     try:
                         new_body, items_added = items.items_rewrite(plain, spec=self._items_spec())
                     except Exception as e:
@@ -457,12 +470,15 @@ class Proxy:
                 # G2 存档层：身份/目录记录 + Progression 根响应合并
                 # 与上面的「配置驱动改写链」正交：只认精确根路径 `/api/Progression`，
                 # 身份与目录取**上游原始响应**（items 必须注入前，否则 catalog_build 漂移）。
-                if self.save is not None and not self.mod.passthrough and rbody:
+                _ua_on = self._unlock_all_enabled()
+                if (self.save is not None or _ua_on) and not self.mod.passthrough and rbody:
                     try:
-                        self._save_observe(path, rbody, rhdrs, reqbody=body)
+                        if self.save is not None:
+                            self._save_observe(path, rbody, rhdrs, reqbody=body)
                         if progression.is_root_path(path):
                             plain, was_gz = httpio.maybe_gunzip(rbody, rhdrs)
-                            new_body, save_n = progression.apply(plain, self.save)
+                            new_body, save_n = progression.apply(
+                                plain, self.save, unlock_all_enabled=_ua_on)
                             if save_n:
                                 out_body = new_body
                                 rewrite_added = save_n

@@ -21,12 +21,20 @@ def is_root_path(path: str) -> bool:
     return raw == PROG_PATH
 
 
-def apply(body, save):
-    """把存档 earned 合并进 Progression 根响应。
+def apply(body, save, unlock_all_enabled=False):
+    """把存档 earned 合并进 Progression 根响应；可选把舰船模块包等级置满。
 
-    ``save`` 为 ``ActiveSave``（None = 存档层未启用 → 原样返回）。
+    ``save`` 为 ``ActiveSave``（None = 存档层未启用 → 跳过合并）。
+    ``unlock_all_enabled``：一键解锁开启时，把 6 条 ship module 包的 packageProgress 等级置满
+    （模块不是库存行，客户端按包等级显示；见 ``engine/unlock_all.py``）。
     返回 ``(new_body, 改动字段数)``；无改动时 body 原样返回（引用相同，便于上层判等）。
     """
-    if save is None:
-        return body, 0
-    return save.apply_progression(body)
+    new_body, changed = (body, 0)
+    if save is not None:
+        new_body, changed = save.apply_progression(body)
+    if unlock_all_enabled:
+        from .. import unlock_all as _ua
+        patched, ua_n = _ua.patch_progression(new_body if new_body is not None else body)
+        if ua_n:
+            return patched, changed + ua_n
+    return new_body, changed

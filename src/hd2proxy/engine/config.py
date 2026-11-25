@@ -649,27 +649,20 @@ def to_engine_spec(profile: dict, catalog_doc=None) -> EngineSpec:
                 inv_items.append({"mixId": _int(row["mixId"]),
                                   "amount": _int(row.get("amount"), 1) or 1,
                                   "isDiscovered": bool(row.get("isDiscovered", False))})
-    # 一键解锁全部物品（v0.10.1）：在**规格构建期**把目录展开成库存行（不进热路径）
-    unlock_stats = None
+    # 一键解锁全部物品（v0.10.1-alpha.2）：只放**标志**，展开在请求期按运行时客户端目录做。
+    # alpha.1 用离线目录在规格期展开 —— 离线目录是商店/护甲表子集（pc3 只有 46 个 id），
+    # 实机表现为"护甲/披风只出 3 件、舰船模块 0 件"（2026-11-25 反馈）。
+    unlock_cfg = None
     if inv.get("unlock_all"):
-        ids, unlock_stats = item_catalog.unlock_all_ids(inv.get("unlock_scope") or [])
-        seen = {row["mixId"] for row in inv_items}
-        added = 0
-        for mid in ids:
-            if mid in seen:
-                continue
-            inv_items.append({"mixId": mid, "amount": 1, "isDiscovered": False})
-            seen.add(mid)
-            added += 1
-        unlock_stats = dict(unlock_stats, added=added)
-        if added:
-            warnings.append("一键解锁全部物品：将注入 %d 个物品（仅本机视图）" % added)
-    inv_cfg = {"enabled": bool(inv_items or inv.get("remove") or inv.get("customization")),
+        unlock_cfg = {"enabled": True, "scope": list(inv.get("unlock_scope") or [])}
+        warnings.append("一键解锁全部物品：运行时按客户端目录展开（含舰船模块 6 条包等级置满）")
+    inv_cfg = {"enabled": bool(inv_items or inv.get("remove") or inv.get("customization")
+                              or unlock_cfg),
                "items": inv_items,
                "remove": list(inv.get("remove") or []),
                "customization": list(inv.get("customization") or [])}
-    if unlock_stats:
-        inv_cfg["unlockAll"] = unlock_stats
+    if unlock_cfg:
+        inv_cfg["unlockAll"] = unlock_cfg
     spec.inventory = inv_cfg if inv_cfg["enabled"] else None
 
     # items

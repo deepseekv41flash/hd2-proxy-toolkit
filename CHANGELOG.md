@@ -6,6 +6,22 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.10.1-alpha.2（2026-11-25）— 修复一键解锁在空白号上的三个缺口（护甲/披风/舰船模块）
+
+- 实机反馈：空白号全量解锁后头盔/护甲只出 1 套、披风只 2 件、**舰船模块 0 件**。
+- 根因 1（目录子集）：alpha.1 在规格期用离线 `data/catalogs/items.json` 展开，其中 pc3（头盔/披风）只有
+  **46** 个 id，客户端实际目录有 **441** 个 ⇒ 少注入近 400 件。改为**请求期按运行时客户端目录**
+  （缓存 `/api/Progression/items` 响应；未收到前退回离线目录）。
+- 根因 2（授予语义）：护甲/披风需要 `isDiscovered=true` 才出现在军械库；alpha.1 写 false。已改 true。
+- 根因 3（舰船模块载体）：模块不是库存行，而是 **6 条 progression package（type=1）的等级进度**
+  （`/api/Progression.packageProgress[].level`，每条 5 级），且 6 条包的 `requiredItems` 必须在库存里
+  （否则 Ship Module 页显示 under construction）。已新增：6 条包等级置 5 + 6 个前置物品补进库存
+  （来源：HellForge `ProfileStore.cs:530` + 11-20 真机 `ProgressionPackages` 抓包）。
+- 新增 `engine/unlock_all.py`（运行时目录缓存 / 库存注入 / 包等级补丁，均幂等）；接线
+  `hooks/inventory.py`、`hooks/progression.py`、`engine/server.py`、`engine/config.py`、GUI 文案。
+- 单测 13 条（目录缓存/回退、货币排除、前置物品、isDiscovered、包等级幂等、hook 端到端、配置校验）。
+- 规则：纯 bug 修复只动 `alpha.N`：`0.10.1-alpha.1` → **`0.10.1-alpha.2`**。
+
 ## v0.10.1-alpha.1（2026-11-25）— 一键解锁全部物品（仅本机视图）
 
 - 用途：内核/内存路线要在测试账号上验证物品相关行为，账号物品不全会污染结论；走代理侧解锁（本机视图）

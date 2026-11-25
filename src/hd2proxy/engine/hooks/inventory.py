@@ -227,6 +227,16 @@ def inventory_rewrite(plain, spec=None):
             seen.add(key)
             added += 1
 
+    # 一键解锁全部物品（v0.10.1-alpha.2）：按**运行时客户端目录**补行（isDiscovered=true）
+    if cfg.get("unlockAll"):
+        from .. import unlock_all
+        _ua = cfg.get("unlockAll")
+        _scope = _ua.get("scope") if isinstance(_ua, dict) else None
+        ua_added = unlock_all.inject_inventory(items, _scope)
+        if ua_added:
+            doc["items"] = items
+            added += ua_added
+
     if not (added or removed):
         return None, 0, 0
     return json.dumps(doc, separators=(",", ":")).encode("utf-8"), added, removed

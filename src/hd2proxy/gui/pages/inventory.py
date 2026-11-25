@@ -777,10 +777,9 @@ class InventoryPage(Page):
         scope = ",".join(st.get("scope") or []) or "全部类别"
         message = chr(10).join([
             "确定一键解锁全部物品？", "",
-            "将向本机库存视图注入 %d 行（范围：%s）" % (len(ids), scope),
-            "目录 %d 行；跳过：不在架 %d / 货币 %d / 空号默认拥有 %d / 无 mixId %d"
-            % (st.get("catalogRows"), st.get("skippedNotInCatalog"), st.get("skippedCurrency"),
-               st.get("skippedDefaultOwned"), st.get("skippedNoMixId")), "",
+            "运行期按**客户端实际目录**展开（离线估算 %d 行，范围：%s）" % (len(ids), scope),
+            "同时把 6 条舰船模块包的等级置满（模块不是库存行，靠 packageProgress 显示）",
+            "授予行 isDiscovered=true（护甲/披风/头盔需要）", "",
             "只改客户端收到的响应，不写服务端任何数据；点「应用配置」后生效。",
             "物品很多时游戏内列表/商店可能加载变慢，这是预期副作用。",
         ])
@@ -841,7 +840,7 @@ class InventoryPage(Page):
         if inv.get("unlock_all"):
             from ...engine.item_catalog import unlock_all_summary
             st = unlock_all_summary(inv.get("unlock_scope") or [])
-            parts.append("一键解锁 全部 %d 行" % st.get("count", 0))
+            parts.append("一键解锁 全开（离线估算 %d 行）" % st.get("count", 0))
         else:
             parts.append("一键解锁 关")
         line = "已加入：" + " · ".join(parts)

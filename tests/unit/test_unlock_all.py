@@ -1,100 +1,120 @@
-"""一键解锁全部物品（v0.10.1）单测。
+"""一键解锁全部物品（v0.10.1-alpha.2）单测。
 
-覆盖：目录展开规则、范围收窄、profile 校验、规格注入（inventory hook）、幂等、缺目录兜底。
-设计见 `engine/item_catalog.py`：在架 + 有 mixId + 非货币 + 非空号默认拥有。
+alpha.1 用离线目录在规格期展开 → 实机护甲/披风只出 3 件、舰船模块 0 件（2026-11-25 反馈）。
+alpha.2 改为：**请求期**按运行时客户端目录展开（isDiscovered=true）+ 舰船模块 6 条包等级置满
++ 6 个 requiredItems 补进库存。覆盖：目录缓存/回退、授予行、包等级、幂等、配置校验。
 """
 
 import json
 
 import pytest
 
-from hd2proxy.engine import config, item_catalog
+from hd2proxy.engine import config, item_catalog, unlock_all
 from hd2proxy.engine.hooks import inventory as inv_hook
+from hd2proxy.engine.hooks import progression as prog_hook
 
-HOST = "api.live.prod.thehelldiversgame.com"
-
-
-# ---------------------------------------------------------------- 目录展开
-
-def test_expand_real_catalog():
-    ids, st = item_catalog.unlock_all_ids()
-    assert st["catalogRows"] > 3000, st
-    assert len(ids) > 2000, st
-    assert len(ids) == len(set(ids)), "展开结果必须去重"
-    assert all(isinstance(i, int) and i > 0 for i in ids)
-    assert st["rows"] == len(ids)
-    # 排除规则真的生效
-    assert st["skippedCurrency"] > 0
-    assert st["skippedDefaultOwned"] > 0
-    assert st["skippedNotInCatalog"] > 0
+LIVE = [
+    {"mixId": 111, "itemId": 111, "progressionCategory": 1, "requiredLevel": 0},
+    {"mixId": 222, "itemId": None, "progressionCategory": 2, "parentId": 111},
+    {"mixId": 333, "itemId": 333, "progressionCategory": 3},     # 披风
+    {"mixId": 444, "itemId": 444, "progressionCategory": 4},     # 护甲
+    {"mixId": 555, "itemId": None, "progressionCategory": 11},   # 战备
+    {"mixId": 999, "itemId": 999, "progressionCategory": 18},    # 货币 → 排除
+]
 
 
-def test_expand_scope_weapon_only():
-    rows = item_catalog.load_rows()
-    expected = [int(r["mix_id"]) for r in rows
-                if r.get("in_catalog") is not False
-                and str(r.get("category") or "").lower() == "weapon"
-                and not r.get("default_owned")
-                and r.get("mix_id") is not None]
-    ids, st = item_catalog.unlock_all_ids(scope=["weapon"])
-    assert st["scope"] == ["weapon"]
-    assert ids == list(dict.fromkeys(expected))
-    assert 50 < len(ids) < 200, len(ids)
-    assert st["skippedScope"] > 0
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    unlock_all.reset()
+    yield
+    unlock_all.reset()
 
 
-def test_expand_missing_catalog_returns_empty(tmp_path, monkeypatch):
-    monkeypatch.setattr(item_catalog, "CATALOG_PATH", tmp_path / "nope.json")
-    ids, st = item_catalog.unlock_all_ids()
-    assert ids == [] and st["catalogRows"] == 0
+# ---------------------------------------------------------------- 目录与展开
+
+def test_set_catalog_and_ownable_ids():
+    assert unlock_all.set_catalog(LIVE) == len(LIVE)
+    ids = unlock_all.ownable_ids()
+    assert ids[:5] == [111, 222, 333, 444, 555]
+    assert 999 not in ids, "货币（pc18）不注入"
+    for mid in unlock_all.SHIP_MODULE_REQUIRED_ITEMS:
+        assert mid in ids, "6 个舰船模块前置物品必须补进库存"
 
 
-def test_unlock_all_summary_counts():
-    st = item_catalog.unlock_all_summary()
-    ids, _ = item_catalog.unlock_all_ids()
-    assert st["count"] == len(ids)
+def test_fallback_to_offline_catalog_when_no_live():
+    ids = unlock_all.ownable_ids()
+    off, _ = item_catalog.unlock_all_ids()
+    assert len(ids) >= len(off) > 2000
+    for mid in unlock_all.SHIP_MODULE_REQUIRED_ITEMS:
+        assert mid in ids
 
 
-# ---------------------------------------------------------------- 规格注入
+def test_inject_marks_discovered_and_is_idempotent():
+    unlock_all.set_catalog(LIVE)
+    items = [{"mixId": 111, "amount": 1, "isDiscovered": False}]
+    added = unlock_all.inject_inventory(items)
+    assert added == len(unlock_all.ownable_ids()) - 1      # 111 已有
+    row = next(r for r in items if r["mixId"] == 333)
+    assert row["isDiscovered"] is True, "护甲/披风需要 isDiscovered=true"
+    assert unlock_all.inject_inventory(items) == 0, "二次调用幂等"
 
-def test_spec_expands_and_enables_inventory():
+
+# ---------------------------------------------------------------- 舰船模块包等级
+
+def test_patch_progression_sets_six_packages_to_max():
+    doc = {"experience": 1, "packageProgress": [
+        {"id32": 131213678, "level": 0, "progress": 5, "sortOrder": 0, "claimedLevels": []},
+        {"id32": 999, "level": 2, "progress": 0, "sortOrder": 0, "claimedLevels": []},
+    ]}
+    body, changed = unlock_all.patch_progression(json.dumps(doc))
+    out = json.loads(body)
+    assert changed >= len(unlock_all.SHIP_MODULE_PACKAGES) - 1
+    by_id = {e["id32"]: e for e in out["packageProgress"]}
+    for pid in unlock_all.SHIP_MODULE_PACKAGES:
+        assert by_id[pid]["level"] == unlock_all.SHIP_MODULE_MAX_LEVEL
+    assert by_id[999]["level"] == 2, "不相关包不动"
+    # 幂等
+    assert unlock_all.patch_progression(body) == (None, 0)
+
+
+def test_patch_progression_no_array_is_noop():
+    assert unlock_all.patch_progression(json.dumps({"experience": 1})) == (None, 0)
+    assert unlock_all.patch_progression(b"not json") == (None, 0)
+
+
+def test_progression_hook_applies_unlock():
+    body = json.dumps({"experience": 1, "packageProgress": []}).encode()
+    new_body, n = prog_hook.apply(body, None, unlock_all_enabled=True)
+    assert n == len(unlock_all.SHIP_MODULE_PACKAGES)
+    assert new_body is not None
+    # 关闭时原样返回
+    same, z = prog_hook.apply(body, None, unlock_all_enabled=False)
+    assert z == 0 and same is body
+
+
+# ---------------------------------------------------------------- 规格与钩子
+
+def test_spec_sets_flag_not_preexpanded():
     prof = config.default_profile()
-    assert prof["inventory"]["unlock_all"] is False
     assert config.to_engine_spec(prof).inventory is None
-
     prof["inventory"]["unlock_all"] = True
     spec = config.to_engine_spec(prof)
-    assert spec.inventory is not None
-    ids, _st = item_catalog.unlock_all_ids()
-    assert len(spec.inventory["items"]) == len(ids)
-    assert spec.inventory["unlockAll"]["added"] == len(ids)
-    assert all(row["amount"] == 1 and row["isDiscovered"] is False
-               for row in spec.inventory["items"])
+    ua = spec.inventory["unlockAll"]
+    assert ua["enabled"] is True and ua["scope"] == []
+    assert spec.inventory["items"] == [], "alpha.2 不在规格期展开（改运行时）"
 
 
-def test_spec_does_not_duplicate_explicit_rows():
-    prof = config.default_profile()
-    first = item_catalog.unlock_all_ids()[0][0]
-    prof["inventory"]["weapons"] = [{"mixId": first, "amount": 1, "isDiscovered": True}]
-    prof["inventory"]["unlock_all"] = True
-    spec = config.to_engine_spec(prof)
-    mids = [row["mixId"] for row in spec.inventory["items"]]
-    assert mids.count(first) == 1
-    assert len(mids) == len(set(mids))
-
-
-def test_inventory_hook_injects_all_and_is_idempotent():
+def test_inventory_hook_injects_from_live_catalog():
+    unlock_all.set_catalog(LIVE)
     prof = config.default_profile()
     prof["inventory"]["unlock_all"] = True
     spec = config.to_engine_spec(prof)
     raw = json.dumps({"items": [{"mixId": 897894480, "amount": 1,
                                  "isDiscovered": False}]}).encode()
     body, added, removed = inv_hook.inventory_rewrite(raw, spec=spec.inventory)
-    assert added == spec.inventory["unlockAll"]["added"]
-    assert removed == 0
-    doc = json.loads(body)
-    assert len(doc["items"]) == added + 1
-    # 再跑一次（客户端轮询）→ 不重复注入
+    assert added == len(unlock_all.ownable_ids())
+    rows = json.loads(body)["items"]
+    assert all(r["isDiscovered"] is True or r["mixId"] == 897894480 for r in rows)
     body2, added2, _ = inv_hook.inventory_rewrite(body, spec=spec.inventory)
     assert added2 == 0 and body2 is None
 
@@ -114,8 +134,8 @@ def test_config_validation_unlock_scope():
     prof["inventory"]["unlock_scope"] = ["weapon", "Attachment"]
     doc, errors, _ = config.validate(prof)
     assert errors == [], errors
-    assert doc["inventory"]["unlock_scope"] == ["weapon", "attachment"]   # 归一化小写
+    assert doc["inventory"]["unlock_scope"] == ["weapon", "attachment"]
 
-    prof["inventory"]["unlock_scope"] = ["weapon", "banana"]
+    prof["inventory"]["unlock_scope"] = ["banana"]
     _doc, errors, _ = config.validate(prof)
     assert any("unlock_scope" in e for e in errors), errors
