@@ -68,6 +68,10 @@ class InventoryPage(Page):
         bar.pack(fill="x", padx=22, pady=(0, 8))
         self.sum_lbl = tk.Label(bar, text="", bg=theme.BG, fg=theme.MUTED, font=theme.F_S)
         self.sum_lbl.pack(side="left")
+        # 一键解锁全部物品（v0.10.1）：按物品目录展开成库存行，只改本机响应
+        self.unlock_btn = theme.button(bar, "一键解锁全部物品",
+                                       command=self._toggle_unlock_all)
+        self.unlock_btn.pack(side="left", padx=(14, 0))
         # 一键撤回本页所有改动：四类库存行 + 目录追加（附件这类成百上千条的库存没法手点删）
         theme.button(bar, "清空全部已添加", danger=True,
                      command=self._clear_all_added).pack(side="left", padx=(14, 0))
@@ -749,6 +753,44 @@ class InventoryPage(Page):
             self.app.profile["items"] = doc
         return doc
 
+    # ---------------------------------------------------------------- 一键解锁全部
+    def _toggle_unlock_all(self):
+        """一键解锁/关闭「全部物品」（只改本机视图；点「应用配置」后引擎生效）。
+
+        展开规则见 `engine/item_catalog.py`：在架 + 有 mixId + 非货币 + 非空号默认拥有。
+        数据量大（约 2.5k 行），所以要确认框并显示实际条数。
+        """
+        from ...engine.item_catalog import unlock_all_ids
+
+        inv = self._inventory()
+        if inv.get("unlock_all"):
+            inv["unlock_all"] = False
+            self.app.mark_dirty()
+            self._render_summary()
+            self.app.toast("已关闭「一键解锁全部物品」（点应用配置后生效）")
+            return
+        ids, st = unlock_all_ids(inv.get("unlock_scope") or [])
+        if not ids:
+            self.app.toast("没有可解锁的物品：目录文件读不到或为空（data/catalogs/items.json）",
+                           error=True)
+            return
+        scope = ",".join(st.get("scope") or []) or "全部类别"
+        message = chr(10).join([
+            "确定一键解锁全部物品？", "",
+            "将向本机库存视图注入 %d 行（范围：%s）" % (len(ids), scope),
+            "目录 %d 行；跳过：不在架 %d / 货币 %d / 空号默认拥有 %d / 无 mixId %d"
+            % (st.get("catalogRows"), st.get("skippedNotInCatalog"), st.get("skippedCurrency"),
+               st.get("skippedDefaultOwned"), st.get("skippedNoMixId")), "",
+            "只改客户端收到的响应，不写服务端任何数据；点「应用配置」后生效。",
+            "物品很多时游戏内列表/商店可能加载变慢，这是预期副作用。",
+        ])
+        if not messagebox.askyesno("一键解锁全部物品", message):
+            return
+        inv["unlock_all"] = True
+        self.app.mark_dirty()
+        self._render_summary()
+        self.app.toast("已开启一键解锁：%d 个物品（点「应用配置」生效）" % len(ids))
+
     # ---------------------------------------------------------------- 批量清空
     def _clear_all_added(self):
         """一键移除本页**所有已添加项**：四类库存行 + 目录追加行（只改本机 profile）。
@@ -796,6 +838,12 @@ class InventoryPage(Page):
             parts.append("%s %d" % (label, len(rows) if isinstance(rows, list) else 0))
         add = self._items(create=False).get("add") or []
         parts.append("目录追加 %d" % (len(add) if isinstance(add, list) else 0))
+        if inv.get("unlock_all"):
+            from ...engine.item_catalog import unlock_all_summary
+            st = unlock_all_summary(inv.get("unlock_scope") or [])
+            parts.append("一键解锁 全部 %d 行" % st.get("count", 0))
+        else:
+            parts.append("一键解锁 关")
         line = "已加入：" + " · ".join(parts)
         cat = self.app.catalogs.catalog_summary()
         if cat["items"]:

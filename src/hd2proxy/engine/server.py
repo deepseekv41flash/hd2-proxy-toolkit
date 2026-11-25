@@ -35,6 +35,20 @@ from .model import Mod, resolve_plan, rewrite_status
 
 
 # ==== Proxy 类（自 M0 legacy_proxy.py 逐字抽取；仅钩子调用点与控制面接入处改动） ====
+def _log_unlock_all(spec):
+    """「一键解锁全部物品」的规格日志（启动 / 热重载各打一次，不随请求刷屏）。"""
+    inv = getattr(spec, "inventory", None) or {}
+    st = inv.get("unlockAll")
+    if not isinstance(st, dict) or not st.get("added"):
+        return
+    scope = ",".join(st.get("scope") or [])
+    log("一键解锁全部物品（仅本机视图）：注入 %d 行（目录 %d 行；跳过 不在架 %d / 货币 %d / "
+        "默认拥有 %d / 无 mixId %d%s）"
+        % (st.get("added", 0), st.get("catalogRows", 0), st.get("skippedNotInCatalog", 0),
+           st.get("skippedCurrency", 0), st.get("skippedDefaultOwned", 0),
+           st.get("skippedNoMixId", 0), ("；范围 " + scope) if scope else ""), audit=True)
+
+
 def stamp_identity_header(lines, ident, has_account=False):
     """v0.7.0：给上游请求补身份头（自建服按玩家分档用）。
 
@@ -705,6 +719,7 @@ def main(argv=None):
             log("变种目录读取失败（变种计划可能为空）: %r" % e)
             _catdoc_for_spec = None
         spec = _config.to_engine_spec(profile, _catdoc_for_spec)
+        _log_unlock_all(spec)
         cfg["host"] = spec.host or cfg["host"]
         if spec.listen_ip:
             cfg["listenIp"] = spec.listen_ip
@@ -888,6 +903,7 @@ def main(argv=None):
             def _reload_profile(profile_doc):
                 """控制面热重载：重建 spec 并替换指针（不重启、不断开游戏连接）。"""
                 new_spec = _config.to_engine_spec(profile_doc, _catdoc_for_spec)
+                _log_unlock_all(new_spec)
                 proxy.spec = new_spec
                 mod.passthrough = bool(new_spec.passthrough)
                 logutil.VERBOSE = bool(new_spec.verbose or logutil.VERBOSE)

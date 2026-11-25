@@ -14,7 +14,7 @@ import json
 import os
 from pathlib import Path
 
-from . import certs, paths
+from . import certs, item_catalog, paths
 from .spec import EngineSpec
 
 SCHEMA_VERSION = 2
@@ -50,6 +50,8 @@ DEFAULT_PROFILE = {
     "inventory": {
         "weapons": [], "attachments": [], "cosmetics": [], "stratagems": [], "probe": [],
         "remove": [], "customization": [],
+        # 一键解锁全部物品（仅本机视图）：按目录展开成库存行；scope 空=全部可拥有类别
+        "unlock_all": False, "unlock_scope": [],
     },
     "items": {"template": None, "add": []},
     "capture": {
@@ -348,6 +350,31 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
             continue
         cust.append(row)
     inv["customization"] = cust
+    # 一键解锁全部物品（v0.10.1）：开关 + 可选类别收窄
+    ua = inv.get("unlock_all", False)
+    if not isinstance(ua, bool):
+        errors.append("inventory.unlock_all 必须是 true/false")
+    else:
+        inv["unlock_all"] = ua
+    scope = inv.get("unlock_scope")
+    if scope is None:
+        inv["unlock_scope"] = []
+    elif not isinstance(scope, list):
+        errors.append("inventory.unlock_scope 必须是类别名数组")
+    else:
+        valid = item_catalog.VALID_SCOPES
+        clean_scope, bad = [], []
+        for name in scope:
+            text = str(name or "").strip().lower()
+            if text in valid:
+                clean_scope.append(text)
+            else:
+                bad.append(name)
+        if bad:
+            errors.append("inventory.unlock_scope 里有未知类别 %r（可选：%s）"
+                          % (bad, ", ".join(valid)))
+        else:
+            inv["unlock_scope"] = clean_scope
     doc["inventory"] = inv
 
     # ---- items ------------------------------------------------------------
@@ -622,10 +649,27 @@ def to_engine_spec(profile: dict, catalog_doc=None) -> EngineSpec:
                 inv_items.append({"mixId": _int(row["mixId"]),
                                   "amount": _int(row.get("amount"), 1) or 1,
                                   "isDiscovered": bool(row.get("isDiscovered", False))})
+    # 一键解锁全部物品（v0.10.1）：在**规格构建期**把目录展开成库存行（不进热路径）
+    unlock_stats = None
+    if inv.get("unlock_all"):
+        ids, unlock_stats = item_catalog.unlock_all_ids(inv.get("unlock_scope") or [])
+        seen = {row["mixId"] for row in inv_items}
+        added = 0
+        for mid in ids:
+            if mid in seen:
+                continue
+            inv_items.append({"mixId": mid, "amount": 1, "isDiscovered": False})
+            seen.add(mid)
+            added += 1
+        unlock_stats = dict(unlock_stats, added=added)
+        if added:
+            warnings.append("一键解锁全部物品：将注入 %d 个物品（仅本机视图）" % added)
     inv_cfg = {"enabled": bool(inv_items or inv.get("remove") or inv.get("customization")),
                "items": inv_items,
                "remove": list(inv.get("remove") or []),
                "customization": list(inv.get("customization") or [])}
+    if unlock_stats:
+        inv_cfg["unlockAll"] = unlock_stats
     spec.inventory = inv_cfg if inv_cfg["enabled"] else None
 
     # items

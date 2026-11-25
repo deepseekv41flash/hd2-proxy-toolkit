@@ -8,7 +8,7 @@
 - 开发计划：[PLAN.md](PLAN.md) ｜ 代码来源与哈希：[docs/PROVENANCE.md](docs/PROVENANCE.md)
 - GUI 选型实测（稳定性/资源占用）：[research/TECH-STACK-DECISION.md](research/TECH-STACK-DECISION.md)
 
-> **当前状态：v0.10.0-alpha.1 已发布（2026-11-25，证书有效期策略：默认 2 天 / 显式 7 天上限）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
+> **当前状态：v0.10.1-alpha.1 已发布（2026-11-25，一键解锁全部物品：本机视图注入约 2.5k 行）** —— 引擎模块化 + 配置面/控制面/安装还原/证书自动续期/三连验收
 > + **Tk GUI 六页** + **6 项能力模板 + 离线预演** + **6 项能力实机逐项验收通过**
 > （安装→游戏内验证→还原全链路，见 [docs/ACCEPTANCE-M4.md](docs/ACCEPTANCE-M4.md)），
 > **738 个单元测试 + 5 个离线自检全绿**；已打包发布 `v0.7.0-alpha.1`（见下方「下载」）。
@@ -65,14 +65,14 @@ python tools/bump_version.py feature --minor # 功能更新：X.Y.Z 变，回 al
 
 门禁会校验版本一致性（`__version__` ↔ `pyproject` PEP 440 ↔ CHANGELOG ↔ 已打 tag 的 Release Notes）。
 
-## 下载（v0.10.0-alpha.1）
+## 下载（v0.10.1-alpha.1）
 
 > **预览版（alpha）**：M4 已逐项实机验证 6 项能力，但更多机型/网络环境/游戏更新后的
 > 全流程稳定性还需要时间验证，先以 alpha 发布。完整说明见
-> [Release Notes](docs/RELEASE-v0.10.0-alpha.1.md)。
+> [Release Notes](docs/RELEASE-v0.10.1-alpha.1.md)。
 
-- 下载：[GitHub Releases · v0.10.0-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.10.0-alpha.1)
-  （`hd2proxy-toolkit-v0.10.0-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
+- 下载：[GitHub Releases · v0.10.1-alpha.1](https://github.com/deepseekv41flash/hd2-proxy-toolkit/releases/tag/v0.10.1-alpha.1)
+  （`hd2proxy-toolkit-v0.10.1-alpha.1-windows-x64.zip` + `SHA256SUMS.txt`）
 - 要求：Windows 10/11 x64；**不需要装 Python**；日常运行不需要管理员，只有安装/还原各弹一次 UAC。
 - 解压即用（onedir，约 15 MB 压缩包 / 解压后约 60 MB）。
   **普通用户双击 `hd2proxy-gui.exe` 打开图形界面**（无控制台）；`hd2proxy.exe` 是 CLI，
@@ -139,7 +139,7 @@ python src/hd2proxy/engine/legacy_proxy.py --config data/legacy/config.example.j
 | 1 | 变种词条（tag + mechanic 成对；虫族 7 个含腐蚀/毒瘴） | ✓✓ M4 实机 | 战况 · 变种卡 / 「变种词条试用」模板 |
 | 2 | 全局效果（GWE type94） | ✓✓ M4 实机 | 战况 · 全局效果卡 / 「全局效果试用」模板 |
 | 3 | 战备试用（type32，≤3） | ✓✓ M4 实机 | 「战备试用」模板（`status.trials` + `trials_planet`） |
-| 4 | 物品解锁（武器/配件/外观 + 目录上架；附件按武器筛选 + 一键解锁整枪配件；**目录 3020 行全量只读总览**） | ✓✓ M4 实机 | **本地账号** · 各分类 +「目录总览」/「物品解锁」模板 /「存档」tab |
+| 4 | 物品解锁（武器/配件/外观 + 目录上架；附件按武器筛选 + 一键解锁整枪配件；**一键解锁全部物品**（按目录注入约 2.5k 行，仅本机视图）；**目录 3020 行全量只读总览**） | ✓✓ M4 实机；一键全解锁待实机 | **本地账号** · 各分类 + 「一键解锁全部物品」+「目录总览」/「物品解锁」模板 /「存档」tab |
 | 5 | 休眠星可玩化（planetInfo + 节点 + 战役 + 归属） | ✓✓ 研究实机结算 + M4 节点/连线 | 战况 · 休眠星卡 / 「休眠星可玩化」模板 |
 | 6 | 生态借用（`settingsHash`） | ✓✓ M4 实机 | 战况 · 生态卡 / 「生态借用」模板 |
 
@@ -208,7 +208,7 @@ GUI 里是战况页顶部「能力模板」条右侧的**离线预演**按钮；
 （+ `manifest.json` / `index.json`；可选端点默认导出；账本里有最近一局结算响应时会另出 `mission_end.json`；每玩家结算事件追加到 `settlements.jsonl`，manifest 带 `settlementsCursor`）。同时引擎会给上游所有请求补
 `X-HD2-Account`（值优先 SteamID64）+ `X-HD2-Account-Source`（`prebind|getmotd|getmessages`），
 供多人自建服按账号分档；客户端自带该头时不重复。边界：**头可伪造，仅适用于可信自建服**；
-详见 [Release Notes](docs/RELEASE-v0.10.0-alpha.1.md)。
+详见 [Release Notes](docs/RELEASE-v0.10.1-alpha.1.md)。
 
 **已知限制（务必知道）**：客户端**一次会话只拉一次** `/api/Progression`，而引擎启动时先按
 `runtime/saves/_last.json` 里「上次的档」渲染首屏，`Pes/GetMotd`（登录后 +24~42 s）才校验身份。
