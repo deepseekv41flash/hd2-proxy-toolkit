@@ -51,7 +51,7 @@ DEFAULT_PROFILE = {
         "weapons": [], "attachments": [], "cosmetics": [], "stratagems": [], "probe": [],
         "remove": [], "customization": [],
         # 一键解锁全部物品（仅本机视图）：按目录展开成库存行；scope 空=全部可拥有类别
-        "unlock_all": False, "unlock_scope": [],
+        "unlock_all": False, "unlock_scope": [], "unlock_discovered": False,
     },
     "items": {"template": None, "add": []},
     "capture": {
@@ -375,6 +375,11 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
                           % (bad, ", ".join(valid)))
         else:
             inv["unlock_scope"] = clean_scope
+    ud = inv.get("unlock_discovered", False)
+    if not isinstance(ud, bool):
+        errors.append("inventory.unlock_discovered 必须是 true/false")
+    else:
+        inv["unlock_discovered"] = ud
     doc["inventory"] = inv
 
     # ---- items ------------------------------------------------------------
@@ -654,7 +659,8 @@ def to_engine_spec(profile: dict, catalog_doc=None) -> EngineSpec:
     # 实机表现为"护甲/披风只出 3 件、舰船模块 0 件"（2026-11-25 反馈）。
     unlock_cfg = None
     if inv.get("unlock_all"):
-        unlock_cfg = {"enabled": True, "scope": list(inv.get("unlock_scope") or [])}
+        unlock_cfg = {"enabled": True, "scope": list(inv.get("unlock_scope") or []),
+                      "discovered": bool(inv.get("unlock_discovered", False))}
         warnings.append("一键解锁全部物品：运行时按客户端目录展开（含舰船模块 6 条包等级置满）")
     inv_cfg = {"enabled": bool(inv_items or inv.get("remove") or inv.get("customization")
                               or unlock_cfg),

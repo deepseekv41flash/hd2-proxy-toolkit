@@ -35,7 +35,7 @@ def _clear_cache():
 def test_set_catalog_and_ownable_ids():
     assert unlock_all.set_catalog(LIVE) == len(LIVE)
     ids = unlock_all.ownable_ids()
-    assert ids[:5] == [111, 222, 333, 444, 555]
+    assert ids[:5] == [111, 222, 333, 444, 555]      # 目录顺序（全部类目，仅排除货币）
     assert 999 not in ids, "货币（pc18）不注入"
     for mid in unlock_all.SHIP_MODULE_REQUIRED_ITEMS:
         assert mid in ids, "6 个舰船模块前置物品必须补进库存"
@@ -52,11 +52,12 @@ def test_fallback_to_offline_catalog_when_no_live():
 def test_inject_marks_discovered_and_is_idempotent():
     unlock_all.set_catalog(LIVE)
     items = [{"mixId": 111, "amount": 1, "isDiscovered": False}]
-    added = unlock_all.inject_inventory(items)
+    added, skipped = unlock_all.inject_inventory(items)
     assert added == len(unlock_all.ownable_ids()) - 1      # 111 已有
+    assert skipped == 0
     row = next(r for r in items if r["mixId"] == 333)
-    assert row["isDiscovered"] is True, "护甲/披风需要 isDiscovered=true"
-    assert unlock_all.inject_inventory(items) == 0, "二次调用幂等"
+    assert row["isDiscovered"] is False, "默认 false（真实数据 1030 行全 false；true 会坏改装）"
+    assert unlock_all.inject_inventory(items) == (0, 0), "二次调用幂等"
 
 
 # ---------------------------------------------------------------- 舰船模块包等级
@@ -68,10 +69,12 @@ def test_patch_progression_sets_six_packages_to_max():
     ]}
     body, changed = unlock_all.patch_progression(json.dumps(doc))
     out = json.loads(body)
-    assert changed >= len(unlock_all.SHIP_MODULE_PACKAGES) - 1
+    assert changed >= len(unlock_all.SHIP_MODULE_PACKAGES) - 1 + len(unlock_all.WEAPON_PACKAGES)
     by_id = {e["id32"]: e for e in out["packageProgress"]}
     for pid in unlock_all.SHIP_MODULE_PACKAGES:
         assert by_id[pid]["level"] == unlock_all.SHIP_MODULE_MAX_LEVEL
+    for pid in unlock_all.WEAPON_PACKAGES:
+        assert by_id[pid]["level"] == unlock_all.WEAPON_LEVEL_DEFAULT
     assert by_id[999]["level"] == 2, "不相关包不动"
     # 幂等
     assert unlock_all.patch_progression(body) == (None, 0)
@@ -85,7 +88,7 @@ def test_patch_progression_no_array_is_noop():
 def test_progression_hook_applies_unlock():
     body = json.dumps({"experience": 1, "packageProgress": []}).encode()
     new_body, n = prog_hook.apply(body, None, unlock_all_enabled=True)
-    assert n == len(unlock_all.SHIP_MODULE_PACKAGES)
+    assert n == len(unlock_all.SHIP_MODULE_PACKAGES) + len(unlock_all.WEAPON_PACKAGES)
     assert new_body is not None
     # 关闭时原样返回
     same, z = prog_hook.apply(body, None, unlock_all_enabled=False)
@@ -114,7 +117,7 @@ def test_inventory_hook_injects_from_live_catalog():
     body, added, removed = inv_hook.inventory_rewrite(raw, spec=spec.inventory)
     assert added == len(unlock_all.ownable_ids())
     rows = json.loads(body)["items"]
-    assert all(r["isDiscovered"] is True or r["mixId"] == 897894480 for r in rows)
+    assert all(r["isDiscovered"] is False for r in rows), "授予行必须 isDiscovered=false"
     body2, added2, _ = inv_hook.inventory_rewrite(body, spec=spec.inventory)
     assert added2 == 0 and body2 is None
 
@@ -139,3 +142,19 @@ def test_config_validation_unlock_scope():
     prof["inventory"]["unlock_scope"] = ["banana"]
     _doc, errors, _ = config.validate(prof)
     assert any("unlock_scope" in e for e in errors), errors
+
+
+# ---------------------------------------------------------------- 上限与类目白名单
+
+
+def test_inventory_cap_guard():
+    rows = [{"mixId": 10000 + i, "progressionCategory": 1} for i in range(6000)]
+    unlock_all.set_catalog(rows)
+    items = []
+    added, skipped = unlock_all.inject_inventory(items)
+    assert added == unlock_all.INVENTORY_CAP - unlock_all.INVENTORY_SAFE_MARGIN
+    assert skipped == 6000 + len(unlock_all.SHIP_MODULE_REQUIRED_ITEMS) - added
+    assert len(items) == added
+    # 已接近上限时不再注入
+    full = [{"mixId": i, "amount": 1, "isDiscovered": True} for i in range(4100)]
+    assert unlock_all.inject_inventory(full)[0] == 0

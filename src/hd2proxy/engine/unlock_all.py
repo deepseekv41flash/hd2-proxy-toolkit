@@ -10,7 +10,8 @@
    否则 Ship Module 页显示"under construction"。
    （来源：HellForge `ProfileStore.cs:530` + 11-20 真机抓包 `ProgressionPackages`。）
 
-授予行统一 `isDiscovered=true`（HellForge 对"授予物品"的写法；空白号此前用 false 时护甲/披风不显示）。
+授予行 `isDiscovered`：**默认 false** —— 2026-11-25 实证：真实库存（主号 970 + 空白号 60 行）**全部 false**；
+alpha.2 改成 true 后出现"所有武器缺改装按钮"，故回退为 false（可用 profile `inventory.unlock_discovered` 改）。
 """
 
 import json
@@ -23,6 +24,30 @@ SHIP_MODULE_MAX_LEVEL = 5
 # 6 条包的 requiredItems（必须在库存里，Ship Module 页才出现）
 SHIP_MODULE_REQUIRED_ITEMS = (
     3440915970, 3421210661, 2070435954, 1402181160, 3822450566, 3764534604)
+# 客户端硬上限（HellForge `RegisteredItems.cs:119`：CatalogueCap=InventoryCap=4096；
+# 注释明确："past that the game ignores the rest, and a weapon would be held without its attachments"
+# —— 2026-11-25 主号症状（970 行 + 注入 3042 ≈ 4012，贴上限；全武器缺"改装"按钮）与之吻合）。
+INVENTORY_CAP = 4096
+INVENTORY_SAFE_MARGIN = 64          # 给客户端自己的补充留余量
+
+
+# 武器精通包（progression package type=2，50 条 × 25 级）——2026-11-25 用户提示 + HellForge 证据：
+# 武器改装/升级入口需要该武器在 packageProgress 里有条目（同 ship module 机制）。
+# 来源：2026-11-20 真机 `/api/Progression/ProgressionPackages` 抓包。
+WEAPON_PACKAGES = (
+    1949876251, 3439606727, 2221505542, 2659105163, 1334452973,
+    4111972552, 883379673, 4090978686, 2373460877, 1973516948,
+    1437213432, 2875976550, 1681710644, 3499835822, 1059686006,
+    287968734, 1445043045, 3988417885, 3479006272, 1414744964,
+    2679158493, 2750223772, 2941409959, 2093204274, 652555970,
+    2031945469, 297733241, 1240353314, 1125762146, 3350514626,
+    3247913466, 3391943729, 1691930195, 1084659860, 9042909,
+    1535490275, 3400574762, 3115977081, 359248235, 2797172057,
+    4286173191, 872226585, 1350237306, 934119933, 674723509,
+    1715358342, 277818845, 2541413995, 67627790, 4246017227,
+)
+WEAPON_LEVEL_DEFAULT = 1     # 最小侵入：只让条目存在（等级 1），不动武器升级进度显示
+
 # 货币不是"物品"：库存里不需要注入（信用点/奖章/样本走其它字段）
 EXCLUDED_CATEGORIES = frozenset({18})
 
@@ -95,19 +120,31 @@ def _have_mix_ids(items) -> set:
     return have
 
 
-def inject_inventory(items, scope=None) -> int:
-    """把可拥有物品补进 inventory.items[]（原地修改），返回新增行数。"""
+def inject_inventory(items, scope=None, discovered=False):
+    """把可拥有物品补进 inventory.items[]（原地修改），返回 ``(added, skipped)``。
+
+    ``discovered``：授予行 `isDiscovered`（默认 false —— 真实数据里所有库存行都是 false；
+    2026-11-25 发现改成 true 会导致"所有武器缺改装按钮"，见模块注释）。
+
+    **上限保护**：客户端只认前 4096 条库存（见 INVENTORY_CAP 注释）；这里留 64 条余量，
+    超出部分不再追加（skipped 计数进日志）。注入顺序保证武器/附件优先（见 ownable_ids）。
+    """
     if not isinstance(items, list):
-        return 0
+        return 0, 0
     have = _have_mix_ids(items)
-    added = 0
+    room = INVENTORY_CAP - INVENTORY_SAFE_MARGIN - len(items)
+    added = skipped = 0
     for mid in ownable_ids(scope):
         if mid in have:
             continue
-        items.append({"mixId": mid, "amount": 1, "isDiscovered": True})
+        if room <= 0:
+            skipped += 1
+            continue
+        items.append({"mixId": mid, "amount": 1, "isDiscovered": bool(discovered)})
         have.add(mid)
         added += 1
-    return added
+        room -= 1
+    return added, skipped
 
 
 def patch_progression(body):
@@ -135,6 +172,20 @@ def patch_progression(body):
             except (TypeError, ValueError):
                 pass
     changed = 0
+    for pid in WEAPON_PACKAGES:
+        entry = by_id.get(pid)
+        if entry is None:
+            progress.append({"id32": pid, "level": WEAPON_LEVEL_DEFAULT,
+                             "progress": 0, "sortOrder": 0, "claimedLevels": []})
+            changed += 1
+        else:
+            try:
+                level = int(entry.get("level") or 0)
+            except (TypeError, ValueError):
+                level = 0
+            if level < WEAPON_LEVEL_DEFAULT:
+                entry["level"] = WEAPON_LEVEL_DEFAULT
+                changed += 1
     for pid in SHIP_MODULE_PACKAGES:
         entry = by_id.get(pid)
         if entry is None:

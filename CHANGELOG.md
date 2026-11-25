@@ -6,6 +6,21 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.10.1-alpha.3（2026-11-25）— 修复「所有武器缺改装按钮」
+
+- 实机反馈（空白号，alpha.2）：军械库里**所有可改装武器都没有「改装」按钮**。
+- 根因 1（已改回）：alpha.2 把授予行 `isDiscovered` 改成 `true`。实证：真实库存 **1030 行
+  （主号 970 + 空白号 60）全部是 `false`** —— `true` 与游戏真实数据完全相悖，回退为 **false（默认）**，
+  并新增 profile `inventory.unlock_discovered` 供需要时显式打开。
+- 根因 2（补齐）：武器改装入口与 ship module 同属"进度包"机制 —— 每把武器有 **type=2 武器精通包**
+  （50 条 × 25 级，2026-11-20 真机 `ProgressionPackages` 抓包）。空白号 `packageProgress` 里没有这些条目，
+  改装入口因此缺失。解锁补丁现在把 **50 条武器包补到 level=1**（最小侵入，不伪造升级进度）。
+- 其余保留 alpha.2 修复：运行时客户端目录展开（pc3 441 个 id）、6 条 ship module 包 level=5 + 6 个前置物品。
+- 新增安全阀：库存注入尊重客户端 **4096 条 InventoryCap**（HellForge `RegisteredItems.cs:119`，
+  留 64 条余量；仅在总量接近上限时生效，当前 ~3.1k 行不触发）。
+- 单测 14 条（含武器包/舰船包补丁、isDiscovered=false、上限保护、幂等）；全量 **758 passed、GATE=PASS**。
+- 规则：纯 bug 修复只动 `alpha.N`：`0.10.1-alpha.2` → **`0.10.1-alpha.3`**。
+
 ## v0.10.1-alpha.2（2026-11-25）— 修复一键解锁在空白号上的三个缺口（护甲/披风/舰船模块）
 
 - 实机反馈：空白号全量解锁后头盔/护甲只出 1 套、披风只 2 件、**舰船模块 0 件**。

@@ -232,10 +232,14 @@ def inventory_rewrite(plain, spec=None):
         from .. import unlock_all
         _ua = cfg.get("unlockAll")
         _scope = _ua.get("scope") if isinstance(_ua, dict) else None
-        ua_added = unlock_all.inject_inventory(items, _scope)
+        _disc = bool(_ua.get("discovered")) if isinstance(_ua, dict) else False
+        ua_added, ua_skipped = unlock_all.inject_inventory(items, _scope, discovered=_disc)
         if ua_added:
             doc["items"] = items
             added += ua_added
+            if ua_skipped:
+                log("UNLOCK 库存接近上限（%d）：本次跳过 %d 行"
+                    % (unlock_all.INVENTORY_CAP, ua_skipped))
 
     if not (added or removed):
         return None, 0, 0
