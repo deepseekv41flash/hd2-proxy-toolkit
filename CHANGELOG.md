@@ -6,6 +6,27 @@
 > `alpha.N` / `rc.N`。alpha = 新功能阶段（可能有 bug），rc = 用户实机验证过（只修 bug），
 > GA = 功能与 bug 收敛。完整规则见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 
+## v0.10.1-alpha.4（2026-11-26）— 修复空白号「所有可改装武器缺改装按钮」（补改装条目）
+
+- 实机反馈（空白号，alpha.3）：改装按钮**仍然缺失**；决定性反例 —— **同一代理、全解锁开，换主号按钮正常**
+  ⇒ 不是注入量/注入内容的问题，而是**账号在该接口上的服务端状态**差异。
+- 定位（2026-11-25 同一会话两个号的原始抓包，注入完全相同）：
+  `/api/Progression/Items/Customize/v2` 主号 **74 条**、空白号 **`{"items":[]}`**；
+  `/api/Progression/inventory` 的 `customization[]` 主号 **149 条**、空白号 **1 条** ——
+  两个号唯一仍然不同的「改装」相关数据就是它。客户端在启动 +18~19 s 各拉一次，整局不再重取。
+- 修法：一键解锁开启时，按**运行期目录**找出**带附件子项的 pc1 武器**（真机 57 把），
+  给这些武器补**空槽**改装条目，两个响应都喂：
+  - `Items/Customize/v2`：`{mixId32, modes: [], activeIndex: 0, customizations: [{index: 0, slots: [0]*8}]}`
+  - `inventory.customization[]`：`{mixId32, index: 0, activeIndex: 0, slots: [0]*8, modes: []}`
+  条目形状取自**客户端自己 PUT 过的空槽**（`f71b1f23_*`），不是臆造；玩家已有的真实预设一律不动
+  （主号 74 条原样保留，只补缺的 5 条）。
+- 边界：只补「目录里有附件子项」的武器（HellForge `RegisteredItems.cs:14-17`：改装界面按
+  `WeaponChild(attachment, weapon)` 重算子项，没有子项的武器不该进这份数据）。
+- GUI 同步：确认框文案修正（`isDiscovered` 早已回退为 false，旧文案还写着 true）+ 增加改装条目说明。
+- 单测 6 条新增（可改装武器筛选、空槽形状、幂等、保留真实预设、inventory 扁平条目、两处接线）；
+  全量 **767 passed、GATE=PASS**。
+- 规则：纯 bug 修复只动 `alpha.N`：`0.10.1-alpha.3` → **`0.10.1-alpha.4`**。
+
 ## v0.10.1-alpha.3（2026-11-25）— 修复「所有武器缺改装按钮」
 
 - 实机反馈（空白号，alpha.2）：军械库里**所有可改装武器都没有「改装」按钮**。

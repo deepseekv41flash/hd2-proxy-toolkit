@@ -115,7 +115,9 @@ def test_inventory_hook_injects_from_live_catalog():
     raw = json.dumps({"items": [{"mixId": 897894480, "amount": 1,
                                  "isDiscovered": False}]}).encode()
     body, added, removed = inv_hook.inventory_rewrite(raw, spec=spec.inventory)
-    assert added == len(unlock_all.ownable_ids())
+    # alpha.4：added = 库存行 + 改装条目（LIVE 里只有 1 把带附件的武器）
+    assert added == len(unlock_all.ownable_ids()) + 1
+    assert json.loads(body)["customization"][0]["mixId32"] == 111
     rows = json.loads(body)["items"]
     assert all(r["isDiscovered"] is False for r in rows), "授予行必须 isDiscovered=false"
     body2, added2, _ = inv_hook.inventory_rewrite(body, spec=spec.inventory)
@@ -158,3 +160,99 @@ def test_inventory_cap_guard():
     # 已接近上限时不再注入
     full = [{"mixId": i, "amount": 1, "isDiscovered": True} for i in range(4100)]
     assert unlock_all.inject_inventory(full)[0] == 0
+
+
+# ---------------------------------------------------------------- 改装条目（alpha.4）
+#
+# 空白号 `/api/Progression/Items/Customize/v2` 是 `{"items":[]}`、主号 74 条 ⇒ 缺「改装」按钮。
+# 形状取自客户端自己 PUT 过的空槽：{mixId32, modes:[], activeIndex:0, customizations:[{index:0,slots:[0]*8}]}
+
+
+def test_customizable_weapons_only_parents():
+    """只有目录里**有子项(附件)**的 pc1 武器才算可改装（610/700 无子项 → 排除）。"""
+    unlock_all.set_catalog(LIVE + [
+        {"mixId": 610, "itemId": 610, "progressionCategory": 1},
+        {"mixId": 700, "itemId": 700, "progressionCategory": 1},
+        {"mixId": 711, "itemId": 700, "progressionCategory": 2, "parentId": 700},
+    ])
+    assert unlock_all.customizable_weapons() == [111, 700]
+
+
+def test_customizable_weapons_empty_without_catalog():
+    assert unlock_all.customizable_weapons() == []
+    doc = {"items": []}
+    assert unlock_all.inject_customizations(doc) == 0
+    assert doc["items"] == []
+
+
+def test_inject_customizations_shape_and_idempotent():
+    unlock_all.set_catalog(LIVE)
+    doc = {"items": []}
+    assert unlock_all.inject_customizations(doc) == 1
+    entry = doc["items"][0]
+    assert entry == {"mixId32": 111, "modes": [], "activeIndex": 0,
+                     "customizations": [{"index": 0, "slots": [0] * 8}]}
+    assert unlock_all.inject_customizations(doc) == 0, "第二次必须幂等"
+
+
+def test_inject_customizations_keeps_existing_presets():
+    """玩家已有的真实条目不能动（主号那些非空槽预设必须原样保留）。"""
+    unlock_all.set_catalog(LIVE)
+    real = {"mixId32": 111, "modes": [1, 0, 0, 0], "activeIndex": 0,
+            "customizations": [{"index": 0, "slots": [3441477456, 0, 0, 0, 0, 0, 0, 0]}]}
+    doc = {"items": [real]}
+    assert unlock_all.inject_customizations(doc) == 0
+    assert doc["items"] == [real]
+
+
+def test_inject_customizations_bad_doc():
+    unlock_all.set_catalog(LIVE)
+    assert unlock_all.inject_customizations(None) == 0
+    assert unlock_all.inject_customizations({"items": "nope"}) == 0
+    assert unlock_all.inject_customizations({"items": [{"mixId32": "x"}]}) == 1
+
+
+def test_customize_hook_fills_when_unlock_all_enabled():
+    """真机路径：钩子（无 research 规格）在 unlock_all_enabled 下补条目并返回 bytes。"""
+    unlock_all.set_catalog(LIVE)
+    raw = json.dumps({"items": []}).encode()
+    body, changed = inv_hook.customize_rewrite(raw, spec={}, unlock_all_enabled=True)
+    assert changed == 1 and body is not None
+    assert json.loads(body)["items"][0]["mixId32"] == 111
+    # 关闭时不动
+    body2, changed2 = inv_hook.customize_rewrite(raw, spec={}, unlock_all_enabled=False)
+    assert (body2, changed2) == (None, 0)
+
+
+def test_inject_inventory_customizations_flat_shape():
+    """inventory 响应里的 customization[]（扁平）同样要补，形状对齐真机（主号 149 条）。"""
+    unlock_all.set_catalog(LIVE)
+    doc = {"items": [], "customization": [
+        {"mixId32": 897894480, "index": 0, "activeIndex": 0, "slots": [1, 0, 0, 0, 0, 0, 0, 0],
+         "modes": [1, 0, 0, 0]}]}
+    assert unlock_all.inject_inventory_customizations(doc) == 1
+    new = [e for e in doc["customization"] if e["mixId32"] == 111]
+    assert new == [{"mixId32": 111, "index": 0, "activeIndex": 0,
+                    "slots": [0] * 8, "modes": []}]
+    assert unlock_all.inject_inventory_customizations(doc) == 0, "幂等"
+    assert len(doc["customization"]) == 2
+
+
+def test_inject_inventory_customizations_creates_missing_key():
+    unlock_all.set_catalog(LIVE)
+    doc = {"items": []}
+    assert unlock_all.inject_inventory_customizations(doc) == 1
+    assert doc["customization"][0]["mixId32"] == 111
+
+
+def test_inventory_hook_fills_customization_when_unlock_all_on():
+    unlock_all.set_catalog(LIVE)
+    prof = config.default_profile()
+    prof["inventory"]["unlock_all"] = True
+    spec = config.to_engine_spec(prof)
+    raw = json.dumps({"items": [], "customization": []}).encode()
+    body, added, removed = inv_hook.inventory_rewrite(raw, spec=spec.inventory)
+    assert removed == 0
+    rows = json.loads(body)["customization"]
+    assert [r["mixId32"] for r in rows] == [111]
+    assert added == len(unlock_all.ownable_ids()) + 1, "added = 库存行 + 改装条目"

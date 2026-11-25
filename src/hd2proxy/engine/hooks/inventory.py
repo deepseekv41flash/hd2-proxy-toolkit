@@ -15,10 +15,15 @@ from ..paths import (ATTACH_STATE, COSMETIC_STATE, CUSTOMIZE_STATE, INV_STATE,
 
 
 # ---- DSH_GWE_INV_V1 : 拥有的物品清单改写（/api/Progression/inventory） ----
-def customize_rewrite(plain, spec=None):
-    """按 runtime/customize_inject.json 改写 L2（每把武器的改装槽快照）。
+def customize_rewrite(plain, spec=None, unlock_all_enabled=False):
+    """改写 L2（/api/Progression/Items/Customize/v2，每把武器的改装槽快照）。
 
-    配置示例：
+    两条来源，可叠加：
+    1. `runtime/customize_inject.json`（研究开关，默认关）：按 edits 改槽位；
+    2. `unlock_all_enabled=True`（一键解锁全部物品）：给所有**可改装武器**补空槽条目
+       （alpha.4 起；空白号该响应是 `{"items":[]}`，主号是 74 条 —— 缺按钮的头号原因）。
+
+    `spec` 配置示例：
         {"enabled": true,
          "edits": [
            {"mixId": 2112173638,
@@ -28,18 +33,19 @@ def customize_rewrite(plain, spec=None):
             "baseSlots": [0, 0, 0, 0, 0, 0, 0, 0]  # createIfMissing 时新建条目用的 8 槽
            }]}
 
-    返回 (new_body, 改动槽数)；无改动时 (None, 0)。
+    返回 (new_body, 改动数)；无改动时 (None, 0)。
     """
     if spec is None:
         try:
             cfg = json.loads(CUSTOMIZE_STATE.read_text(encoding="utf-8"))
         except Exception:
-            return None, 0
+            cfg = {}
     else:
         cfg = spec
     if not isinstance(cfg, dict):
-        return None, 0
-    if not cfg.get("enabled"):
+        cfg = {}
+    plan_on = bool(cfg.get("enabled"))
+    if not (plan_on or unlock_all_enabled):
         return None, 0
     try:
         doc = json.loads(plain)
@@ -59,7 +65,7 @@ def customize_rewrite(plain, spec=None):
 
     changed = 0
     touched = []
-    for edit in (cfg.get("edits") or []):
+    for edit in (cfg.get("edits") or []) if plan_on else []:
         if not isinstance(edit, dict):
             continue
         try:
@@ -109,9 +115,17 @@ def customize_rewrite(plain, spec=None):
                     changed += 1
         touched.append(mix)
 
+    # 一键解锁全部物品（v0.10.1-alpha.4）：给所有可改装武器补空槽条目
+    if unlock_all_enabled:
+        from .. import unlock_all
+        ua_added = unlock_all.inject_customizations(doc)
+        if ua_added:
+            changed += ua_added
+            log("UNLOCK 改装条目 +%d（按运行期目录里带附件的武器展开）" % ua_added)
+
     if not changed:
         return None, 0
-    if cfg.get("logEdits", True):
+    if plan_on and touched and cfg.get("logEdits", True):
         log("CUSTOMIZE plan applied to mixId(s) %s" % ",".join(str(m) for m in touched))
     return json.dumps(doc, separators=(",", ":")).encode("utf-8"), changed
 
@@ -129,6 +143,7 @@ def inventory_rewrite(plain, spec=None):
 
     返回 (new_body, added, removed)；没有改动时返回 (None, 0, 0)。
     只动 items / customization 两个数组，其余字段原样保留。
+    `added` 含一键解锁补的**库存行 + 改装条目**（alpha.4 起；两者日志分别打点）。
     """
     if spec is None:
         states = []
@@ -240,6 +255,11 @@ def inventory_rewrite(plain, spec=None):
             if ua_skipped:
                 log("UNLOCK 库存接近上限（%d）：本次跳过 %d 行"
                     % (unlock_all.INVENTORY_CAP, ua_skipped))
+        # v0.10.1-alpha.4：改装条目（本响应里的扁平 customization[]，空白号只有 1 条）
+        ua_cust = unlock_all.inject_inventory_customizations(doc)
+        if ua_cust:
+            added += ua_cust
+            log("UNLOCK 改装条目 +%d（inventory.customization）" % ua_cust)
 
     if not (added or removed):
         return None, 0, 0

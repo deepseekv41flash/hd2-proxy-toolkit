@@ -43,7 +43,8 @@ def _log_unlock_all(spec):
     if not isinstance(st, dict) or not st.get("enabled"):
         return
     scope = ",".join(st.get("scope") or [])
-    log("一键解锁全部物品（仅本机视图）：运行时按客户端目录展开 + 舰船模块 6 条包等级置满%s"
+    log("一键解锁全部物品（仅本机视图）：运行时按客户端目录展开 + 舰船模块 6 条包等级置满"
+        " + 可改装武器补空槽改装条目%s"
         % (("；范围 " + scope) if scope else ""), audit=True)
 
 
@@ -419,10 +420,10 @@ class Proxy:
                         rewrite_added = inv_added + inv_removed
                         dropped_encoding = was_gz
                         self.stats["rewrite"] += 1
-                        log("INV REWRITE +%d -%d items%s"
+                        log("INV REWRITE +%d -%d 行%s"
                             % (inv_added, inv_removed, " [from gzip]" if was_gz else ""),
                             audit=True)
-                        self._note("inventory", "+%d -%d items" % (inv_added, inv_removed))
+                        self._note("inventory", "+%d -%d 行" % (inv_added, inv_removed))
 
                 elif (not self.mod.passthrough) and paths.ITEMS_PATH in path and rbody:
                     # DSH_GWE_ITEMS_V1：往服务端物品目录里补一条（克隆同族记录，改 itemId/mixId）
@@ -452,9 +453,12 @@ class Proxy:
 
                 elif (not self.mod.passthrough) and paths.CUSTOMIZE_PATH in path and rbody:
                     # DSH-GWE-CUSTOMIZE-V1：L2 改装槽快照改写（见 _gwe_customize_rewrite）
+                    # v0.10.1-alpha.4：一键解锁时给所有可改装武器补空槽条目（空白号该响应是空数组）
                     plain, was_gz = httpio.maybe_gunzip(rbody, rhdrs)
                     try:
-                        new_body, cz_hits = inventory.customize_rewrite(plain, spec=self._customize_spec())
+                        new_body, cz_hits = inventory.customize_rewrite(
+                            plain, spec=self._customize_spec(),
+                            unlock_all_enabled=self._unlock_all_enabled())
                     except Exception as e:
                         log("customize rewrite failed: %r" % e)
                         new_body, cz_hits = None, 0
@@ -463,9 +467,9 @@ class Proxy:
                         rewrite_added = cz_hits
                         dropped_encoding = was_gz
                         self.stats["rewrite"] += 1
-                        log("CUSTOMIZE REWRITE %d slot(s)%s"
+                        log("CUSTOMIZE REWRITE +%d entry/slot(s)%s"
                             % (cz_hits, " [from gzip]" if was_gz else ""), audit=True)
-                        self._note("customize", "%d slot(s)" % cz_hits)
+                        self._note("customize", "+%d entry/slot(s)" % cz_hits)
 
                 # G2 存档层：身份/目录记录 + Progression 根响应合并
                 # 与上面的「配置驱动改写链」正交：只认精确根路径 `/api/Progression`，
