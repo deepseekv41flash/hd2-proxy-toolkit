@@ -389,6 +389,11 @@ def _cli_args(**kw):
 
 def test_cli_hosts_status_and_off(tmp_path, monkeypatch, capsys):
     from hd2proxy import __main__ as cli
+    from hd2proxy.engine import sysprobe
+
+    # CI runner 本身就是管理员（GitHub windows-latest 以 admin 跑），
+    # 不强制"非管理员"的话会直接走写入分支，测不到 UAC 取消路径。
+    monkeypatch.setattr(sysprobe, "is_admin", lambda: False)
 
     hp = tmp_path / "hosts"
     hp.write_text("127.0.0.1  localhost\n"
