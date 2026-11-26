@@ -101,13 +101,16 @@ def pick_crl_port(preferred=CDP_PORT_DEFAULT, fallbacks=CRL_PORT_FALLBACKS):
 
     为什么需要：有 8080 落在 Hyper-V / WSL / Docker 的保留端口段（`netsh int ipv4 show
     excludedportrange protocol=tcp`），bind 会直接给 **WinError 10013**；以前这个异常
-    会把整个引擎带崩（2026-11-27 有用户报到）。返回 ``(port, err)``；全不可用返回 ``(None, err)``。
+    会把整个引擎带崩（2026-11-27 有用户报到）。
+
+    返回 ``(port, why)``：``why`` 是**首选端口绑不上的原因**（首选可用时为 None）——
+    日志要能说清"为什么换"，不能只说"换了"。全不可用返回 ``(None, 全部尝试)``。
     """
     tried = []
     for p in (preferred, *fallbacks):
         ok, err = _try_bind(p)
         if ok:
-            return int(p), None
+            return int(p), ("; ".join(tried) or None)
         tried.append("%s(%s)" % (p, getattr(err, "winerror", None) or err))
     return None, "; ".join(tried)
 

@@ -284,10 +284,19 @@ def test_pick_crl_port_skips_blocked_preferred():
     probe[0].close()
     free_port = probe[1]
     try:
-        picked, err = certs.pick_crl_port(busy_port, (free_port,))
-        assert (picked, err) == (free_port, None)
+        picked, why = certs.pick_crl_port(busy_port, (free_port,))
+        assert picked == free_port
+        assert why and str(busy_port) in why, "降级必须说清首选为什么不可用（不能只印 None）"
     finally:
         busy.close()
+
+
+def test_pick_crl_port_passes_through_when_preferred_free():
+    probe = _occupy()
+    probe[0].close()
+    port = probe[1]
+    picked, why = certs.pick_crl_port(port, (18080,))
+    assert (picked, why) == (port, None), "首选可用时不该有降级原因"
 
 
 def test_pick_crl_port_all_blocked_returns_none():

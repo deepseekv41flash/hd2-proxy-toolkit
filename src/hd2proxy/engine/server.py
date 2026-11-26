@@ -846,8 +846,7 @@ def main(argv=None):
         elif int(_picked) != int(_want_crl):
             crl_port = int(_picked)
             cfg["crlPort"] = crl_port
-            log("CRL 端口 %d 不可绑（%s）→ 改用 %d"
-                % (_want_crl, _crl_err, crl_port), audit=True)
+            log("CRL 端口不可绑（%s）→ 改用 %d" % (_crl_err, crl_port), audit=True)
             if auto_renew:
                 log("   证书将按新端口重签（CRL 分发点跟随端口）", audit=True)
             else:
