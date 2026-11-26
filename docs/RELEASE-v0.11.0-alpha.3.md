@@ -73,17 +73,22 @@ PermissionError: [WinError 10013] 以一种访问权限不允许的方式做了�
 
 ## 已经遇到这个错、但暂时不想升级的处置
 
-```bat
-netsh int ipv4 show excludedportrange protocol=tcp
-```
+**先说结论：旧版没有可靠的本地绕过办法。** 旧版把 CRL 分发点（CDP）写死成
+`http://127.0.0.1:8080/ca.crl`，所以「把 `proxy.crl_port` 改成 18080 再重签证书」也救不了 ——
+证书仍指向 8080（没人监听），Schannel 一样拒绝握手。旧版只有两条路：
 
-看 8080 是否在保留段里；是的话：
-
-1. 打开 `%LOCALAPPDATA%\HD2ProxyStudio\profiles\default.json`，把 `proxy.crl_port` 改成 `18080`；
-2. **必须在 GUI 里点一次「签发 / 续期证书」**（旧版证书的 CDP 写死 8080，不重签换了端口也没用）；
-3. 再启动引擎。
+1. **把 8080 让出来**（管理员，会让 Hyper-V/WSL 的保留段重新分配）：
+   ```bat
+   net stop winnat
+   ```
+   然后启动引擎；能连上后再 `net start winnat`（Docker Desktop / WSL 重启后可能又占回去）。
+   先确认 8080 确实在保留段里：
+   ```bat
+   netsh int ipv4 show excludedportrange protocol=tcp
+   ```
+2. **升级到本版**（推荐）：引擎自己换端口、自己按新端口重签、CRL 绑不上也不再崩。
 
 ## 部署说明
 
-`D:\mod\release-test\current` 会在确认没有 `hd2proxy*` 进程运行时再同步到本版。
-在那之前想立刻用上 → 解压 `dist/hd2proxy-toolkit-v0.11.0-alpha.3-windows-x64.zip` 到任意目录运行。
+`D:\mod\release-test\current` 已同步到本版；想自己用 → 解压
+`dist/hd2proxy-toolkit-v0.11.0-alpha.3-windows-x64.zip` 到任意目录运行。
