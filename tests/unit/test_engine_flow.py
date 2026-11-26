@@ -386,6 +386,52 @@ def test_engine_profile_control_flow(tmp_path):
                     proc.kill()
 
 
+def test_engine_starts_when_crl_port_is_blocked(tmp_path):
+    """★ 现场回归（2026-11-27）：8080 绑不上时引擎必须照常起来，而不是当场崩。
+
+    原状：`serve_crl` 的 `PermissionError [WinError 10013]` 直接冒到 `cmd_engine`，
+    进程死掉 → GUI 只显示「引擎启动失败：进程退出或 30 秒内未就绪」。
+    修复后：自动换到备用 CRL 端口继续服务，并把**实际端口**写进 engine.json。
+    """
+    state_file = tmp_path / "state" / "engine.json"
+    cert_dir = tmp_path / "certs"
+    busy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    busy.bind(("127.0.0.1", 0))
+    busy.listen(4)
+    busy_port = busy.getsockname()[1]
+    try:
+        # 证书按「被占的那个端口」签发，模拟现场：配置里写 8080，8080 却绑不上
+        certs.generate_session(cert_dir, host=HOST, days=1, force=True, crl_port=busy_port)
+        _write_hosts(tmp_path / "hosts")
+        _certutil_stub(tmp_path)
+        port, ctl_port = (free_port() for _ in range(2))
+        profile_path = _make_profile(tmp_path, port=port, crl_port=busy_port,
+                                     control_port=ctl_port, content=False)
+        proc = start_engine(tmp_path, profile_path, cert_dir, port, ctl_port)
+        try:
+            state = wait_engine(state_file)          # 引擎崩了这里就 AssertionError
+            assert state["crl_port"] != busy_port, "占用端口不可能绑成功"
+            assert state["crl_port"] in (certs.CDP_PORT_DEFAULT,) + certs.CRL_PORT_FALLBACKS
+            assert api(state_file, "/status")["crl_port"] == state["crl_port"]
+            # CRL 真的在新的端口上服务（Schannel 取不到会拒绝握手）
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            with opener.open("http://127.0.0.1:%d/ca.crl" % state["crl_port"],
+                             timeout=5) as r:
+                assert r.status == 200
+                assert r.read() == (cert_dir / "ca.crl").read_bytes()
+            api(state_file, "/shutdown", method="POST", body={})
+            assert proc.wait(15) == 0
+        finally:
+            if proc.poll() is None:
+                proc.terminate()
+                try:
+                    proc.wait(5)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+    finally:
+        busy.close()
+
+
 def test_engine_save_layer_rewrites_progression(tmp_path):
     """G2 端到端：存档 earned 合并进 `/api/Progression` + 会话基准/pending + /status 暴露。"""
     state_file = tmp_path / "state" / "engine.json"

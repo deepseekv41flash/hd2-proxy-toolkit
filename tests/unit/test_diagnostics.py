@@ -195,6 +195,31 @@ def test_listen_candidates_sorted_and_recommended(monkeypatch):
     assert rows[0]["recommended"] is True and rows[1]["is_virtual"] is True
 
 
+def test_collect_prefers_running_engine_actual_crl_port(tmp_path, monkeypatch):
+    """引擎因保留端口段换了 CRL 端口时，诊断页要以 engine.json 的实际端口为准。
+
+    profile 里仍是旧值 8080；引擎自报 18080 —— 拿 8080 去查只会显示「空闲/冲突」，
+    把人往「端口被占」的错方向引（2026-11-27 用户报障的同一处矛盾）。
+    """
+    state = tmp_path / "engine.json"
+    state.write_text(json.dumps({"pid": 4321, "crl_port": 18080}), encoding="utf-8")
+    monkeypatch.setattr(diagnostics.sysprobe, "resolve_listen_ip", lambda value: "10.0.0.2")
+    seen = []
+
+    def _port_state(ip, port, own):
+        seen.append(port)
+        return {"ip": ip, "port": port, "state": "ours", "wildcard": False, "owners": []}
+
+    monkeypatch.setattr(diagnostics.sysprobe, "port_state", _port_state)
+    snap = diagnostics.collect({"proxy": {"port": 443, "crl_port": 8080}},
+                              cert_dir=tmp_path / "nope", state_file=state,
+                              own_pids={4321})
+    assert 8080 not in seen, "引擎在跑时不能拿 profile 的旧 CRL 端口去查"
+    assert 18080 in seen
+    crl_rows = [row for row in snap["ports"] if row["role"] == "CRL"]
+    assert [row["port"] for row in crl_rows] == [18080]
+
+
 def test_port_preflight_reports_conflicts(monkeypatch):
     monkeypatch.setattr(diagnostics.sysprobe, "resolve_listen_ip", lambda value: "10.0.0.2")
     monkeypatch.setattr(diagnostics.sysprobe, "port_state", lambda ip, port, own: {

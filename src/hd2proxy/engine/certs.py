@@ -21,6 +21,27 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
+
+from .logutil import log
+
+# ---- CRL 分发端口（2026-11-27：CDP 必须跟随**真正监听**的端口） ----------------
+# 有机器上 8080 落在 Hyper-V/WSL/Docker 的保留段里，bind 直接给 WinError 10013；
+# 那时既要用别的端口服务 CRL，又必须把新端口写进证书（见 pick_crl_port / cdp_url）。
+CDP_PORT_DEFAULT = 8080
+CDP_URL = "http://127.0.0.1:%d/ca.crl" % CDP_PORT_DEFAULT     # 兼容旧引用（仅默认端口）
+CRL_PORT_FALLBACKS = (18080, 28080, 38080, 48080)
+
+
+def cdp_url(port=CDP_PORT_DEFAULT) -> str:
+    """证书里的 CRL 分发点地址（**必须与实际服务端口一致**，否则 Schannel 取不到 CRL）。"""
+    try:
+        p = int(port) or CDP_PORT_DEFAULT
+    except (TypeError, ValueError):
+        p = CDP_PORT_DEFAULT
+    return "http://127.0.0.1:%d/ca.crl" % p
 
 
 # ---- 有效期策略（2026-11-25 与 research 线双端定案） --------------------------
@@ -50,11 +71,6 @@ def clamp_days(days, max_days=None) -> int:
     except (TypeError, ValueError):
         want = MAX_DAYS_DEFAULT
     return max(1, min(want, effective_max_days(max_days), MAX_DAYS_HARD))
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
-
-from .logutil import log
 
 
 def _session_mode(cert_dir):
@@ -66,11 +82,56 @@ def _session_mode(cert_dir):
         return "leaf"
 
 
-def serve_crl(cert_dir, port=8080):
-    """在本机 8080 提供 ca.crl。
+def _try_bind(port):
+    """能不能在 127.0.0.1:port 上监听（立刻释放）。返回 (ok, err)。"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+    try:
+        s.bind(("127.0.0.1", int(port)))
+        return True, None
+    except OSError as e:
+        return False, e
+    finally:
+        s.close()
+
+
+def pick_crl_port(preferred=CDP_PORT_DEFAULT, fallbacks=CRL_PORT_FALLBACKS):
+    """挑一个**能真正监听**的 CRL 端口：先试配置值，再试 18080/28080/38080/48080。
+
+    为什么需要：有 8080 落在 Hyper-V / WSL / Docker 的保留端口段（`netsh int ipv4 show
+    excludedportrange protocol=tcp`），bind 会直接给 **WinError 10013**；以前这个异常
+    会把整个引擎带崩（2026-11-27 有用户报到）。返回 ``(port, err)``；全不可用返回 ``(None, err)``。
+    """
+    tried = []
+    for p in (preferred, *fallbacks):
+        ok, err = _try_bind(p)
+        if ok:
+            return int(p), None
+        tried.append("%s(%s)" % (p, getattr(err, "winerror", None) or err))
+    return None, "; ".join(tried)
+
+
+def _resolve_crl_port(crl_port=None):
+    """把 ``None`` / ``0`` 解析成**当前真能监听**的端口（签发时用）。
+
+    签发与运行必须是同一个端口：证书里的 CDP 写死了端口，服务却听在别处，
+    Schannel 一样取不到 CRL。全不可用时退回默认值（让 serve_crl 去告警）。
+    """
+    if crl_port:
+        return int(crl_port)
+    port, _err = pick_crl_port(CDP_PORT_DEFAULT)
+    return int(port) if port else CDP_PORT_DEFAULT
+
+
+def serve_crl(cert_dir, port=CDP_PORT_DEFAULT):
+    """在 ``127.0.0.1:<port>`` 提供 ca.crl（默认 8080）。
 
     Windows Schannel 看到证书里的 CDP 就会去取；取不到就报
     CRYPT_E_NO_REVOCATION_CHECK 并拒绝握手，所以这个服务是必需的。
+
+    **绑不上不许抛**：WinError 10013（权限 / Hyper-V·WSL·Docker 的保留端口段）曾把整个引擎
+    带崩（2026-11-27 用户报障）。这里降级成一条带处置建议的告警，引擎继续跑。
     """
     crl = Path(cert_dir) / "ca.crl"
     if not crl.exists():
@@ -93,10 +154,19 @@ def serve_crl(cert_dir, port=8080):
         def log_message(self, *a):
             pass
 
-    srv = ThreadingHTTPServer(("127.0.0.1", port), H)
+    srv = None
+    try:
+        srv = ThreadingHTTPServer(("127.0.0.1", int(port)), H)
+    except OSError as e:                          # 典型：WinError 10013 权限/保留段拒绝
+        log("⚠ CRL 服务绑不上 127.0.0.1:%d（%r）—— 引擎继续启动"
+            % (int(port), e), audit=True)
+        log("   → 看保留端口段：netsh int ipv4 show excludedportrange protocol=tcp")
+        log("   → 或改 profile 的 proxy.crl_port 后重开引擎（证书会按新端口重签）")
+        log("   Schannel 取不到 CRL 时会拒绝握手（CRYPT_E_NO_REVOCATION_CHECK）")
+        return None
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()
-    log("CRL server on http://127.0.0.1:%d/ca.crl (%d B)" % (port, crl.stat().st_size))
+    log("CRL server on %s (%d B)" % (cdp_url(port), crl.stat().st_size))
     return srv
 
 
@@ -173,16 +243,13 @@ def write_key(path: Path, key):
         pass
 
 
-CDP_URL = "http://127.0.0.1:8080/ca.crl"
-
-
-def add_crl_extensions(builder, is_ca: bool):
+def add_crl_extensions(builder, is_ca: bool, crl_port=CDP_PORT_DEFAULT):
     """给证书加吊销检查点：没有 CDP 时 Windows Schannel 直接报
     CRYPT_E_NO_REVOCATION_CHECK（0x80092012）并拒绝握手。"""
     b = builder.add_extension(
         x509.CRLDistributionPoints([
             x509.DistributionPoint(
-                full_name=[x509.UniformResourceIdentifier(CDP_URL)],
+                full_name=[x509.UniformResourceIdentifier(cdp_url(crl_port))],
                 relative_name=None, reasons=None, crl_issuer=None),
         ]), critical=False)
     if not is_ca:
@@ -190,12 +257,13 @@ def add_crl_extensions(builder, is_ca: bool):
             x509.AuthorityInformationAccess([
                 x509.AccessDescription(
                     x509.oid.AuthorityInformationAccessOID.CA_ISSUERS,
-                    x509.UniformResourceIdentifier(CDP_URL)),
+                    x509.UniformResourceIdentifier(cdp_url(crl_port))),
             ]), critical=False)
     return b
 
 
-def leaf_cert(host: str, pub, issuer_name, issuer_key, days: int, is_self: bool):
+def leaf_cert(host: str, pub, issuer_name, issuer_key, days: int, is_self: bool,
+              crl_port=CDP_PORT_DEFAULT):
     now = datetime.now(timezone.utc)
     b = (
         x509.CertificateBuilder()
@@ -220,16 +288,18 @@ def leaf_cert(host: str, pub, issuer_name, issuer_key, days: int, is_self: bool)
         b = b.add_extension(
             x509.AuthorityKeyIdentifier.from_issuer_public_key(issuer_key.public_key()),
             critical=False)
-        b = add_crl_extensions(b, False)
+        b = add_crl_extensions(b, False, crl_port)
+    # 自签叶（leaf 模式）**故意不加 CDP**：没有 CA 就没有 ca.crl，加了只会指向一个 404，
+    # 让 Schannel 在吊销检查上卡死。leaf 模式本来过不了 preflight（只认 ca 模式）。
     return b.sign(issuer_key, hashes.SHA256())
 
 
-def build_leaf_mode(host: str, out: Path, days: int):
+def build_leaf_mode(host: str, out: Path, days: int, crl_port=CDP_PORT_DEFAULT):
     days = max(1, min(int(days), MAX_DAYS_HARD))   # 硬上限兜底（不套默认 2 天）
     key = new_key()
     cert = leaf_cert(host, key.public_key(), x509.Name(
         [x509.NameAttribute(NameOID.COMMON_NAME, host + " (local session)")]),
-        key, days, True)
+        key, days, True, crl_port)
     write_key(out / "server.key", key)
     (out / "server.pem").write_bytes(cert.public_bytes(serialization.Encoding.PEM))
     (out / "server.chain.pem").write_bytes(cert.public_bytes(serialization.Encoding.PEM))
@@ -239,7 +309,7 @@ def build_leaf_mode(host: str, out: Path, days: int):
     return cert, cert
 
 
-def build_ca_mode(host: str, out: Path, days: int):
+def build_ca_mode(host: str, out: Path, days: int, crl_port=CDP_PORT_DEFAULT):
     days = max(1, min(int(days), MAX_DAYS_HARD))   # 硬上限兜底（不套默认 2 天）
     ca_key = new_key()
     now = datetime.now(timezone.utc)
@@ -261,10 +331,10 @@ def build_ca_mode(host: str, out: Path, days: int):
             encipher_only=False, decipher_only=False), critical=True)
         .add_extension(x509.SubjectKeyIdentifier.from_public_key(ca_key.public_key()),
                        critical=False)
-        .sign(ca_key, hashes.SHA256())
     )
+    ca = add_crl_extensions(ca, True, crl_port).sign(ca_key, hashes.SHA256())
     leaf_key = new_key()
-    leaf = leaf_cert(host, leaf_key.public_key(), ca.subject, ca_key, days, False)
+    leaf = leaf_cert(host, leaf_key.public_key(), ca.subject, ca_key, days, False, crl_port)
     write_key(out / "server.key", leaf_key)
     (out / "server.pem").write_bytes(leaf.public_bytes(serialization.Encoding.PEM))
     (out / "server.chain.pem").write_bytes(
@@ -328,8 +398,9 @@ def describe(leaf, mode: str, host: str, anchor=None):
     return report
 
 
-def existing_ok(out: Path, host: str, days: int):
-    """已有会话证书是否还能用：SAN 唯一、有效期够、自检 OK、密钥在。"""
+def existing_ok(out: Path, host: str, days: int, crl_port=None):
+    """已有会话证书是否还能用：SAN 唯一、有效期够、自检 OK、密钥在、**CRL 端口一致**。"""
+    crl_port = _resolve_crl_port(crl_port)
     session = out / "session.json"
     if not session.exists() or not (out / "server.key").exists():
         return None
@@ -338,6 +409,9 @@ def existing_ok(out: Path, host: str, days: int):
     except Exception:
         return None
     if info.get("san_dns") != [host] or info.get("self_check") != "OK":
+        return None
+    # CRL 分发点端口变了就必须重签（否则证书里的 CDP 指向一个没人监听的端口）
+    if int(info.get("crl_port") or CDP_PORT_DEFAULT) != int(crl_port or CDP_PORT_DEFAULT):
         return None
     try:
         cert = x509.load_pem_x509_certificate((out / "anchor.pem").read_bytes())
@@ -433,26 +507,30 @@ def _cert_warnings(info, remaining, trusted=None):
 
 
 def generate_session(cert_dir, host=DEFAULT_HOST, days=2, max_days=None,
-                     force=False, mode="ca") -> dict:
+                     force=False, mode="ca", crl_port=None) -> dict:
     """签发（或复用）一次会话证书。等价于原 tools/gen_session_certs.py 的主流程。
 
     安全约束：ca 模式 / SAN 单域名 / 签完删 CA 私钥 / 无多余私钥；
     有效期默认 2 天，显式传 ``max_days`` 才放宽（硬上限 7 天不可突破，见 :func:`clamp_days`）。
+    ``crl_port`` 不传就走 :func:`_resolve_crl_port`（挑真能监听的端口），
+    保证证书里的 CRL 分发点等于引擎实际提供 CRL 的端口。
     返回 report dict；失败抛 RuntimeError。
     """
     days = clamp_days(days, max_days)
+    crl_port = _resolve_crl_port(crl_port)
     out = Path(cert_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)
     if not force:
-        old = existing_ok(out, host, days)
+        old = existing_ok(out, host, days, crl_port=crl_port)
         if old:
             return old
     if mode == "leaf":
-        leaf, anchor = build_leaf_mode(host, out, days)
+        leaf, anchor = build_leaf_mode(host, out, days, crl_port=crl_port)
     else:
-        leaf, anchor = build_ca_mode(host, out, days)
+        leaf, anchor = build_ca_mode(host, out, days, crl_port=crl_port)
     report = describe(leaf, mode, host, anchor)
     report["host"] = host
+    report["crl_port"] = int(crl_port)
     report["created"] = datetime.now(timezone.utc).isoformat()
     report["files"] = sorted(p.name for p in out.iterdir() if p.is_file())
     stray = [p.name for p in out.iterdir() if p.name.endswith(".key") and p.name != "server.key"]
@@ -495,20 +573,22 @@ def _record_ca_history(cert_dir, old_thumb: str, new_thumb: str) -> None:
 
 
 def ensure_session(cert_dir, host=DEFAULT_HOST, days=2, max_days=None,
-                   min_remaining_hours=12.0, force=False) -> dict:
-    """启动前保证证书可用：缺失/过期/剩余不足 → 自动重签；否则复用。
+                   min_remaining_hours=12.0, force=False, crl_port=None) -> dict:
+    """启动前保证证书可用：缺失/过期/剩余不足/**CRL 端口变了** → 自动重签；否则复用。
 
     返回 {"action": "reused"|"generated", "report": {...}, "remaining_hours": float}
     """
     cert_dir = Path(cert_dir)
+    crl_port = _resolve_crl_port(crl_port)
     remaining = session_remaining_hours(cert_dir)
     usable = remaining is not None and remaining > min_remaining_hours
-    if usable and not force and existing_ok(cert_dir, host, days):
+    if usable and not force and existing_ok(cert_dir, host, days, crl_port=crl_port):
         return {"action": "reused", "report": cert_status(cert_dir),
                 "remaining_hours": remaining}
     before = cert_status(cert_dir)
     old_thumb = str(before.get("thumbprint") or "") if before.get("exists") else ""
-    report = generate_session(cert_dir, host=host, days=days, max_days=max_days, force=True)
+    report = generate_session(cert_dir, host=host, days=days, max_days=max_days, force=True,
+                              crl_port=crl_port)
     new_thumb = str((report or {}).get("thumbprint_sha1")
                     or (report or {}).get("thumbprint") or "")
     if new_thumb and new_thumb != old_thumb:

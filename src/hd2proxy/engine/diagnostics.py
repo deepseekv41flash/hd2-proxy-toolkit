@@ -35,17 +35,23 @@ PORT_DEFAULTS = (
 # --------------------------------------------------------------------------- #
 # 采集
 # --------------------------------------------------------------------------- #
+def engine_state(state_file: Path | None = None) -> dict:
+    """读 engine.json（GUI/CLI 的发现入口）；读不到 / 坏掉就给空 dict。"""
+    path = Path(state_file) if state_file else paths.engine_state_file()
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
 def own_engine_pids(state_file: Path | None = None) -> set[int]:
     """本工具引擎的 PID（从 engine.json 读，且进程还活着才算）。
 
     端口预检必须排除它：引擎已在跑时 443 显示「被占用」是正常状态，不能报冲突。
     """
-    path = Path(state_file) if state_file else paths.engine_state_file()
+    doc = engine_state(state_file)
     pids: set[int] = set()
-    try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return pids
     for key in ("pid", "control_pid"):
         try:
             pid = int(doc.get(key) or 0)
@@ -126,6 +132,12 @@ def collect(profile: dict, cert_dir=None, own_pids=None, state_file=None) -> dic
 
     own = set(own_pids) if own_pids is not None else own_engine_pids(state_file)
     engine_running = bool(own)
+    # 引擎自报的实际 CRL 端口优先：8080 可能被系统保留段挡住，引擎已自动换端口
+    # （certs.pick_crl_port）。拿 profile 的旧值去查会显示「空闲/冲突」，把人引向错方向。
+    try:
+        eff_crl_port = int(engine_state(state_file).get("crl_port") or 0)
+    except (TypeError, ValueError):
+        eff_crl_port = 0
 
     ports: list[dict] = []
     if listen_ip:
@@ -134,6 +146,8 @@ def collect(profile: dict, cert_dir=None, own_pids=None, state_file=None) -> dic
                 port = int(proxy.get(key) or default)
             except (TypeError, ValueError):
                 port = default
+            if key == "crl_port" and engine_running and eff_crl_port:
+                port = eff_crl_port
             bind_ip = listen_ip if where == "listen" else where
             entry = sysprobe.port_state(bind_ip, port, own)
             entry.setdefault("ip", bind_ip)

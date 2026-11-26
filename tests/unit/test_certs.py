@@ -5,6 +5,8 @@
 """
 
 import json
+import socket
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -217,3 +219,133 @@ def test_profile_cert_days_validation():
     _, bad, _ = config.validate({"schema": 2, "name": "t", "cert": {"days": 8}})
     assert any("硬上限" in e for e in bad)
     assert config.default_profile()["cert"]["days"] == 2
+
+
+# ---- CRL 端口（v0.11.0-alpha.3）：CDP 跟随端口 / 端口降级 / 绑不上不崩 ----------
+#
+# 现场（2026-11-27 用户报障）：8080 落在 Hyper-V/WSL/Docker 的保留端口段里，
+# serve_crl 绑 127.0.0.1:8080 抛 PermissionError [WinError 10013]，
+# 异常冒到 cmd_engine 把整个引擎带崩（GUI 弹「引擎启动失败」）。三条护栏都在这里钉死。
+
+
+def _cdp_uris(pem_path):
+    """读证书里的 CRL 分发点（CDP）URI 列表。"""
+    from cryptography import x509
+    cert = x509.load_pem_x509_certificate(Path(pem_path).read_bytes())
+    ext = cert.extensions.get_extension_for_class(x509.CRLDistributionPoints)
+    return [n.value for d in ext.value for n in d.full_name]
+
+
+def _occupy(port=0):
+    """占住一个本机端口（返回 (sock, port)），模拟「8080 被保留段/别人挡住」。"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("127.0.0.1", port))
+    s.listen(4)
+    return s, s.getsockname()[1]
+
+
+def test_cdp_url_follows_port():
+    assert certs.cdp_url(8080) == "http://127.0.0.1:8080/ca.crl"
+    assert certs.cdp_url(18080) == "http://127.0.0.1:18080/ca.crl"
+    assert certs.cdp_url(0) == certs.cdp_url(certs.CDP_PORT_DEFAULT)   # 0/None → 默认端口
+    assert certs.cdp_url(None) == certs.cdp_url(certs.CDP_PORT_DEFAULT)
+    assert certs.CDP_PORT_DEFAULT == 8080
+    assert 8080 not in certs.CRL_PORT_FALLBACKS          # 降级表不能把首选混进去
+
+
+def test_certificates_carry_cdp_with_the_given_port(tmp_path):
+    """换端口签出来的证书，CDP 必须指向新端口（叶子与 CA 都要有）。"""
+    cert_dir = tmp_path / "certs"
+    report = certs.generate_session(cert_dir, host=HOST, days=1, force=True, crl_port=18080)
+    assert report["crl_port"] == 18080
+    assert json.loads((cert_dir / "session.json").read_text(encoding="utf-8"))["crl_port"] == 18080
+    assert _cdp_uris(cert_dir / "server.pem") == ["http://127.0.0.1:18080/ca.crl"]
+    assert _cdp_uris(cert_dir / "anchor.pem") == ["http://127.0.0.1:18080/ca.crl"]
+
+
+def test_leaf_mode_has_no_cdp_by_design(tmp_path):
+    """leaf 模式没有 CA 就没有 ca.crl：**故意不加 CDP**（加了只是指向 404）。
+
+    这条钉住「不要把 leaf 也加 CDP」——那是本轮改动的反例，别再来一次。
+    """
+    from cryptography import x509
+    cert_dir = tmp_path / "leafcerts"
+    certs.generate_session(cert_dir, host=HOST, days=1, force=True, mode="leaf",
+                           crl_port=28080)
+    cert = x509.load_pem_x509_certificate((cert_dir / "server.pem").read_bytes())
+    with pytest.raises(x509.extensions.ExtensionNotFound):
+        cert.extensions.get_extension_for_class(x509.CRLDistributionPoints)
+    assert not (cert_dir / "ca.crl").exists()
+
+
+def test_pick_crl_port_skips_blocked_preferred():
+    busy, busy_port = _occupy()
+    probe = _occupy()                 # 先占一个拿到端口号，再放掉当「空闲」备选
+    probe[0].close()
+    free_port = probe[1]
+    try:
+        picked, err = certs.pick_crl_port(busy_port, (free_port,))
+        assert (picked, err) == (free_port, None)
+    finally:
+        busy.close()
+
+
+def test_pick_crl_port_all_blocked_returns_none():
+    busy, busy_port = _occupy()
+    try:
+        picked, err = certs.pick_crl_port(busy_port, (busy_port,))
+        assert picked is None
+        assert err and str(busy_port) in err
+    finally:
+        busy.close()
+
+
+def test_serve_crl_returns_none_instead_of_raising(tmp_path):
+    """★ 回归点：端口被占/被保留时 serve_crl 必须返回 None，绝不能再抛出去带崩引擎。"""
+    certs.generate_session(tmp_path / "certs", host=HOST, days=1, force=True)
+    busy, busy_port = _occupy()
+    try:
+        assert certs.serve_crl(tmp_path / "certs", busy_port) is None
+    finally:
+        busy.close()
+
+
+def test_serve_crl_serves_the_crl(tmp_path):
+    certs.generate_session(tmp_path / "certs", host=HOST, days=1, force=True)
+    srv = certs.serve_crl(tmp_path / "certs", 0)          # 0 = 临时端口
+    assert srv is not None
+    try:
+        port = srv.server_address[1]
+        with urllib.request.urlopen("http://127.0.0.1:%d/ca.crl" % port, timeout=5) as r:
+            assert r.status == 200
+            assert r.read() == (tmp_path / "certs" / "ca.crl").read_bytes()
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_existing_ok_rejects_port_change(tmp_path):
+    """存下来的证书 CRL 端口和现在要用的不一致 → 视为不可用（强制重签）。"""
+    cert_dir = tmp_path / "certs"
+    certs.generate_session(cert_dir, host=HOST, days=1, force=True, crl_port=8080)
+    assert certs.existing_ok(cert_dir, HOST, 1, crl_port=8080) is not None
+    assert certs.existing_ok(cert_dir, HOST, 1, crl_port=18080) is None
+
+
+def test_ensure_session_resigns_when_port_changes(tmp_path):
+    cert_dir = tmp_path / "certs"
+    first = certs.ensure_session(cert_dir, host=HOST, days=1, crl_port=8080)
+    assert first["action"] == "generated"
+    again = certs.ensure_session(cert_dir, host=HOST, days=1, crl_port=18080)
+    assert again["action"] == "generated", "端口变了必须重签，否则证书 CDP 指向无人监听的端口"
+    info = json.loads((cert_dir / "session.json").read_text(encoding="utf-8"))
+    assert info["crl_port"] == 18080
+    reused = certs.ensure_session(cert_dir, host=HOST, days=1, crl_port=18080)
+    assert reused["action"] == "reused"
+
+
+def test_resolve_crl_port_defaults():
+    assert certs._resolve_crl_port(None) in ({certs.CDP_PORT_DEFAULT}
+                                             | set(certs.CRL_PORT_FALLBACKS))
+    assert certs._resolve_crl_port(18080) == 18080
+

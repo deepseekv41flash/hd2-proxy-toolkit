@@ -97,6 +97,9 @@ class ControlServer:
             "port": self.port,
             "url": "http://127.0.0.1:%d" % self.port,
             "token": self.token,
+            # 实际生效的 CRL 端口：8080 可能被保留端口段挡住而自动换成了别的（见 certs.pick_crl_port），
+            # 诊断页要以**这个**为准，不能拿 profile 里的旧值去判「端口空闲/冲突」。
+            "crl_port": int(getattr(self.ctx, "crl_port", 0) or 0),
             "started_at": _now(),
         }
 

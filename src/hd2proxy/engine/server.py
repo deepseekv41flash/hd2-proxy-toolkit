@@ -828,13 +828,38 @@ def main(argv=None):
     # ---- 3. 证书：按需自动续期 + preflight -----------------------------------
     cert_dir = Path(a.cert_dir)
     cert_dir.mkdir(parents=True, exist_ok=True)
+    # CRL 端口先探一次：8080 可能落在系统保留段里（Hyper-V / WSL / Docker），bind 会直接给
+    # WinError 10013。以前这个异常没人接，引擎当场崩掉（2026-11-27 有用户报障）。
+    # 端口定了才签证书 —— 证书里的 CRL 分发点（CDP）必须等于**真正监听**的端口。
     auto_renew = (spec.cert_auto_renew if spec is not None else False) and not a.no_auto_renew
+    if crl_port:
+        _want_crl = crl_port
+        try:
+            _picked, _crl_err = certs.pick_crl_port(crl_port)
+        except Exception as e:                    # noqa: BLE001 - 探测失败不算致命
+            _picked, _crl_err = crl_port, repr(e)
+        if _picked is None:
+            log("⚠ CRL 端口全部不可用（首选 %d：%s）—— 引擎继续启动，但客户端可能拒绝握手"
+                % (_want_crl, _crl_err), audit=True)
+            log("   → 看保留段：netsh int ipv4 show excludedportrange protocol=tcp", audit=True)
+            log("   → 或改 profile 的 proxy.crl_port（GUI 设置页）", audit=True)
+        elif int(_picked) != int(_want_crl):
+            crl_port = int(_picked)
+            cfg["crlPort"] = crl_port
+            log("CRL 端口 %d 不可绑（%s）→ 改用 %d"
+                % (_want_crl, _crl_err, crl_port), audit=True)
+            if auto_renew:
+                log("   证书将按新端口重签（CRL 分发点跟随端口）", audit=True)
+            else:
+                log("   ⚠ 自动续证已关闭：现有证书的 CRL 分发点仍是 %d —— 请重签一次"
+                    "（GUI「签发/续期证书」或 hd2proxy.exe certs renew）" % _want_crl, audit=True)
     if auto_renew:
         try:
             _days = (spec.cert_days if spec is not None else certs.MAX_DAYS_DEFAULT)
             r = certs.ensure_session(cert_dir, host=host, days=_days, max_days=_days,
                                      min_remaining_hours=(spec.cert_min_remaining_hours
-                                                          if spec is not None else 12.0))
+                                                          if spec is not None else 12.0),
+                                     crl_port=crl_port)
             log("证书 %s（剩余 %s 小时）"
                 % (r["action"], round(r.get("remaining_hours") or 0, 1)), audit=True)
         except Exception as e:
@@ -927,7 +952,13 @@ def main(argv=None):
         log("  端口被别的程序占了（旧代理/加速器/其它代理软件）。也可以换监听网卡。")
         return 3
     srv.listen(64)
-    crl_srv = certs.serve_crl(cert_dir, crl_port)
+    # CRL 服务是 Schannel 的必需项，但**绑不上绝不能把引擎带崩**（10013 只在个别人机器上出现，
+    # 为此丢掉整个引擎毫无意义）：serve_crl 内部已降级成告警，这里再兜一层。
+    try:
+        crl_srv = certs.serve_crl(cert_dir, crl_port)
+    except Exception as e:                        # noqa: BLE001 - 兜底，绝不外抛
+        crl_srv = None
+        log("⚠ CRL 服务启动失败（%r）—— 引擎继续运行" % (e,), audit=True)
 
     ctx = EngineContext(proxy, mod, spec, cert_dir=cert_dir, host=host,
                         listen_ip=listen_ip, port=port, crl_port=crl_port,
