@@ -118,6 +118,7 @@ class OverviewPage(Page):
             self.card_stats[1].configure(text="0")
             self.card_capture[1].configure(text="关", fg=theme.MUTED)
             theme.fill_table(self.events, [])
+            self._render_hosts_line(self._snapshot, self._evaluation)
             return
         mode = "直通" if status.get("mode") == "passthrough" else "改写"
         self.card_engine[1].configure(text=mode, fg=theme.FG if mode == "改写" else theme.GOLD)
@@ -149,6 +150,8 @@ class OverviewPage(Page):
         for ev in reversed(status.get("rewrites") or []):
             rows.append((ev.get("ts", "")[-8:], ev.get("kind", ""), ev.get("detail", "")))
         theme.fill_table(self.events, rows)
+        # 引擎启停会改变 hosts 行该说的话（"连不上" vs "代理生效中"），这里跟着刷
+        self._render_hosts_line(self._snapshot, self._evaluation)
 
     def refresh(self):
         self.on_status(self.app.last_status)
@@ -193,11 +196,24 @@ class OverviewPage(Page):
             self.warn_lbl.pack(fill="x", padx=22, pady=(10, 0), before=self.events.master)
             self._warn_shown = True
 
+    def _engine_running(self):
+        """引擎是否在跑 —— 以 `client.running()` 为准（2026-11-26 实机 bug：
+
+        `status["mode"]` 在改写模式下是**缺省/None**，拿它判会得出"引擎未运行"，
+        于是底栏显示"引擎运行中"、hosts 行却报"未运行"，自相矛盾。
+        """
+        try:
+            if self.app.client.running():
+                return True
+        except Exception:                       # noqa: BLE001 - 客户端缺方法时退回状态
+            pass
+        return bool(self.app.last_status)
+
     def _render_hosts_line(self, snapshot, evaluation):
         """一行说清 hosts 现在指哪、以及"引擎没开就连不上"这个坑。"""
         h = (snapshot or {}).get("hosts") or {}
         state = h.get("state")
-        running = bool((self.app.last_status or {}).get("mode"))
+        running = self._engine_running()
         if state == "ok":
             if running:
                 self.hosts_lbl.configure(

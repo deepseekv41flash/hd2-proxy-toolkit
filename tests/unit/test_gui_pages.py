@@ -1124,3 +1124,36 @@ def test_inventory_save_tab_level_editor(inv_page, app, monkeypatch, tmp_path):
     # 清除覆盖 → 经验归 0
     inv_page._clear_level()
     assert saves.ledger_experience(root=tmp_path)["experience"] == 0
+
+
+def test_overview_hosts_line_tracks_engine_running(root, app, monkeypatch):
+    """回归（2026-11-26 实机 bug）：底栏"引擎运行中"时，hosts 行不许再说"引擎未运行"。
+
+    根因：`status["mode"]` 在改写模式下缺省 ⇒ 用它判运行态会得出未运行。
+    """
+    from hd2proxy.engine import diagnostics as diag_mod
+
+    snap = _diag_snapshot()
+    snap["hosts"] = {"state": "ok", "ip": "100.67.88.219",
+                     "expected_ip": "100.67.88.219", "commented": False,
+                     "line": "100.67.88.219 api.live.prod.theliberatorsgame.com # hd2proxy",
+                     "comment_prefix": ""}
+    monkeypatch.setattr(diag_mod, "collect", lambda *a, **k: snap)
+    monkeypatch.setattr(diag_mod, "evaluate", lambda s: {"ok": True, "errors": [], "warnings": []})
+
+    page = _make(OverviewPage, root, app)
+
+    # 引擎没跑：红字提示"连不上"
+    app.client.running_flag = False
+    app.last_status = None
+    page.refresh()
+    assert "引擎未运行" in page.hosts_lbl.cget("text")
+
+    # 引擎跑起来（status 里没有 mode 字段——正是实机那种情况）：必须改成"代理生效中"
+    app.client.running_flag = True
+    app.last_status = {"listen_ip": "100.67.88.219", "port": 443, "stats": {},
+                       "cert": {"usable": True, "remaining_hours": 129.0}}
+    page.on_status(app.last_status)
+    text = page.hosts_lbl.cget("text")
+    assert "引擎未运行" not in text, text
+    assert "代理生效中" in text, text
