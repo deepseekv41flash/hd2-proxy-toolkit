@@ -86,10 +86,13 @@ def test_patch_progression_no_array_is_noop():
 
 
 def test_progression_hook_applies_unlock():
-    body = json.dumps({"experience": 1, "packageProgress": []}).encode()
+    body = json.dumps({"experience": 1, "packageProgress": [],
+                       "purchasedSeasonPassItems": []}).encode()
     new_body, n = prog_hook.apply(body, None, unlock_all_enabled=True)
-    assert n == len(unlock_all.SHIP_MODULE_PACKAGES) + len(unlock_all.WEAPON_PACKAGES)
+    # 包补丁（舰船 6 + 武器 50）+ 战团领取名单 1 处
+    assert n == len(unlock_all.SHIP_MODULE_PACKAGES) + len(unlock_all.WEAPON_PACKAGES) + 1
     assert new_body is not None
+    assert len(json.loads(new_body)["purchasedSeasonPassItems"]) == 603
     # 关闭时原样返回
     same, z = prog_hook.apply(body, None, unlock_all_enabled=False)
     assert z == 0 and same is body
@@ -256,3 +259,205 @@ def test_inventory_hook_fills_customization_when_unlock_all_on():
     rows = json.loads(body)["customization"]
     assert [r["mixId32"] for r in rows] == [111]
     assert added == len(unlock_all.ownable_ids()) + 1, "added = 库存行 + 改装条目"
+
+
+# ---------------------------------------------------------------- 战团领取名单（alpha.5）
+#
+# 军械库的解锁态（武器等级 / 改装按钮）看 `purchasedSeasonPassItems`：主号 426 条 ⊆ 26 个战团
+# `itemIds` 并集 603 条；空白号 0 条 ⇒ 一切按「未领取」显示。这里把并集全按已领取下发。
+
+
+def test_seasonpass_union_and_persist(tmp_path, monkeypatch):
+    monkeypatch.setattr(unlock_all, "WARBOND_ITEMS_FILE", tmp_path / "warbond.json")
+    monkeypatch.setattr(unlock_all, "WARBOND_FALLBACK_FILE", tmp_path / "none.json")
+    unlock_all.reset()
+    rows = [{"id32": 1, "itemIds": [3, 5, 9]}, {"id32": 2, "itemIds": [9, 12]}]
+    assert unlock_all.set_seasonpass(rows) == 4        # 3,5,9,12 去重
+    assert unlock_all.seasonpass_items() == [3, 5, 9, 12]
+    assert (tmp_path / "warbond.json").exists(), "必须落盘（下次会话生效）"
+    # 再喂一份更长的 → 取并集，且不丢旧的
+    assert unlock_all.set_seasonpass([{"itemIds": [12, 20]}]) == 5
+    assert unlock_all.seasonpass_items() == [3, 5, 9, 12, 20]
+    assert unlock_all.set_seasonpass("nope") == 5, "坏输入不改缓存"
+
+
+def test_patch_progression_claims_all_warbonds(tmp_path, monkeypatch):
+    monkeypatch.setattr(unlock_all, "WARBOND_ITEMS_FILE", tmp_path / "warbond.json")
+    monkeypatch.setattr(unlock_all, "WARBOND_FALLBACK_FILE", tmp_path / "none.json")
+    unlock_all.reset()
+    unlock_all.set_seasonpass([{"itemIds": [3, 5, 9]}])
+    doc = {"packageProgress": [], "purchasedSeasonPassItems": [9, 11]}
+    body, changed = unlock_all.patch_progression(json.dumps(doc).encode())
+    out = json.loads(body)
+    assert out["purchasedSeasonPassItems"] == [9, 11, 3, 5], "原有顺序保留，只补缺的"
+    # packageProgress 是空数组 ⇒ 先补 56 条包（舰船 6 + 武器 50），再加 1 处领取名单
+    assert changed == len(unlock_all.SHIP_MODULE_PACKAGES) + len(unlock_all.WEAPON_PACKAGES) + 1
+    body2, changed2 = unlock_all.patch_progression(body)
+    assert (body2, changed2) == (None, 0), "幂等"
+
+
+def test_patch_progression_without_warbond_data_keeps_claims(tmp_path, monkeypatch):
+    monkeypatch.setattr(unlock_all, "WARBOND_ITEMS_FILE", tmp_path / "none.json")
+    monkeypatch.setattr(unlock_all, "WARBOND_FALLBACK_FILE", tmp_path / "none2.json")
+    unlock_all.reset()
+    doc = {"packageProgress": [], "purchasedSeasonPassItems": [7]}
+    body, changed = unlock_all.patch_progression(json.dumps(doc).encode())
+    assert changed == len(unlock_all.SHIP_MODULE_PACKAGES) + len(unlock_all.WEAPON_PACKAGES)
+    assert json.loads(body)["purchasedSeasonPassItems"] == [7], "拿不到战团表就不动领取名单"
+
+
+def test_bundled_warbond_fallback_is_sane():
+    """内置兜底 = 真机 SeasonPass 抓包的 itemIds 并集（603 条）。"""
+    ids = unlock_all.seasonpass_items()
+    assert len(ids) == 603
+    assert min(ids) == 1 and max(ids) == 1007
+    assert 510 in ids and 511 in ids, "主号真实领取项必须在名单里"
+    assert len(set(ids)) == len(ids), "无重复"
+
+
+# ---------------------------------------------------------------- 账号级开关（flags / xp，默认关）
+#
+# 实证：同为代理解锁出来的武器，主号能改装、测试号不能 ⇒ 门槛是**账号级开关**。
+# 这里只提供两个可调旋钮用于定位（默认 0 = 不动）：教程位掩码、经验下限。
+
+
+def test_patch_progression_forge_flags_or_merge():
+    doc = {"packageProgress": [], "onboardingFlags": 0x40, "purchasedSeasonPassItems": []}
+    body, changed = unlock_all.patch_progression(json.dumps(doc).encode(), forge_flags=0x100)
+    out = json.loads(body)
+    assert out["onboardingFlags"] == 0x140, "必须是按位或（不清已有位）"
+    assert changed >= 1
+    body2, changed2 = unlock_all.patch_progression(body, forge_flags=0x100)
+    assert changed2 == 0, "已包含则不重复计改动"
+
+
+def test_patch_progression_forge_xp_only_raises(tmp_path, monkeypatch):
+    # 隔离战团兜底：本用例只关心 experience
+    monkeypatch.setattr(unlock_all, "WARBOND_ITEMS_FILE", tmp_path / "none.json")
+    monkeypatch.setattr(unlock_all, "WARBOND_FALLBACK_FILE", tmp_path / "none2.json")
+    unlock_all.reset()
+    doc = {"packageProgress": [], "experience": 208, "purchasedSeasonPassItems": []}
+    body, _n = unlock_all.patch_progression(json.dumps(doc).encode(), forge_xp=2760148)
+    assert json.loads(body)["experience"] == 2760148
+    # 用第一次的产物（包已齐）把经验抬高后再跑一次：不应再改动
+    high = json.loads(body)
+    high["experience"] = 9999999
+    body2, n2 = unlock_all.patch_progression(json.dumps(high).encode(), forge_xp=2760148)
+    assert (body2, n2) == (None, 0), "只抬不降"
+
+
+def test_progression_hook_passes_forge_knobs():
+    body = json.dumps({"packageProgress": [], "purchasedSeasonPassItems": [],
+                       "experience": 10, "onboardingFlags": 0}).encode()
+    new_body, n = prog_hook.apply(body, None, unlock_all_enabled=True,
+                                  forge_flags=0x7F, forge_xp=500)
+    out = json.loads(new_body)
+    assert out["onboardingFlags"] == 0x7F and out["experience"] == 500
+    assert n > 0
+
+
+def test_config_validation_forge_knobs():
+    prof = config.default_profile()
+    assert prof["inventory"]["unlock_flags"] == 0 and prof["inventory"]["unlock_xp"] == 0
+    prof["inventory"]["unlock_all"] = True
+    prof["inventory"]["unlock_flags"] = 7962491
+    prof["inventory"]["unlock_xp"] = 2760148
+    _doc, errors, _w = config.validate(prof)
+    assert errors == [], errors
+    spec = config.to_engine_spec(prof)
+    assert spec.inventory["unlockAll"]["flags"] == 7962491
+    assert spec.inventory["unlockAll"]["xp"] == 2760148
+
+    prof["inventory"]["unlock_flags"] = -1
+    _doc, errors, _ = config.validate(prof)
+    assert any("unlock_flags" in e for e in errors)
+    prof["inventory"]["unlock_flags"] = 0
+    prof["inventory"]["unlock_xp"] = "many"
+    _doc, errors, _ = config.validate(prof)
+    assert any("unlock_xp" in e for e in errors)
+
+
+# ---------------------------------------------------------------- 账号等级门槛（alpha.6）
+#
+# 2026-11-26 实机实证：武器改装按**账号等级**解锁 —— 10 级 / 7,100 经验。
+# 依据：wiki Levels 页 Unlocks 表 Level 10 奖励含 "Weapon Attachments"；本 build levelspec 同级 7,100。
+
+
+def test_level_table_and_xp_lookup():
+    rows = unlock_all.level_rows()
+    assert len(rows) == 300, "内置等级表 300 级"
+    assert unlock_all.xp_for_level(1) == 1
+    assert unlock_all.xp_for_level(9) == 5850
+    assert unlock_all.xp_for_level(10) == 7100, "10 级 = 7,100 经验（改装解锁阈值）"
+    assert unlock_all.xp_for_level(11) == 8400
+    assert unlock_all.xp_for_level(0) == 0
+    assert unlock_all.xp_for_level("x") == 0
+    assert unlock_all.xp_for_level(999) == 11080000, "超出表尾取最后一级"
+
+
+def test_default_unlock_level_is_ten():
+    assert unlock_all.DEFAULT_UNLOCK_LEVEL == 10
+    prof = config.default_profile()
+    assert prof["inventory"]["unlock_level"] == 10
+    assert prof["inventory"]["unlock_xp"] == 0
+    prof["inventory"]["unlock_all"] = True
+    spec = config.to_engine_spec(prof)
+    assert spec.inventory["unlockAll"]["level"] == 10
+    assert spec.inventory["unlockAll"]["xp"] == 7100, "默认补到 10 级（最小改动）"
+
+
+def test_unlock_level_zero_keeps_experience():
+    prof = config.default_profile()
+    prof["inventory"]["unlock_all"] = True
+    prof["inventory"]["unlock_level"] = 0
+    spec = config.to_engine_spec(prof)
+    assert spec.inventory["unlockAll"]["xp"] == 0, "0 级 = 不补等级"
+
+
+def test_unlock_xp_override_wins():
+    prof = config.default_profile()
+    prof["inventory"]["unlock_all"] = True
+    prof["inventory"]["unlock_level"] = 20
+    prof["inventory"]["unlock_xp"] = 5000
+    spec = config.to_engine_spec(prof)
+    assert spec.inventory["unlockAll"]["xp"] == 5000
+
+
+def test_unlock_level_validation():
+    prof = config.default_profile()
+    prof["inventory"]["unlock_level"] = 301
+    _doc, errors, _ = config.validate(prof)
+    assert any("unlock_level" in e for e in errors)
+    prof["inventory"]["unlock_level"] = True
+    _doc, errors, _ = config.validate(prof)
+    assert any("unlock_level" in e for e in errors)
+
+
+def test_level_for_xp():
+    assert unlock_all.level_for_xp(0) == 0
+    assert unlock_all.level_for_xp(208) == 2
+    assert unlock_all.level_for_xp(7099) == 9
+    assert unlock_all.level_for_xp(7100) == 10, "7,100 = 恰好 10 级"
+    assert unlock_all.level_for_xp(9900) == 12
+    assert unlock_all.level_for_xp("x") == 0
+
+
+def test_patch_progression_raises_xp_only_below_target(tmp_path, monkeypatch):
+    """判定式：低于 10 级 → 补到 7,100；≥10 级 → 经验一个字都不动。"""
+    monkeypatch.setattr(unlock_all, "WARBOND_ITEMS_FILE", tmp_path / "n1.json")
+    monkeypatch.setattr(unlock_all, "WARBOND_FALLBACK_FILE", tmp_path / "n2.json")
+    unlock_all.reset()
+    target = unlock_all.xp_for_level(unlock_all.DEFAULT_UNLOCK_LEVEL)
+
+    low = {"packageProgress": [], "purchasedSeasonPassItems": [], "experience": 208}
+    body, _n = unlock_all.patch_progression(json.dumps(low).encode(), forge_xp=target)
+    out = json.loads(body)
+    assert out["experience"] == 7100 and unlock_all.level_for_xp(out["experience"]) == 10
+
+    for xp in (7100, 7300, 9900, 2760148):     # 恰好 10 级 / 10 级中段 / 12 级 / 199 级
+        doc = json.loads(body)
+        doc["experience"] = xp
+        body2, n2 = unlock_all.patch_progression(json.dumps(doc).encode(), forge_xp=target)
+        if body2 is None:
+            continue                            # 完全无改动：经验当然没变
+        assert json.loads(body2)["experience"] == xp, "≥10 级不许改经验"

@@ -95,6 +95,8 @@ CONSUME_PATH = "/api/Progression/inventory/consume"
 # G5+：真正的"解锁/购买"写路径 —— 扣钱 + 授予都在**响应**里（旧仓 variant-net UNLOCK-MAP §3.1）
 ACQUIRE_ITEM_PATH = "/api/Progression/ProgressionPackage/AcquireUnlockableItem"
 SEASONPASS_BUY_PATH = "/api/SeasonPass/item/buy"
+# 战团列表（26 个战团 + 各自 itemIds）：一键解锁用它合成「全部已领取」名单
+SEASONPASS_PATH = "/api/SeasonPass"
 
 # ---- 运行期状态文件（热重载：每个响应到达时现读） ---------------------------
 INV_STATE = RUNTIME / "inventory_inject.json"

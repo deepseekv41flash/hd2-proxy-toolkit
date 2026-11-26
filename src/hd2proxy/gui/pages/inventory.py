@@ -771,15 +771,18 @@ class InventoryPage(Page):
             return
         ids, st = unlock_all_ids(inv.get("unlock_scope") or [])
         if not ids:
-            self.app.toast("没有可解锁的物品：目录文件读不到或为空（data/catalogs/items.json）",
-                           error=True)
+            # 2026-11-26 实机踩过：安装目录的 data/ 缺失 ⇒ 只报"读不到"没法自查，这里带上绝对路径
+            from ...engine import paths as _paths
+            _p = _paths.CATALOGS_DIR / "items.json"
+            self.app.toast("没有可解锁的物品：目录文件读不到或为空 → %s（检查安装目录里的 data/ 是否完整）"
+                           % _p, error=True)
             return
         scope = ",".join(st.get("scope") or []) or "全部类别"
         message = chr(10).join([
             "确定一键解锁全部物品？", "",
             "运行期按**客户端实际目录**展开（离线估算 %d 行，范围：%s）" % (len(ids), scope),
             "同时把 6 条舰船模块包的等级置满（模块不是库存行，靠 packageProgress 显示）",
-            "并给所有可改装武器补改装条目（缺这份数据时武器没有「改装」按钮）",
+            "并把**全部战团条目按「已领取」下发**（军械库的解锁态 —— 武器等级/改装按钮 —— 看这份名单）",
             "授予行 isDiscovered=false（与真实库存一致）", "",
             "只改客户端收到的响应，不写服务端任何数据；点「应用配置」后生效。",
             "物品很多时游戏内列表/商店可能加载变慢，这是预期副作用。",

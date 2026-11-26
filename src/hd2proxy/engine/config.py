@@ -52,6 +52,11 @@ DEFAULT_PROFILE = {
         "remove": [], "customization": [],
         # 一键解锁全部物品（仅本机视图）：按目录展开成库存行；scope 空=全部可拥有类别
         "unlock_all": False, "unlock_scope": [], "unlock_discovered": False,
+        # 账号等级门槛：**武器改装按账号等级解锁（10 级 = 7,100 经验）**，默认把等级补到 10；
+        # 0 = 不补。`unlock_xp` 为显式经验覆盖（>0 时优先，调试/特殊账号用）。
+        "unlock_level": 10, "unlock_xp": 0,
+        # 教程位掩码（默认 0 = 不动；排查用）
+        "unlock_flags": 0,
     },
     "items": {"template": None, "add": []},
     "capture": {
@@ -380,6 +385,21 @@ def validate(raw) -> tuple[dict, list[str], list[str]]:
         errors.append("inventory.unlock_discovered 必须是 true/false")
     else:
         inv["unlock_discovered"] = ud
+    uf = inv.get("unlock_flags", 0)
+    if not isinstance(uf, int) or isinstance(uf, bool) or not (0 <= uf <= 0x7FFFFFFF):
+        errors.append("inventory.unlock_flags 必须是 0..2147483647 的整数（教程位掩码）")
+    else:
+        inv["unlock_flags"] = uf
+    ul = inv.get("unlock_level", 10)
+    if not isinstance(ul, int) or isinstance(ul, bool) or not (0 <= ul <= 300):
+        errors.append("inventory.unlock_level 必须是 0..300 的整数（0=不补等级）")
+    else:
+        inv["unlock_level"] = ul
+    ux = inv.get("unlock_xp", 0)
+    if not isinstance(ux, int) or isinstance(ux, bool) or not (0 <= ux <= 11080000):
+        errors.append("inventory.unlock_xp 必须是 0..11080000 的整数（0=按 unlock_level 换算）")
+    else:
+        inv["unlock_xp"] = ux
     doc["inventory"] = inv
 
     # ---- items ------------------------------------------------------------
@@ -659,9 +679,16 @@ def to_engine_spec(profile: dict, catalog_doc=None) -> EngineSpec:
     # 实机表现为"护甲/披风只出 3 件、舰船模块 0 件"（2026-11-25 反馈）。
     unlock_cfg = None
     if inv.get("unlock_all"):
+        from . import unlock_all as _ua
+        _level = int(inv.get("unlock_level") or 0)
+        _xp = int(inv.get("unlock_xp") or 0) or _ua.xp_for_level(_level)
         unlock_cfg = {"enabled": True, "scope": list(inv.get("unlock_scope") or []),
-                      "discovered": bool(inv.get("unlock_discovered", False))}
-        warnings.append("一键解锁全部物品：运行时按客户端目录展开（含舰船模块 6 条包等级置满）")
+                      "discovered": bool(inv.get("unlock_discovered", False)),
+                      "flags": int(inv.get("unlock_flags") or 0),
+                      "level": _level, "xp": _xp}
+        warnings.append("一键解锁全部物品：运行时按客户端目录展开（含舰船模块 6 条包等级置满；"
+                        "账号等级补到 %d 级 —— 武器改装在 %d 级解锁）"
+                        % (_level, _ua.DEFAULT_UNLOCK_LEVEL))
     inv_cfg = {"enabled": bool(inv_items or inv.get("remove") or inv.get("customization")
                               or unlock_cfg),
                "items": inv_items,

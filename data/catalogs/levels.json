@@ -1,0 +1,1206 @@
+{
+"source": "GET /api/Progression/levelspec（2026-11-20 真机抓包 0a1bf61e，本 build 300 级）",
+"note": "等级→累计经验阈值。武器改装在 10 级解锁（wiki Levels 页 Unlocks 表：Level 10 = Weapon Attachments，7,100 XP）",
+"levels": [
+{
+"level": 1,
+"requiredExperience": 1
+},
+{
+"level": 2,
+"requiredExperience": 100
+},
+{
+"level": 3,
+"requiredExperience": 350
+},
+{
+"level": 4,
+"requiredExperience": 850
+},
+{
+"level": 5,
+"requiredExperience": 1600
+},
+{
+"level": 6,
+"requiredExperience": 2600
+},
+{
+"level": 7,
+"requiredExperience": 3600
+},
+{
+"level": 8,
+"requiredExperience": 4600
+},
+{
+"level": 9,
+"requiredExperience": 5850
+},
+{
+"level": 10,
+"requiredExperience": 7100
+},
+{
+"level": 11,
+"requiredExperience": 8400
+},
+{
+"level": 12,
+"requiredExperience": 9900
+},
+{
+"level": 13,
+"requiredExperience": 11400
+},
+{
+"level": 14,
+"requiredExperience": 12900
+},
+{
+"level": 15,
+"requiredExperience": 14400
+},
+{
+"level": 16,
+"requiredExperience": 15900
+},
+{
+"level": 17,
+"requiredExperience": 17900
+},
+{
+"level": 18,
+"requiredExperience": 19900
+},
+{
+"level": 19,
+"requiredExperience": 21900
+},
+{
+"level": 20,
+"requiredExperience": 23900
+},
+{
+"level": 21,
+"requiredExperience": 25900
+},
+{
+"level": 22,
+"requiredExperience": 28400
+},
+{
+"level": 23,
+"requiredExperience": 30900
+},
+{
+"level": 24,
+"requiredExperience": 33400
+},
+{
+"level": 25,
+"requiredExperience": 35900
+},
+{
+"level": 26,
+"requiredExperience": 38400
+},
+{
+"level": 27,
+"requiredExperience": 41400
+},
+{
+"level": 28,
+"requiredExperience": 44400
+},
+{
+"level": 29,
+"requiredExperience": 47400
+},
+{
+"level": 30,
+"requiredExperience": 50400
+},
+{
+"level": 31,
+"requiredExperience": 53400
+},
+{
+"level": 32,
+"requiredExperience": 56900
+},
+{
+"level": 33,
+"requiredExperience": 60400
+},
+{
+"level": 34,
+"requiredExperience": 63900
+},
+{
+"level": 35,
+"requiredExperience": 67400
+},
+{
+"level": 36,
+"requiredExperience": 70900
+},
+{
+"level": 37,
+"requiredExperience": 74900
+},
+{
+"level": 38,
+"requiredExperience": 78900
+},
+{
+"level": 39,
+"requiredExperience": 82900
+},
+{
+"level": 40,
+"requiredExperience": 86900
+},
+{
+"level": 41,
+"requiredExperience": 90900
+},
+{
+"level": 42,
+"requiredExperience": 95400
+},
+{
+"level": 43,
+"requiredExperience": 99900
+},
+{
+"level": 44,
+"requiredExperience": 104400
+},
+{
+"level": 45,
+"requiredExperience": 108900
+},
+{
+"level": 46,
+"requiredExperience": 113400
+},
+{
+"level": 47,
+"requiredExperience": 118400
+},
+{
+"level": 48,
+"requiredExperience": 123400
+},
+{
+"level": 49,
+"requiredExperience": 128400
+},
+{
+"level": 50,
+"requiredExperience": 133400
+},
+{
+"level": 51,
+"requiredExperience": 138900
+},
+{
+"level": 52,
+"requiredExperience": 144400
+},
+{
+"level": 53,
+"requiredExperience": 149900
+},
+{
+"level": 54,
+"requiredExperience": 155400
+},
+{
+"level": 55,
+"requiredExperience": 161000
+},
+{
+"level": 56,
+"requiredExperience": 167000
+},
+{
+"level": 57,
+"requiredExperience": 173000
+},
+{
+"level": 58,
+"requiredExperience": 179000
+},
+{
+"level": 59,
+"requiredExperience": 185000
+},
+{
+"level": 60,
+"requiredExperience": 191000
+},
+{
+"level": 61,
+"requiredExperience": 197500
+},
+{
+"level": 62,
+"requiredExperience": 204000
+},
+{
+"level": 63,
+"requiredExperience": 210500
+},
+{
+"level": 64,
+"requiredExperience": 217000
+},
+{
+"level": 65,
+"requiredExperience": 223500
+},
+{
+"level": 66,
+"requiredExperience": 230500
+},
+{
+"level": 67,
+"requiredExperience": 237500
+},
+{
+"level": 68,
+"requiredExperience": 244500
+},
+{
+"level": 69,
+"requiredExperience": 251500
+},
+{
+"level": 70,
+"requiredExperience": 258500
+},
+{
+"level": 71,
+"requiredExperience": 266000
+},
+{
+"level": 72,
+"requiredExperience": 273500
+},
+{
+"level": 73,
+"requiredExperience": 281000
+},
+{
+"level": 74,
+"requiredExperience": 288500
+},
+{
+"level": 75,
+"requiredExperience": 296000
+},
+{
+"level": 76,
+"requiredExperience": 304000
+},
+{
+"level": 77,
+"requiredExperience": 312000
+},
+{
+"level": 78,
+"requiredExperience": 320000
+},
+{
+"level": 79,
+"requiredExperience": 328000
+},
+{
+"level": 80,
+"requiredExperience": 336000
+},
+{
+"level": 81,
+"requiredExperience": 344500
+},
+{
+"level": 82,
+"requiredExperience": 353000
+},
+{
+"level": 83,
+"requiredExperience": 361500
+},
+{
+"level": 84,
+"requiredExperience": 370000
+},
+{
+"level": 85,
+"requiredExperience": 378500
+},
+{
+"level": 86,
+"requiredExperience": 387500
+},
+{
+"level": 87,
+"requiredExperience": 396500
+},
+{
+"level": 88,
+"requiredExperience": 405500
+},
+{
+"level": 89,
+"requiredExperience": 414500
+},
+{
+"level": 90,
+"requiredExperience": 423500
+},
+{
+"level": 91,
+"requiredExperience": 433000
+},
+{
+"level": 92,
+"requiredExperience": 442500
+},
+{
+"level": 93,
+"requiredExperience": 452000
+},
+{
+"level": 94,
+"requiredExperience": 461500
+},
+{
+"level": 95,
+"requiredExperience": 471000
+},
+{
+"level": 96,
+"requiredExperience": 481000
+},
+{
+"level": 97,
+"requiredExperience": 491000
+},
+{
+"level": 98,
+"requiredExperience": 501000
+},
+{
+"level": 99,
+"requiredExperience": 511000
+},
+{
+"level": 100,
+"requiredExperience": 521500
+},
+{
+"level": 101,
+"requiredExperience": 532000
+},
+{
+"level": 102,
+"requiredExperience": 542500
+},
+{
+"level": 103,
+"requiredExperience": 553000
+},
+{
+"level": 104,
+"requiredExperience": 564000
+},
+{
+"level": 105,
+"requiredExperience": 575000
+},
+{
+"level": 106,
+"requiredExperience": 586000
+},
+{
+"level": 107,
+"requiredExperience": 597000
+},
+{
+"level": 108,
+"requiredExperience": 608000
+},
+{
+"level": 109,
+"requiredExperience": 619500
+},
+{
+"level": 110,
+"requiredExperience": 631000
+},
+{
+"level": 111,
+"requiredExperience": 642500
+},
+{
+"level": 112,
+"requiredExperience": 654000
+},
+{
+"level": 113,
+"requiredExperience": 665500
+},
+{
+"level": 114,
+"requiredExperience": 677500
+},
+{
+"level": 115,
+"requiredExperience": 689500
+},
+{
+"level": 116,
+"requiredExperience": 701500
+},
+{
+"level": 117,
+"requiredExperience": 713500
+},
+{
+"level": 118,
+"requiredExperience": 725500
+},
+{
+"level": 119,
+"requiredExperience": 738000
+},
+{
+"level": 120,
+"requiredExperience": 750500
+},
+{
+"level": 121,
+"requiredExperience": 763000
+},
+{
+"level": 122,
+"requiredExperience": 775500
+},
+{
+"level": 123,
+"requiredExperience": 788000
+},
+{
+"level": 124,
+"requiredExperience": 801000
+},
+{
+"level": 125,
+"requiredExperience": 814000
+},
+{
+"level": 126,
+"requiredExperience": 827000
+},
+{
+"level": 127,
+"requiredExperience": 840000
+},
+{
+"level": 128,
+"requiredExperience": 853000
+},
+{
+"level": 129,
+"requiredExperience": 866500
+},
+{
+"level": 130,
+"requiredExperience": 880000
+},
+{
+"level": 131,
+"requiredExperience": 893500
+},
+{
+"level": 132,
+"requiredExperience": 907000
+},
+{
+"level": 133,
+"requiredExperience": 920500
+},
+{
+"level": 134,
+"requiredExperience": 934500
+},
+{
+"level": 135,
+"requiredExperience": 948500
+},
+{
+"level": 136,
+"requiredExperience": 962500
+},
+{
+"level": 137,
+"requiredExperience": 976500
+},
+{
+"level": 138,
+"requiredExperience": 990500
+},
+{
+"level": 139,
+"requiredExperience": 1005000
+},
+{
+"level": 140,
+"requiredExperience": 1019500
+},
+{
+"level": 141,
+"requiredExperience": 1034000
+},
+{
+"level": 142,
+"requiredExperience": 1048500
+},
+{
+"level": 143,
+"requiredExperience": 1063000
+},
+{
+"level": 144,
+"requiredExperience": 1078000
+},
+{
+"level": 145,
+"requiredExperience": 1093000
+},
+{
+"level": 146,
+"requiredExperience": 1108000
+},
+{
+"level": 147,
+"requiredExperience": 1123000
+},
+{
+"level": 148,
+"requiredExperience": 1138000
+},
+{
+"level": 149,
+"requiredExperience": 1153000
+},
+{
+"level": 150,
+"requiredExperience": 1168000
+},
+{
+"level": 151,
+"requiredExperience": 1184000
+},
+{
+"level": 152,
+"requiredExperience": 1201000
+},
+{
+"level": 153,
+"requiredExperience": 1218500
+},
+{
+"level": 154,
+"requiredExperience": 1236500
+},
+{
+"level": 155,
+"requiredExperience": 1255500
+},
+{
+"level": 156,
+"requiredExperience": 1275000
+},
+{
+"level": 157,
+"requiredExperience": 1295500
+},
+{
+"level": 158,
+"requiredExperience": 1316000
+},
+{
+"level": 159,
+"requiredExperience": 1337500
+},
+{
+"level": 160,
+"requiredExperience": 1360000
+},
+{
+"level": 161,
+"requiredExperience": 1382500
+},
+{
+"level": 162,
+"requiredExperience": 1406500
+},
+{
+"level": 163,
+"requiredExperience": 1430500
+},
+{
+"level": 164,
+"requiredExperience": 1455500
+},
+{
+"level": 165,
+"requiredExperience": 1481000
+},
+{
+"level": 166,
+"requiredExperience": 1507000
+},
+{
+"level": 167,
+"requiredExperience": 1534000
+},
+{
+"level": 168,
+"requiredExperience": 1561500
+},
+{
+"level": 169,
+"requiredExperience": 1590000
+},
+{
+"level": 170,
+"requiredExperience": 1618500
+},
+{
+"level": 171,
+"requiredExperience": 1648500
+},
+{
+"level": 172,
+"requiredExperience": 1678500
+},
+{
+"level": 173,
+"requiredExperience": 1709500
+},
+{
+"level": 174,
+"requiredExperience": 1741000
+},
+{
+"level": 175,
+"requiredExperience": 1773000
+},
+{
+"level": 176,
+"requiredExperience": 1806000
+},
+{
+"level": 177,
+"requiredExperience": 1839500
+},
+{
+"level": 178,
+"requiredExperience": 1874000
+},
+{
+"level": 179,
+"requiredExperience": 1909000
+},
+{
+"level": 180,
+"requiredExperience": 1944500
+},
+{
+"level": 181,
+"requiredExperience": 1981000
+},
+{
+"level": 182,
+"requiredExperience": 2017500
+},
+{
+"level": 183,
+"requiredExperience": 2055500
+},
+{
+"level": 184,
+"requiredExperience": 2093500
+},
+{
+"level": 185,
+"requiredExperience": 2132500
+},
+{
+"level": 186,
+"requiredExperience": 2172000
+},
+{
+"level": 187,
+"requiredExperience": 2212500
+},
+{
+"level": 188,
+"requiredExperience": 2253500
+},
+{
+"level": 189,
+"requiredExperience": 2295000
+},
+{
+"level": 190,
+"requiredExperience": 2337500
+},
+{
+"level": 191,
+"requiredExperience": 2380500
+},
+{
+"level": 192,
+"requiredExperience": 2424000
+},
+{
+"level": 193,
+"requiredExperience": 2468500
+},
+{
+"level": 194,
+"requiredExperience": 2513000
+},
+{
+"level": 195,
+"requiredExperience": 2559000
+},
+{
+"level": 196,
+"requiredExperience": 2605000
+},
+{
+"level": 197,
+"requiredExperience": 2652000
+},
+{
+"level": 198,
+"requiredExperience": 2700000
+},
+{
+"level": 199,
+"requiredExperience": 2748000
+},
+{
+"level": 200,
+"requiredExperience": 2797000
+},
+{
+"level": 201,
+"requiredExperience": 2847000
+},
+{
+"level": 202,
+"requiredExperience": 2897000
+},
+{
+"level": 203,
+"requiredExperience": 2948000
+},
+{
+"level": 204,
+"requiredExperience": 3000000
+},
+{
+"level": 205,
+"requiredExperience": 3052000
+},
+{
+"level": 206,
+"requiredExperience": 3105000
+},
+{
+"level": 207,
+"requiredExperience": 3159000
+},
+{
+"level": 208,
+"requiredExperience": 3213500
+},
+{
+"level": 209,
+"requiredExperience": 3268500
+},
+{
+"level": 210,
+"requiredExperience": 3324000
+},
+{
+"level": 211,
+"requiredExperience": 3380500
+},
+{
+"level": 212,
+"requiredExperience": 3437500
+},
+{
+"level": 213,
+"requiredExperience": 3495000
+},
+{
+"level": 214,
+"requiredExperience": 3553500
+},
+{
+"level": 215,
+"requiredExperience": 3612500
+},
+{
+"level": 216,
+"requiredExperience": 3672000
+},
+{
+"level": 217,
+"requiredExperience": 3732500
+},
+{
+"level": 218,
+"requiredExperience": 3793500
+},
+{
+"level": 219,
+"requiredExperience": 3855500
+},
+{
+"level": 220,
+"requiredExperience": 3918000
+},
+{
+"level": 221,
+"requiredExperience": 3981000
+},
+{
+"level": 222,
+"requiredExperience": 4044500
+},
+{
+"level": 223,
+"requiredExperience": 4109000
+},
+{
+"level": 224,
+"requiredExperience": 4174000
+},
+{
+"level": 225,
+"requiredExperience": 4240000
+},
+{
+"level": 226,
+"requiredExperience": 4306000
+},
+{
+"level": 227,
+"requiredExperience": 4373500
+},
+{
+"level": 228,
+"requiredExperience": 4441000
+},
+{
+"level": 229,
+"requiredExperience": 4509500
+},
+{
+"level": 230,
+"requiredExperience": 4578500
+},
+{
+"level": 231,
+"requiredExperience": 4648500
+},
+{
+"level": 232,
+"requiredExperience": 4719000
+},
+{
+"level": 233,
+"requiredExperience": 4790000
+},
+{
+"level": 234,
+"requiredExperience": 4861500
+},
+{
+"level": 235,
+"requiredExperience": 4934000
+},
+{
+"level": 236,
+"requiredExperience": 5007000
+},
+{
+"level": 237,
+"requiredExperience": 5081000
+},
+{
+"level": 238,
+"requiredExperience": 5155500
+},
+{
+"level": 239,
+"requiredExperience": 5230500
+},
+{
+"level": 240,
+"requiredExperience": 5306500
+},
+{
+"level": 241,
+"requiredExperience": 5383000
+},
+{
+"level": 242,
+"requiredExperience": 5460000
+},
+{
+"level": 243,
+"requiredExperience": 5538000
+},
+{
+"level": 244,
+"requiredExperience": 5616500
+},
+{
+"level": 245,
+"requiredExperience": 5695500
+},
+{
+"level": 246,
+"requiredExperience": 5775000
+},
+{
+"level": 247,
+"requiredExperience": 5855500
+},
+{
+"level": 248,
+"requiredExperience": 5937000
+},
+{
+"level": 249,
+"requiredExperience": 6018500
+},
+{
+"level": 250,
+"requiredExperience": 6101000
+},
+{
+"level": 251,
+"requiredExperience": 6184500
+},
+{
+"level": 252,
+"requiredExperience": 6268000
+},
+{
+"level": 253,
+"requiredExperience": 6352500
+},
+{
+"level": 254,
+"requiredExperience": 6438000
+},
+{
+"level": 255,
+"requiredExperience": 6523500
+},
+{
+"level": 256,
+"requiredExperience": 6610000
+},
+{
+"level": 257,
+"requiredExperience": 6697500
+},
+{
+"level": 258,
+"requiredExperience": 6785000
+},
+{
+"level": 259,
+"requiredExperience": 6874000
+},
+{
+"level": 260,
+"requiredExperience": 6963000
+},
+{
+"level": 261,
+"requiredExperience": 7053000
+},
+{
+"level": 262,
+"requiredExperience": 7143500
+},
+{
+"level": 263,
+"requiredExperience": 7234500
+},
+{
+"level": 264,
+"requiredExperience": 7326500
+},
+{
+"level": 265,
+"requiredExperience": 7419000
+},
+{
+"level": 266,
+"requiredExperience": 7512000
+},
+{
+"level": 267,
+"requiredExperience": 7606000
+},
+{
+"level": 268,
+"requiredExperience": 7700500
+},
+{
+"level": 269,
+"requiredExperience": 7796000
+},
+{
+"level": 270,
+"requiredExperience": 7891500
+},
+{
+"level": 271,
+"requiredExperience": 7988500
+},
+{
+"level": 272,
+"requiredExperience": 8085500
+},
+{
+"level": 273,
+"requiredExperience": 8183500
+},
+{
+"level": 274,
+"requiredExperience": 8282000
+},
+{
+"level": 275,
+"requiredExperience": 8381000
+},
+{
+"level": 276,
+"requiredExperience": 8481000
+},
+{
+"level": 277,
+"requiredExperience": 8581500
+},
+{
+"level": 278,
+"requiredExperience": 8683000
+},
+{
+"level": 279,
+"requiredExperience": 8785000
+},
+{
+"level": 280,
+"requiredExperience": 8887500
+},
+{
+"level": 281,
+"requiredExperience": 8990500
+},
+{
+"level": 282,
+"requiredExperience": 9094500
+},
+{
+"level": 283,
+"requiredExperience": 9199500
+},
+{
+"level": 284,
+"requiredExperience": 9304500
+},
+{
+"level": 285,
+"requiredExperience": 9410500
+},
+{
+"level": 286,
+"requiredExperience": 9517000
+},
+{
+"level": 287,
+"requiredExperience": 9624500
+},
+{
+"level": 288,
+"requiredExperience": 9732500
+},
+{
+"level": 289,
+"requiredExperience": 9841000
+},
+{
+"level": 290,
+"requiredExperience": 9950000
+},
+{
+"level": 291,
+"requiredExperience": 10060000
+},
+{
+"level": 292,
+"requiredExperience": 10171000
+},
+{
+"level": 293,
+"requiredExperience": 10282000
+},
+{
+"level": 294,
+"requiredExperience": 10394000
+},
+{
+"level": 295,
+"requiredExperience": 10506500
+},
+{
+"level": 296,
+"requiredExperience": 10620000
+},
+{
+"level": 297,
+"requiredExperience": 10734000
+},
+{
+"level": 298,
+"requiredExperience": 10848500
+},
+{
+"level": 299,
+"requiredExperience": 10964000
+},
+{
+"level": 300,
+"requiredExperience": 11080000
+}
+]
+}

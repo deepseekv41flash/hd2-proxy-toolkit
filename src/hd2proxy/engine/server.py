@@ -43,9 +43,22 @@ def _log_unlock_all(spec):
     if not isinstance(st, dict) or not st.get("enabled"):
         return
     scope = ",".join(st.get("scope") or [])
+    _lv = st.get("level")
+    _xp = st.get("xp")
     log("一键解锁全部物品（仅本机视图）：运行时按客户端目录展开 + 舰船模块 6 条包等级置满"
-        " + 可改装武器补空槽改装条目%s"
+        " + 可改装武器补空槽改装条目 + 战团条目全按已领取"
+        + (" + 账号等级补到 %s 级（%s 经验；武器改装在 10 级解锁）"
+           % (_lv, _xp) if _xp else "") + "%s"
         % (("；范围 " + scope) if scope else ""), audit=True)
+    try:
+        from . import unlock_all as _ua
+        n = len(_ua.seasonpass_items())
+    except Exception:
+        n = 0
+    if n:
+        log("一键解锁：战团领取名单 %d 条（军械库解锁态看这份名单；"
+            "客户端本次会话从 /api/SeasonPass 学到的新战团会落盘，下次会话生效）" % n,
+            audit=True)
 
 
 def stamp_identity_header(lines, ident, has_account=False):
@@ -83,6 +96,8 @@ class Proxy:
         # 用于拒绝非白名单 SNI：一个没装证书的上下文，握手会自然失败（不发 alert 之外的任何东西）
         self.empty_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.stats = {"tls": 0, "req": 0, "deny": 0, "rewrite": 0}
+        # v0.10.1-alpha.5：战团条目缓存的「上次报过的条数」（避免每个 SeasonPass 请求都刷日志）
+        self._warbond_seen = 0
         # 只放行本机来源（回环 + 本机各网卡 IP）。算一次就够，别每条连接都解析一遍。
         self.local_ips = {"127.0.0.1", self.mod.listen_ip}
         try:
@@ -113,11 +128,17 @@ class Proxy:
     def _customize_spec(self):
         return self._spec_part("customize")
 
-    def _unlock_all_enabled(self) -> bool:
-        """「一键解锁全部物品」是否开启（v0.10.1-alpha.2：请求期按运行时目录展开）。"""
+    def _unlock_all_cfg(self) -> dict:
+        """「一键解锁全部物品」的规格（未开启返回空 dict）。"""
         cfg = self._inventory_spec()
         ua = (cfg or {}).get("unlockAll") if isinstance(cfg, dict) else None
-        return bool(ua.get("enabled")) if isinstance(ua, dict) else bool(ua)
+        if isinstance(ua, dict):
+            return ua if ua.get("enabled") else {}
+        return {"enabled": True} if ua else {}
+
+    def _unlock_all_enabled(self) -> bool:
+        """「一键解锁全部物品」是否开启（v0.10.1-alpha.2：请求期按运行时目录展开）。"""
+        return bool(self._unlock_all_cfg().get("enabled"))
 
     def _note(self, kind, detail):
         """记一条改写事件（控制面/GUI 实时展示；只保留最近 200 条）。"""
@@ -451,6 +472,21 @@ class Proxy:
                             % (items_added, " [from gzip]" if was_gz else ""), audit=True)
                         self._note("items", "+%d entries" % items_added)
 
+                elif (not self.mod.passthrough) and paths.SEASONPASS_PATH in path and rbody \
+                        and paths.SEASONPASS_BUY_PATH not in path:
+                    # v0.10.1-alpha.5：缓存战团条目表（26 个战团的 itemIds 并集）—— 军械库解锁态看这份名单。
+                    # 客户端 +16 s 先拉 /api/Progression、+19 s 才拉 /api/SeasonPass ⇒ 本次只学到、落盘，
+                    # 下一次会话起生效（内置兜底 data/catalogs/warbond_items.json 让首跑就有效）。
+                    if self._unlock_all_enabled():
+                        try:
+                            plain, _was_gz = httpio.maybe_gunzip(rbody, rhdrs)
+                            n = unlock_all.set_seasonpass(json.loads(plain))
+                            if n and self._warbond_seen != n:
+                                self._warbond_seen = n
+                                log("UNLOCK 战团条目已缓存 %d 条（全部按「已领取」下发）" % n)
+                        except Exception as e:      # noqa: BLE001 - 缓存失败不影响代理
+                            log("UNLOCK 战团列表解析失败（本次不缓存）: %r" % e)
+
                 elif (not self.mod.passthrough) and paths.CUSTOMIZE_PATH in path and rbody:
                     # DSH-GWE-CUSTOMIZE-V1：L2 改装槽快照改写（见 _gwe_customize_rewrite）
                     # v0.10.1-alpha.4：一键解锁时给所有可改装武器补空槽条目（空白号该响应是空数组）
@@ -481,8 +517,11 @@ class Proxy:
                             self._save_observe(path, rbody, rhdrs, reqbody=body)
                         if progression.is_root_path(path):
                             plain, was_gz = httpio.maybe_gunzip(rbody, rhdrs)
+                            _ua_cfg = self._unlock_all_cfg() if _ua_on else {}
                             new_body, save_n = progression.apply(
-                                plain, self.save, unlock_all_enabled=_ua_on)
+                                plain, self.save, unlock_all_enabled=_ua_on,
+                                forge_flags=int(_ua_cfg.get("flags") or 0),
+                                forge_xp=int(_ua_cfg.get("xp") or 0))
                             if save_n:
                                 out_body = new_body
                                 rewrite_added = save_n

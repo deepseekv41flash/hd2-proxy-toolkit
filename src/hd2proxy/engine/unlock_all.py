@@ -24,6 +24,8 @@ alpha.2 改成 true 后出现"所有武器缺改装按钮"，故回退为 false�
 import json
 import threading
 
+from . import paths
+
 # ---- 舰船模块：6 条 type=1 进度包（第 7 条 1555987791 不在活动账号上，忽略） ----------
 SHIP_MODULE_PACKAGES = (
     131213678, 4202868518, 2822932719, 792686718, 1831255310, 2636037703)
@@ -58,11 +60,23 @@ WEAPON_LEVEL_DEFAULT = 1     # 最小侵入：只让条目存在（等级 1）�
 # 改装槽模板（客户端自己的空槽形状，见 `f71b1f23_*`/`bf3a4053_*`）
 CUSTOMIZE_SLOT_COUNT = 8
 
+# 账号等级门槛（2026-11-26 实机实证）：**武器改装按账号等级解锁 —— 10 级（7,100 经验）**。
+# 依据：wiki `Levels` 页 Unlocks 表 Level 10 奖励里就写着 "Weapon Attachments"；本 build 的
+# `/api/Progression/levelspec` 也给出 10 级 = 7,100 经验。测试号 2 级、主号 199 级 —— 把等级补到
+# 10 级即出现「改装」按钮与武器等级进度（等级 199 也验证过，两者只有等级不同）。
+DEFAULT_UNLOCK_LEVEL = 10
+LEVELS_FALLBACK_FILE = paths.CATALOGS_DIR / "levels.json"
+_levels = {"rows": []}
+
 # 货币不是"物品"：库存里不需要注入（信用点/奖章/样本走其它字段）
 EXCLUDED_CATEGORIES = frozenset({18})
 
 _lock = threading.Lock()
 _catalog = {"key": None, "rows": []}
+# 战团条目（`purchasedSeasonPassItems` 宇宙）：运行期落盘 + 内置兜底（同一份真实抓包生成）
+WARBOND_ITEMS_FILE = paths.RUNTIME / "warbond_items.json"
+WARBOND_FALLBACK_FILE = paths.CATALOGS_DIR / "warbond_items.json"
+_warbond = {"items": []}
 
 
 def reset():
@@ -70,6 +84,8 @@ def reset():
     with _lock:
         _catalog["key"] = None
         _catalog["rows"] = []
+        _warbond["items"] = []
+        _levels["rows"] = []
 
 
 def set_catalog(rows, key=None) -> int:
@@ -256,8 +272,122 @@ def inject_inventory_customizations(doc):
     return added
 
 
-def patch_progression(body):
-    """把 6 条舰船模块包的 `packageProgress` 等级置满（原地/返回 bytes）。
+def level_rows() -> list:
+    """等级表 `[{level, requiredExperience}]`（内置 `data/catalogs/levels.json`，300 级）。"""
+    with _lock:
+        if _levels["rows"]:
+            return list(_levels["rows"])
+    try:
+        doc = json.loads(LEVELS_FALLBACK_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    rows = doc.get("levels") if isinstance(doc, dict) else doc
+    clean = []
+    for r in rows or []:
+        if isinstance(r, dict):
+            try:
+                clean.append({"level": int(r["level"]),
+                              "requiredExperience": int(r["requiredExperience"])})
+            except (KeyError, TypeError, ValueError):
+                continue
+    clean.sort(key=lambda e: e["level"])
+    with _lock:
+        _levels["rows"] = clean
+    return list(clean)
+
+
+def xp_for_level(level) -> int:
+    """该等级所需的**累计经验**阈值；表里没有该级时取不超过它的最大一级（找不到=0）。"""
+    try:
+        want = int(level)
+    except (TypeError, ValueError):
+        return 0
+    best = 0
+    for r in level_rows():
+        if r["level"] <= want:
+            best = r["requiredExperience"]
+        else:
+            break
+    return best
+
+
+def level_for_xp(xp) -> int:
+    """累计经验对应的**等级**（表里各阈值都与 7,100=10 级同源；找不到=0）。"""
+    try:
+        cur = int(xp)
+    except (TypeError, ValueError):
+        return 0
+    lv = 0
+    for r in level_rows():
+        if cur >= r["requiredExperience"]:
+            lv = r["level"]
+        else:
+            break
+    return lv
+
+
+def seasonpass_items() -> list:
+    """全部战团条目 id（`purchasedSeasonPassItems` 的宇宙）：内存缓存 → 运行期落盘 → 内置兜底。"""
+    with _lock:
+        if _warbond["items"]:
+            return list(_warbond["items"])
+    for src in (WARBOND_ITEMS_FILE, WARBOND_FALLBACK_FILE):
+        try:
+            doc = json.loads(src.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        items = doc.get("itemIds") if isinstance(doc, dict) else doc
+        ids = _clean_ids(items)
+        if ids:
+            with _lock:
+                _warbond["items"] = ids
+            return list(ids)
+    return []
+
+
+def _clean_ids(values) -> list:
+    out, seen = [], set()
+    for v in values or []:
+        try:
+            iv = int(v)
+        except (TypeError, ValueError):
+            continue
+        if iv > 0 and iv not in seen:
+            seen.add(iv)
+            out.append(iv)
+    return out
+
+
+def set_seasonpass(rows) -> int:
+    """缓存 `/api/SeasonPass` 响应里各战团的 `itemIds`（并集）。返回并集条数。
+
+    客户端启动时**先拉** `/api/Progression`（+16 s）**后拉** `/api/SeasonPass`（+19 s），
+    所以本次会话学到的条目只能给**下一次**会话用 —— 落盘到 `runtime/warbond_items.json`；
+    首次运行则用内置兜底 `data/catalogs/warbond_items.json`（同一份真实抓包生成）。
+    """
+    if not isinstance(rows, list):
+        return len(seasonpass_items())
+    ids = []
+    for row in rows:
+        if isinstance(row, dict):
+            ids.extend(row.get("itemIds") or [])
+    merged = _clean_ids(list(seasonpass_items()) + ids)
+    if not merged:
+        return 0
+    with _lock:
+        _warbond["items"] = merged
+    try:
+        WARBOND_ITEMS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        WARBOND_ITEMS_FILE.write_text(
+            json.dumps({"itemIds": merged}, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+    return len(merged)
+
+
+def patch_progression(body, forge_flags=0, forge_xp=0):
+    """补 `packageProgress`（舰船模块满级 / 武器包 level≥1）+ 领取全部战团条目
+    + 可选伪造账号级开关（`forge_flags`：教程位或掩码；`forge_xp`：经验下限）。
 
     返回 ``(new_body 或 None, 改动数)``；没有 `packageProgress` 数组时也不报错，
     只在有变化时返回新 body。
@@ -310,6 +440,54 @@ def patch_progression(body):
             entry["level"] = SHIP_MODULE_MAX_LEVEL
             entry["progress"] = 0
             changed += 1
+    # 战团条目：全部「已领取」—— 军械库的解锁态看这份名单（主号 426 条 ⊆ 26 个战团 itemIds 并集 603 条）
+    claimed = seasonpass_items()
+    if claimed:
+        have = set()
+        for v in doc.get("purchasedSeasonPassItems") or []:
+            try:
+                have.add(int(v))
+            except (TypeError, ValueError):
+                pass
+        missing = [i for i in claimed if i not in have]
+        if missing:
+            doc["purchasedSeasonPassItems"] = list(
+                doc.get("purchasedSeasonPassItems") or []) + missing
+            changed += 1
+    # 账号级"开关"（默认关）：教程进度位 / 经验（等级）—— 用于排查军械库能力门
+    if forge_flags:
+        try:
+            cur = int(doc.get("onboardingFlags") or 0)
+        except (TypeError, ValueError):
+            cur = 0
+        merged = cur | int(forge_flags)
+        if merged != cur:
+            doc["onboardingFlags"] = merged
+            changed += 1
+    if forge_xp:
+        try:
+            cur = int(doc.get("experience") or 0)
+        except (TypeError, ValueError):
+            cur = 0
+        target = int(forge_xp)
+        # 判定式（2026-11-26 用户指定）：**低于目标等级才补，高于/等于目标等级一律不动经验**。
+        # 等级由 levelspec 阈值换算（7,100 XP = 10 级 = 武器改装解锁级）。
+        if cur < target:
+            doc["experience"] = target
+            changed += 1
+            try:
+                from ..logutil import log
+                log("UNLOCK 账号等级 %d 级（%d 经验）< %d 级 → 经验补到 %d（%d 级）"
+                    % (level_for_xp(cur), cur, level_for_xp(target), target, level_for_xp(target)))
+            except Exception:
+                pass
+        else:
+            try:
+                from ..logutil import log
+                log("UNLOCK 账号等级 %d 级（%d 经验）≥ %d 级 → 经验不动"
+                    % (level_for_xp(cur), cur, level_for_xp(target)))
+            except Exception:
+                pass
     if not changed:
         return None, 0
     return json.dumps(doc, separators=(",", ":")).encode("utf-8"), changed
