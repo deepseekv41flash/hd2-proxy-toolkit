@@ -100,6 +100,12 @@ class FakeApp:
     def uninstall_dry(self):
         pass
 
+    def hosts_off(self):
+        pass
+
+    def hosts_on(self):
+        pass
+
     def save_profile(self, apply=False):
         return True
 
@@ -1087,3 +1093,34 @@ def test_account_page_save_tab_and_boundaries(inv_page):
 
     body = page.save_summary_lbl.cget("text")
     assert "身份：" in body and "经验" in body and "统计" in body
+
+
+# ---------------------------------------------------------------- 存档页：等级编辑（2026-11-26）
+
+
+def test_inventory_save_tab_level_editor(inv_page, app, monkeypatch, tmp_path):
+    """存档页要有「账号等级」编辑区，且「设为该等级」真的写进本机账本。"""
+    from hd2proxy.engine import levels, saves
+
+    # 造一份账本并指向它（GUI 的读写都走 paths.SAVES_DIR，这里重定向到 tmp）
+    monkeypatch.setattr(saves.paths, "SAVES_DIR", tmp_path)
+    doc = saves.empty_save("steam_9")
+    doc["earned"]["experience"] = 208
+    saves.SaveStore("steam_9", tmp_path).save(doc)
+
+    # 控件在位
+    assert inv_page.var_level.get() == "10"
+    assert hasattr(inv_page, "level_now_lbl")
+
+    inv_page._refresh_save_summary()
+    assert "2 级" in inv_page.level_now_lbl.cget("text"), inv_page.level_now_lbl.cget("text")
+
+    # 设为 10 级 → 账本经验变成等级表里 10 级的值
+    inv_page.var_level.set("10")
+    inv_page._apply_level()
+    assert saves.ledger_experience(root=tmp_path)["experience"] == levels.xp_for_level(10) == 7100
+    assert "10 级" in inv_page.level_now_lbl.cget("text")
+
+    # 清除覆盖 → 经验归 0
+    inv_page._clear_level()
+    assert saves.ledger_experience(root=tmp_path)["experience"] == 0

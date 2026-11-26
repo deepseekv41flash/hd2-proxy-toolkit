@@ -87,6 +87,7 @@ class InventoryPage(Page):
                 self._build_edit_tab(key, label)
         self._build_items_tab()
         self._build_catalog_tab()
+        self.var_level = tk.StringVar(value="10")   # 账号等级编辑（存档 tab）
         self._build_save_tab()
         self.nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
@@ -125,6 +126,31 @@ class InventoryPage(Page):
                                          font=theme.F_S, justify="left", anchor="w",
                                          padx=12, pady=10)
         self.save_summary_lbl.pack(fill="x", padx=12, pady=(6, 8))
+
+        # 账号等级（仅本机视图）：按等级表把"目标等级"换算成经验写进本机账本（2026-11-26）
+        lvbox = tk.Frame(tab, bg=theme.PANEL, highlightbackground=theme.BORDER,
+                         highlightthickness=1, padx=12, pady=8)
+        lvbox.pack(fill="x", padx=12, pady=(0, 8))
+        lvhead = tk.Frame(lvbox, bg=theme.PANEL)
+        lvhead.pack(fill="x")
+        tk.Label(lvhead, text="账号等级（仅本机视图）", bg=theme.PANEL, fg=theme.FG,
+                 font=theme.F_S).pack(side="left")
+        self.level_now_lbl = tk.Label(lvhead, text="", bg=theme.PANEL, fg=theme.MUTED,
+                                      font=theme.F_S)
+        self.level_now_lbl.pack(side="left", padx=(10, 0))
+        lvrow = tk.Frame(lvbox, bg=theme.PANEL)
+        lvrow.pack(fill="x", pady=(6, 0))
+        tk.Label(lvrow, text="目标等级", bg=theme.PANEL, fg=theme.MUTED,
+                 font=theme.F_S).pack(side="left")
+        theme.entry(lvrow, self.var_level, width=6).pack(side="left", padx=(6, 8))
+        theme.button(lvrow, "设为该等级", command=self._apply_level,
+                     primary=True).pack(side="left")
+        theme.button(lvrow, "清除覆盖", command=self._clear_level).pack(side="left", padx=(8, 0))
+        tk.Label(lvbox,
+                 text="写在本机账本的 experience 上（10 级 = 7,100 经验）；引擎合并时“只抬不降”，"
+                      "改完要重进游戏才生效；服务端不受影响。",
+                 bg=theme.PANEL, fg=theme.MUTED, font=theme.F_S,
+                 anchor="w", justify="left").pack(fill="x", pady=(6, 0))
 
         box = tk.Frame(tab, bg=theme.PANEL, highlightbackground=theme.BORDER,
                        highlightthickness=1, padx=12, pady=8)
@@ -166,6 +192,62 @@ class InventoryPage(Page):
         self.save_dir_lbl.configure(
             text="存档目录：%s（点「存档预演」可在开游戏前看这份档会改什么 / 一局会加多少）"
                  % (self._save_root()))
+        self._refresh_level_line()
+
+    # ---- 账号等级编辑（只改本机账本） ----------------------------------
+    def _refresh_level_line(self):
+        """把"当前档的经验 → 等级"显示出来（读账本，不联网、引擎不跑也能看）。"""
+        from ...engine import levels, saves
+        try:
+            info = saves.ledger_experience()
+        except Exception as e:              # noqa: BLE001
+            self.level_now_lbl.configure(text="读取账本失败：%r" % (e,))
+            return
+        if not info.get("save_id"):
+            self.level_now_lbl.configure(text="当前档：无（先让引擎跑一次）")
+            return
+        xp = int(info.get("experience") or 0)
+        self.level_now_lbl.configure(
+            text="当前：%s · %s 级 · %d 经验（账本 %s）"
+                 % (levels.describe(xp), levels.level_for_xp(xp), xp, info["save_id"]))
+
+    def _apply_level(self):
+        """把"目标等级"换算成经验写进本机账本（只改本机，服务端不动）。"""
+        from ...engine import levels, saves
+        raw = (self.var_level.get() or "").strip()
+        try:
+            want = int(raw)
+        except ValueError:
+            self.app.toast("目标等级要填整数（1–%d）" % levels.max_level(), error=True)
+            return
+        top = levels.max_level()
+        if not (1 <= want <= top):
+            self.app.toast("目标等级超出范围（1–%d）" % top, error=True)
+            return
+        xp = levels.xp_for_level(want)
+        if xp <= 0:
+            self.app.toast("等级表里没有 %d 级（data/catalogs/levels.json）" % want, error=True)
+            return
+        try:
+            res = saves.set_ledger_experience(xp)
+        except Exception as e:              # noqa: BLE001
+            self.app.toast("写账本失败：%r" % (e,), error=True)
+            return
+        self._refresh_save_summary()
+        self.app.toast("已把本机账本改成 %d 级（%d 经验）；重进游戏生效"
+                       % (want, res["after"]))
+
+    def _clear_level(self):
+        """清掉等级覆盖（把账本经验置 0 → 合并后回到服务端真实值）。"""
+        from ...engine import saves
+        try:
+            res = saves.set_ledger_experience(0)
+        except Exception as e:              # noqa: BLE001
+            self.app.toast("清覆盖失败：%r" % (e,), error=True)
+            return
+        self._refresh_save_summary()
+        self.app.toast("已清除等级覆盖（账本经验 %s → 0）；重进游戏回到服务端真实等级"
+                       % res["before"])
 
     def _save_root(self):
         from ...engine import paths as engine_paths

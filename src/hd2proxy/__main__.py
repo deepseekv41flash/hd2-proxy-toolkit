@@ -373,6 +373,79 @@ def cmd_uninstall(a):
     return OK if result.ok else FAIL
 
 
+def cmd_hosts(a):
+    """hosts 劫持的三种操作（**只碰 hosts 里我们那一行**，不碰证书）。
+
+    存在的理由（2026-11-26 实机）：mod 线要"不开代理时游戏直连官方服"，
+    但 hosts 被我们改写后，引擎没起就没人监听 ⇒ 游戏连不上。
+    `hosts off` 就是那个"恢复直连"的一键动作；`hosts on` 再切回来。
+    """
+    from .engine import hosts as hosts_mod
+    from .engine import elevation, sysprobe
+
+    action = getattr(a, "hosts_cmd", "") or "status"
+
+    if action == "status":
+        try:
+            text = hosts_mod.read_hosts()
+        except OSError as e:
+            print("读取 hosts 失败：%r" % (e,))
+            return FAIL
+        info = hosts_mod.find_marker(text)
+        if not info:
+            print("hosts：未劫持（游戏直连官方服）")
+            return OK
+        state = "已注释（不生效）" if info.get("commented") else "生效中"
+        print("hosts：%s → %s（第 %d 行，%s）"
+              % (info.get("ip") or "?", info.get("host") or "?", info.get("line_no"), state))
+        print("路径：%s" % hosts_mod.hosts_path())
+        return OK
+
+    if action == "off":
+        if not (a.elevated or sysprobe.is_admin()):
+            res = elevation.relaunch_self("hosts", "off", "--elevated")
+            if res.get("cancelled"):
+                print("已取消：未获得管理员权限，hosts 未改动")
+                return FAIL
+            if res.get("launched") and res.get("exit_code") == 0:
+                print("hosts 已还原（游戏直连官方服）")
+                return OK
+            print("还原失败：%s" % (res.get("error") or "exit=%s" % res.get("exit_code")))
+            return FAIL
+        result = hosts_mod.remove_marker()
+        if not result.get("ok"):
+            print("还原失败：%s" % result.get("error"))
+            return FAIL
+        print("hosts 已还原：删除 %d 行（备份在同目录 %s）"
+              % (result.get("removed", 0), hosts_mod.BACKUP_DIRNAME))
+        return OK
+
+    if action == "on":
+        ip = sysprobe.resolve_listen_ip(a.ip or None)
+        host = a.host or "api.live.prod.thehelldiversgame.com"
+        if not a.elevated and not sysprobe.is_admin():
+            res = elevation.relaunch_self("hosts", "on", "--ip", ip, "--host", host,
+                                          "--elevated")
+            if res.get("cancelled"):
+                print("已取消：未获得管理员权限，hosts 未改动")
+                return FAIL
+            if res.get("launched") and res.get("exit_code") == 0:
+                print("hosts 已写入：%s → %s" % (ip, host))
+                return OK
+            print("写入失败：%s" % (res.get("error") or "exit=%s" % res.get("exit_code")))
+            return FAIL
+        plan = hosts_mod.plan_edit(ip, host)
+        result = hosts_mod.apply_edit(plan)
+        if not result.get("ok"):
+            print("写入失败：%s" % result.get("error"))
+            return FAIL
+        print("hosts 已写入：%s → %s（游戏这之后只能走本代理）" % (ip, host))
+        return OK
+
+    print("未知子命令：%s（可选 status / on / off）" % action)
+    return FAIL
+
+
 def cmd_status(a):
     try:
         _out(_api("/status", url=a.url, token=a.token))
@@ -598,6 +671,13 @@ def build_parser():
     p.add_argument("--plan", default="", help="（内部）提权子进程用的计划文件")
     p.add_argument("--elevated", action="store_true", help="（内部）以管理员身份执行")
 
+    p = sub.add_parser("hosts", help="hosts 劫持开关：status / on / off（只碰我们那一行，不动证书）")
+    p.add_argument("hosts_cmd", nargs="?", default="status",
+                   choices=["status", "on", "off"], help="status=看状态；off=恢复直连；on=重新劫持")
+    p.add_argument("--ip", default="", help="listen_ip（on 用；默认自动挑本机网卡）")
+    p.add_argument("--host", default="", help="要劫持的域名（默认 api.live.prod.thehelldiversgame.com）")
+    p.add_argument("--elevated", action="store_true", help="内部：已在管理员进程里")
+
     p = sub.add_parser("uninstall", help="还原：删 hosts 行 + 删证书信任（需要一次 UAC）")
     p.add_argument("--profile", default="")
     p.add_argument("--host", default="")
@@ -689,6 +769,7 @@ def main(argv=None):
         "info": cmd_info, "engine": cmd_engine, "selftest": cmd_selftest,
         "gate": cmd_gate, "profiles": cmd_profiles, "migrate": cmd_migrate,
         "certs": cmd_certs, "install": cmd_install, "uninstall": cmd_uninstall,
+        "hosts": cmd_hosts,
         "status": cmd_status, "verify": cmd_verify, "shutdown": cmd_shutdown,
         "gui": cmd_gui, "preview": cmd_preview, "save-preview": cmd_save_preview,
         "save-export": cmd_save_export, "live": cmd_live,

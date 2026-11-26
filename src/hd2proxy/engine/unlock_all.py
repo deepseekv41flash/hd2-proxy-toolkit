@@ -65,8 +65,10 @@ CUSTOMIZE_SLOT_COUNT = 8
 # `/api/Progression/levelspec` 也给出 10 级 = 7,100 经验。测试号 2 级、主号 199 级 —— 把等级补到
 # 10 级即出现「改装」按钮与武器等级进度（等级 199 也验证过，两者只有等级不同）。
 DEFAULT_UNLOCK_LEVEL = 10
-LEVELS_FALLBACK_FILE = paths.CATALOGS_DIR / "levels.json"
-_levels = {"rows": []}
+
+# 等级表实现在 `engine/levels.py`（GUI「存档」页的等级编辑与这里共用）；保留旧名做兼容。
+from .levels import level_for_xp, xp_for_level              # noqa: E402
+from .levels import rows as level_rows                       # noqa: E402,F401
 
 # 货币不是"物品"：库存里不需要注入（信用点/奖章/样本走其它字段）
 EXCLUDED_CATEGORIES = frozenset({18})
@@ -85,7 +87,6 @@ def reset():
         _catalog["key"] = None
         _catalog["rows"] = []
         _warbond["items"] = []
-        _levels["rows"] = []
 
 
 def set_catalog(rows, key=None) -> int:
@@ -270,60 +271,6 @@ def inject_inventory_customizations(doc):
         have.add((mid, 0))
         added += 1
     return added
-
-
-def level_rows() -> list:
-    """等级表 `[{level, requiredExperience}]`（内置 `data/catalogs/levels.json`，300 级）。"""
-    with _lock:
-        if _levels["rows"]:
-            return list(_levels["rows"])
-    try:
-        doc = json.loads(LEVELS_FALLBACK_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return []
-    rows = doc.get("levels") if isinstance(doc, dict) else doc
-    clean = []
-    for r in rows or []:
-        if isinstance(r, dict):
-            try:
-                clean.append({"level": int(r["level"]),
-                              "requiredExperience": int(r["requiredExperience"])})
-            except (KeyError, TypeError, ValueError):
-                continue
-    clean.sort(key=lambda e: e["level"])
-    with _lock:
-        _levels["rows"] = clean
-    return list(clean)
-
-
-def xp_for_level(level) -> int:
-    """该等级所需的**累计经验**阈值；表里没有该级时取不超过它的最大一级（找不到=0）。"""
-    try:
-        want = int(level)
-    except (TypeError, ValueError):
-        return 0
-    best = 0
-    for r in level_rows():
-        if r["level"] <= want:
-            best = r["requiredExperience"]
-        else:
-            break
-    return best
-
-
-def level_for_xp(xp) -> int:
-    """累计经验对应的**等级**（表里各阈值都与 7,100=10 级同源；找不到=0）。"""
-    try:
-        cur = int(xp)
-    except (TypeError, ValueError):
-        return 0
-    lv = 0
-    for r in level_rows():
-        if cur >= r["requiredExperience"]:
-            lv = r["level"]
-        else:
-            break
-    return lv
 
 
 def seasonpass_items() -> list:

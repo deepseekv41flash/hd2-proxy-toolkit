@@ -434,6 +434,68 @@ def write_last(save_id, steam_id=None, hd2_account=None, root=None) -> dict:
     return doc
 
 
+# ---------------------------------------------------------------- 等级编辑（本机账本）
+
+
+def editable_save_id(save_id=None, root=None) -> str:
+    """挑一份"可编辑的账本"：显式 id → `_last.json` 的 last_save_id；都没有 → 抛 ValueError。
+
+    等级编辑（GUI「存档」页）用它：只在**已有账本**上改，绝不凭空造一份没有身份的空档
+    （那会让引擎以为"这个玩家一切从零开始"）。
+    """
+    if save_id:
+        sid = normal_save_id(save_id)
+        if not (SaveStore(sid, root).path()).exists():
+            raise ValueError("账本不存在：%s" % sid)
+        return sid
+    last = read_last(root)
+    sid = last.get("last_save_id")
+    if not sid:
+        raise ValueError("还没有本机账本（先让引擎跑一次、进一次游戏）")
+    sid = normal_save_id(sid)
+    if not (SaveStore(sid, root).path()).exists():
+        raise ValueError("_last.json 指向的账本不存在：%s" % sid)
+    return sid
+
+
+def set_ledger_experience(xp, save_id=None, root=None) -> dict:
+    """把账本的 ``earned.experience`` 设成 ``xp``（**等级编辑**用；只改本机账本，不碰服务端）。
+
+    为什么有效：引擎把账本的 ``experience`` 以 **max** 合并进 `/api/Progression` 响应
+    （``apply_to_progression``）——写一个更大的值，下一次会话客户端就会看到更高等级；
+    客户端"一局只拉一次"，所以**改完要重进游戏**才可见。
+
+    返回 ``{"save_id", "before", "after", "doc"}``；失败抛异常（GUI 负责提示）。
+    """
+    sid = editable_save_id(save_id, root)
+    try:
+        target = max(0, int(xp))
+    except (TypeError, ValueError):
+        raise ValueError("经验必须是整数：%r" % (xp,))
+    store = SaveStore(sid, root)
+    before = None
+
+    def _mut(doc):
+        nonlocal before
+        earned = doc.setdefault("earned", {})
+        before = _as_int(earned.get("experience"))
+        earned["experience"] = target
+
+    doc = store.update(_mut)
+    log("账本经验改写：%s %s → %s（仅本机账本）" % (sid, before, target), audit=True)
+    return {"save_id": sid, "before": before, "after": target, "doc": doc}
+
+
+def ledger_experience(save_id=None, root=None) -> dict:
+    """读账本里的经验（只读；没有账本不抛，返回 ``save_id=None``）。"""
+    try:
+        sid = editable_save_id(save_id, root)
+    except ValueError:
+        return {"save_id": None, "experience": 0}
+    doc = SaveStore(sid, root).load()
+    return {"save_id": sid, "experience": _as_int((doc.get("earned") or {}).get("experience"))}
+
+
 def mark_pending(save_id, *, run_id=None, root=None, since=None) -> dict:
     """标记「该档身份尚未校验」（配合 `_session-start` 快照跨引擎重启存活）。
 

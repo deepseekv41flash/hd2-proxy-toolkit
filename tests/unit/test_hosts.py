@@ -368,3 +368,66 @@ def test_custom_marker_roundtrip(isolated_hosts):
     assert hosts.find_marker(hosts.read_hosts()) is None       # 默认 marker 认不到
     assert hosts.count_marker(marker=marker) == 1
     assert hosts.remove_marker(marker=marker)["removed"] == 1
+
+
+# ---------------------------------------------------------------- CLI：hosts status/on/off（2026-11-26）
+#
+# 研究线不开代理时要能"恢复直连"：hosts off 只删我们那一行，**不碰证书信任**。
+
+
+def _cli_args(**kw):
+    class A:
+        hosts_cmd = "status"
+        elevated = False
+        ip = ""
+        host = ""
+    a = A()
+    for k, v in kw.items():
+        setattr(a, k, v)
+    return a
+
+
+def test_cli_hosts_status_and_off(tmp_path, monkeypatch, capsys):
+    from hd2proxy import __main__ as cli
+
+    hp = tmp_path / "hosts"
+    hp.write_text("127.0.0.1  localhost\n"
+                  "100.10.10.10 api.live.prod.thehelldiversgame.com # hd2proxy\n",
+                  encoding="utf-8")
+    monkeypatch.setenv("HD2PROXY_HOSTS_PATH", str(hp))
+
+    assert cli.cmd_hosts(_cli_args()) == 0
+    out = capsys.readouterr().out
+    assert "生效中" in out and "100.10.10.10" in out
+
+    # 非管理员且用户拒绝 UAC → 不改动、返回失败
+    monkeypatch.setenv("HD2PROXY_ELEVATION_STUB", "1")
+    assert cli.cmd_hosts(_cli_args(hosts_cmd="off")) == cli.FAIL
+    assert "hd2proxy" in hp.read_text(encoding="utf-8")
+
+    # 已在管理员进程里 → 真的删掉我们那一行，别人的行原样保留
+    assert cli.cmd_hosts(_cli_args(hosts_cmd="off", elevated=True)) == 0
+    text = hp.read_text(encoding="utf-8")
+    assert "hd2proxy" not in text
+    assert "127.0.0.1  localhost" in text
+
+    # 还原后再查状态：未劫持
+    capsys.readouterr()
+    assert cli.cmd_hosts(_cli_args()) == 0
+    assert "未劫持" in capsys.readouterr().out
+
+
+def test_cli_hosts_on_writes_marker(tmp_path, monkeypatch, capsys):
+    from hd2proxy import __main__ as cli
+
+    hp = tmp_path / "hosts"
+    hp.write_text("127.0.0.1  localhost\n", encoding="utf-8")
+    monkeypatch.setenv("HD2PROXY_HOSTS_PATH", str(hp))
+
+    assert cli.cmd_hosts(_cli_args(hosts_cmd="on", elevated=True,
+                                   ip="100.20.30.40")) == 0
+    text = hp.read_text(encoding="utf-8")
+    assert "100.20.30.40 api.live.prod.thehelldiversgame.com # hd2proxy" in text
+    assert "127.0.0.1  localhost" in text
+    info = hosts.find_marker(text)
+    assert info and info["ip"] == "100.20.30.40"

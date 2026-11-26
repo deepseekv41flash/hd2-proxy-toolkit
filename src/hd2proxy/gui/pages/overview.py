@@ -53,8 +53,18 @@ class OverviewPage(Page):
             side="left", padx=(0, 8))
         theme.button(row2, "还原计划（dry-run）", command=self.app.uninstall_dry).pack(
             side="left", padx=(0, 8))
+        # hosts 开关（2026-11-26）：mod/研究线不开代理时，必须能把 hosts 还原成直连，
+        # 否则引擎没起就没人监听 100.67.88.219:443，游戏直接连不上。**不碰证书信任**。
+        theme.button(row2, "恢复直连（hosts）", command=self.app.hosts_off,
+                     danger=True).pack(side="left", padx=(0, 8))
+        theme.button(row2, "重新劫持（hosts）", command=self.app.hosts_on).pack(
+            side="left", padx=(0, 8))
         theme.button(row2, "打开日志", command=self._open_log).pack(side="left", padx=(0, 8))
         theme.button(row2, "系统自检", command=self._selfcheck).pack(side="left")
+
+        self.hosts_lbl = tk.Label(self, text="hosts：检查中…", bg=theme.BG, fg=theme.DIM,
+                                  font=theme.F_S, anchor="w")
+        self.hosts_lbl.pack(fill="x", padx=22, pady=(0, 6))
 
         # ---- 状态卡 ----------------------------------------------------
         cards = tk.Frame(self, bg=theme.BG)
@@ -164,6 +174,7 @@ class OverviewPage(Page):
             self._snapshot, self._evaluation = None, None
             return
         self._snapshot, self._evaluation = snapshot, evaluation
+        self._render_hosts_line(snapshot, evaluation)
         items = [w for w in evaluation.get("warnings") or []
                  if w["level"] in ("error", "warn")]
         if not items:
@@ -181,6 +192,36 @@ class OverviewPage(Page):
         if not self._warn_shown:
             self.warn_lbl.pack(fill="x", padx=22, pady=(10, 0), before=self.events.master)
             self._warn_shown = True
+
+    def _render_hosts_line(self, snapshot, evaluation):
+        """一行说清 hosts 现在指哪、以及"引擎没开就连不上"这个坑。"""
+        h = (snapshot or {}).get("hosts") or {}
+        state = h.get("state")
+        running = bool((self.app.last_status or {}).get("mode"))
+        if state == "ok":
+            if running:
+                self.hosts_lbl.configure(
+                    text="hosts：→ %s（代理生效中；关掉引擎前请点「恢复直连」）" % h.get("ip"),
+                    fg=theme.GREEN)
+            else:
+                self.hosts_lbl.configure(
+                    text="hosts：→ %s 但引擎未运行 ⇒ 游戏会连不上；点「恢复直连（hosts）」"
+                         % h.get("ip"), fg=theme.RED)
+        elif state == "missing":
+            self.hosts_lbl.configure(
+                text="hosts：未劫持（游戏直连官方服；要用代理点「重新劫持（hosts）」）",
+                fg=theme.MUTED)
+        elif state == "commented":
+            self.hosts_lbl.configure(
+                text="hosts：那一行被注释了%s ⇒ 游戏不走代理；要代理请重新劫持"
+                     % (("（%s）" % h.get("comment_prefix")) if h.get("comment_prefix") else ""),
+                fg=theme.GOLD)
+        elif state == "wrong-ip":
+            self.hosts_lbl.configure(
+                text="hosts：→ %s，与监听 IP %s 不一致；点「重新劫持（hosts）」修正"
+                     % (h.get("ip"), h.get("expected_ip")), fg=theme.GOLD)
+        else:
+            self.hosts_lbl.configure(text="hosts：未知状态", fg=theme.DIM)
 
     def _selfcheck(self):
         """系统自检：**强制**清缓存重算（用户点它就是要「此刻」的准确状态）。"""

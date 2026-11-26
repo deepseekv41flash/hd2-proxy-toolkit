@@ -494,6 +494,44 @@ class App:
                 "--listen-ip", listen]
         self._run_cli_dialog(args, "还原计划（dry-run，不改系统）")
 
+    # ---- hosts 劫持开关（恢复直连 / 重新劫持）-----------------------------
+    def hosts_off(self):
+        """恢复直连：删 hosts 里我们那一行（**不动证书信任**）。研究线不开代理时必需。"""
+        msg = (
+            "会删掉 hosts 里本工具那一行（`# hd2proxy`），游戏从此直连官方服务器。\n\n"
+            "· 证书信任保持不动（不影响浏览器/其它程序）\n"
+            "· 之后要再用代理，点「重新劫持（hosts）」即可\n"
+            "· 需要一次 UAC 管理员授权")
+        if not messagebox.askyesno("恢复直连（还原 hosts）", msg):
+            return
+        self._run_hosts_cmd(["hosts", "off"], "恢复直连")
+
+    def hosts_on(self):
+        """重新劫持：把 hosts 指回本机监听 IP（游戏才会走代理）。"""
+        prof = self.profile or {}
+        ip = ((prof.get("proxy") or {}).get("listen_ip") or "auto")
+        msg = (
+            "会把 hosts 的 HD2 API 域名指回本机监听地址（listen_ip=%s）。\n\n"
+            "· 之后引擎必须开着，否则游戏会连不上\n"
+            "· 需要一次 UAC 管理员授权" % ip)
+        if not messagebox.askyesno("重新劫持（hosts）", msg):
+            return
+        self._run_hosts_cmd(["hosts", "on", "--ip", ip], "重新劫持")
+
+    def _run_hosts_cmd(self, args, title):
+        def done(result):
+            if isinstance(result, Exception):
+                messagebox.showerror(title, repr(result))
+                return
+            code, out = result
+            self.toast("%s%s" % (title, "完成" if code == 0 else "失败/取消"), error=code != 0)
+            if code != 0:
+                self.show_text(title + "：失败或取消", out)
+            page = self.pages.get("overview")
+            if page is not None and hasattr(page, "refresh"):
+                page.refresh()
+        self.run_bg(lambda: self.client.run_cli(args, timeout=300), done, busy=title + "…")
+
     def _run_cli_dialog(self, args, title):
         def done(result):
             if isinstance(result, Exception):

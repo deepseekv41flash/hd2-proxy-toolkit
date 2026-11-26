@@ -461,3 +461,49 @@ def test_patch_progression_raises_xp_only_below_target(tmp_path, monkeypatch):
         if body2 is None:
             continue                            # 完全无改动：经验当然没变
         assert json.loads(body2)["experience"] == xp, "≥10 级不许改经验"
+
+
+# ---------------------------------------------------------------- 等级编辑（存档页，2026-11-26）
+
+
+def test_levels_module_lookup():
+    from hd2proxy.engine import levels
+    levels.reset()
+    assert len(levels.rows()) == 300
+    assert levels.xp_for_level(10) == 7100
+    assert levels.level_for_xp(7100) == 10
+    assert levels.level_for_xp(7099) == 9
+    assert levels.max_level() == 300
+    assert "10 级" in levels.describe(7100)
+    assert "距 3 级还差" in levels.describe(208)
+
+
+def test_set_ledger_experience_writes_with_backup(tmp_path):
+    from hd2proxy.engine import saves
+    doc = saves.empty_save("steam_42")
+    doc["earned"]["experience"] = 208
+    saves.SaveStore("steam_42", tmp_path).save(doc)
+
+    res = saves.set_ledger_experience(7100, root=tmp_path)
+    assert res["before"] == 208 and res["after"] == 7100
+    assert saves.ledger_experience(root=tmp_path)["experience"] == 7100
+    assert (tmp_path / "steam_42.json.bak").exists(), "覆盖前必须留 .bak"
+
+    # 合并效果：账本经验以 max 合并进 /api/Progression 响应
+    body = json.dumps({"experience": 208, "packageProgress": [],
+                       "purchasedSeasonPassItems": []}).encode()
+    new_body, _n = saves.apply_to_progression(body, saves.SaveStore("steam_42", tmp_path).load())
+    assert json.loads(new_body)["experience"] == 7100
+
+
+def test_set_ledger_experience_without_ledger_raises(tmp_path):
+    from hd2proxy.engine import saves
+    with pytest.raises(ValueError):
+        saves.set_ledger_experience(7100, root=tmp_path)
+    assert saves.ledger_experience(root=tmp_path) == {"save_id": None, "experience": 0}
+
+
+def test_set_ledger_experience_clamps_negative(tmp_path):
+    from hd2proxy.engine import saves
+    saves.SaveStore("steam_7", tmp_path).save(saves.empty_save("steam_7"))
+    assert saves.set_ledger_experience(-5, root=tmp_path)["after"] == 0, "负值=清除覆盖"
