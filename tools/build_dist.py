@@ -108,15 +108,24 @@ def _main_window_title(process_name: str) -> str:
 
 
 def _smoke_gui(label: str, exe: Path):
-    """启动 exe，等 6s 确认进程存活且有主窗口，然后强杀。"""
+    """启动 exe，轮询到出现主窗口再杀（超时 25s）。
+
+    为什么轮询而不是睡固定 6s：**新构建的 exe 第一次启动会被杀软扫一遍**，冷机实测
+    `hd2proxy.exe` 无参数时窗口要 9s 才建好（2026-11-27 发版时被这 6s 卡成假失败）。
+    """
     proc = subprocess.Popen([str(exe)], env=_gui_env())
     try:
-        time.sleep(6)
-        if proc.poll() is not None:
-            raise SystemExit("%s 启动后退出（rc=%s）" % (label, proc.returncode))
-        title = _main_window_title(exe.stem)
+        deadline = time.time() + 25
+        title = ""
+        while time.time() < deadline:
+            time.sleep(1)
+            if proc.poll() is not None:
+                raise SystemExit("%s 启动后退出（rc=%s）" % (label, proc.returncode))
+            title = _main_window_title(exe.stem)
+            if title:
+                break
         if not title:
-            raise SystemExit("%s 进程存活但没有主窗口（GUI 未打开）" % label)
+            raise SystemExit("%s 进程存活但 25s 内没有主窗口（GUI 未打开）" % label)
         print("  OK  %s 窗口存活（pid=%s，标题非空）" % (label, proc.pid))
     finally:
         proc.kill()
